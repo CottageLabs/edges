@@ -11,6 +11,19 @@ jQuery(document).ready(function($) {
             }),
             edges.newResultsDisplay({
                 id: "results"
+            }),
+            edges.newChart({
+                id: "license",
+                aggregations : [
+                    es.newAggregation({
+                        name : "license",
+                        type: "terms",
+                        body: {field: "index.license.exact"}
+                    })
+                ],
+                seriesKeys : {
+                    "license" : "License"
+                }
             })
         ]
     });

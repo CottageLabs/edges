@@ -24,6 +24,9 @@ $.extend(edges, {
                 thefacetview += '<div class="col-md-12" id="facetview_rightcol">';
             }
 
+            // for the moment, a place to stick the test chart
+            thefacetview += '<div class="col-md-12"><div id="license"></div></div>';
+
             // insert the div within which the results actually will go
             thefacetview += '<div class="table table-striped table-bordered" id="results" dir="auto"></div>';
 

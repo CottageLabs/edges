@@ -10,7 +10,7 @@ var edges = {
             this.components = params.components || [];
             this.search_url = params.search_url;
             this.selector = params.selector;
-            this.renderPacks = params.renderPacks || [edges.bs3];
+            this.renderPacks = params.renderPacks || [edges.bs3, edges.nvd3];
             this.template = params.template;
             this.debug = params.debug || false;
         };
@@ -85,7 +85,7 @@ var edges = {
             }
         },
 
-        getRenderer : function(fname) {
+        getRenderPackFunction : function(fname) {
             for (var i = 0; i < this.renderPacks.length; i++) {
                 var rp = this.renderPacks[i];
                 if (rp.hasOwnProperty(fname)) {
@@ -176,7 +176,7 @@ var edges = {
 
             // set the renderer from default if necessary
             if (!this.renderer) {
-                this.renderer = this.edge.getRenderer("renderTermSelector");
+                this.renderer = this.edge.getRenderPackFunction("renderTermSelector");
             }
         },
 
@@ -227,7 +227,7 @@ var edges = {
             // set the renderer from default if necessary
             // set the renderer from default if necessary
             if (!this.renderer) {
-                this.renderer = this.edge.getRenderer("renderResultsDisplay");
+                this.renderer = this.edge.getRenderPackFunction("renderResultsDisplay");
             }
         },
 
@@ -236,6 +236,64 @@ var edges = {
         },
 
         contrib : function(query) {}
+    },
+
+    newChart : function(params) {
+        var Chart = function(args) {
+            this.id = args.id;
+            this.aggregations = args.aggregations || [];
+            this.seriesKeys = args.seriesKeys || {};
+            this.dataSeries = args.dataSeries || false;
+            this.dataFunction = args.dataFunction || false;
+            this.renderer = args.renderer;
+        };
+        Chart.prototype = edges.ChartPrototype;
+        return new Chart(params);
+    },
+    ChartPrototype : {
+        init : function(edge) {
+            this.edge = edge;
+            if (!this.renderer) {
+                this.renderer = this.edge.getRenderPackFunction("multiBar");
+            }
+            if (!this.dataFunction) {
+                this.dataFunction = this._dataFunction
+            }
+        },
+        draw : function(edge) {
+            this.dataSeries = this.dataFunction(this);
+            this.renderer(this);
+        },
+        contrib: function(query) {
+            for (var i = 0; i < this.aggregations.length; i++) {
+                query.addAggregation({aggregation : this.aggregations[i]});
+            }
+        },
+        _dataFunction : function(ch) {
+            // for each aggregation, get the results and add them to the data series
+            var data_series = [];
+            if (!ch.edge.state.raw) {
+                return data_series;
+            }
+            for (var i = 0; i < ch.aggregations.length; i++) {
+                // get the facet, the field name and the size
+                var agg = ch.aggregations[i];
+                var buckets = ch.edge.state.raw.aggregations[agg.name].buckets;
+
+                var series = {};
+                series["key"] = this.seriesKeys[agg.name];
+                series["values"] = [];
+
+                for (var j = 0; j < buckets.length; j++) {
+                    var doccount = buckets[j].doc_count;
+                    var key = buckets[j].key;
+                    series.values.push({label : key, value: doccount});
+                }
+
+                data_series.push(series);
+            }
+            return data_series;
+        }
     },
 
     //////////////////////////////////////////////////////////////////
