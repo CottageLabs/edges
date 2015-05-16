@@ -1,27 +1,25 @@
 var edges = {
 
-    // Initialise function which acts as a constructor for the main Edges class, and also
-    // triggers the startup routine.  It then returns the object to the caller, to use as
-    // they will
     init : function(params) {
-        var Edges = function(params) {
-            this.query = es.newQuery();
-            this.state = edges.newState();
-            this.components = params.components || [];
-            this.search_url = params.search_url;
-            this.selector = params.selector;
-            this.renderPacks = params.renderPacks || [edges.bs3, edges.nvd3];
-            this.template = params.template;
-            this.debug = params.debug || false;
-        };
-        Edges.prototype = edges.EdgesPrototype;
-        var e = new Edges(params);
+        var e = edges.newEdge(params);
         e.startup();
         return e;
     },
 
-    EdgesPrototype : {
-        startup : function() {
+    newEdge : function(params) {
+        return new edges.Edge(params);
+    },
+    Edge : function(params) {
+        this.query = es.newQuery();
+        this.state = edges.newState();
+        this.components = params.components || [];
+        this.search_url = params.search_url;
+        this.selector = params.selector;
+        this.renderPacks = params.renderPacks || [edges.bs3, edges.nvd3];
+        this.template = params.template;
+        this.debug = params.debug || false;
+
+        this.startup = function() {
             // obtain the jquery context for all our operations
             this.context = $(this.selector);
 
@@ -44,9 +42,9 @@ var edges = {
 
             // now issue a query
             this.doQuery();
-        },
+        };
 
-        category : function(cat) {
+        this.category = function(cat) {
             var comps = [];
             for (var i = 0; i < this.components.length; i++) {
                 var component = this.components[i];
@@ -55,9 +53,9 @@ var edges = {
                 }
             }
             return comps;
-        },
+        };
 
-        doQuery: function () {
+        this.doQuery = function() {
             // request the components to contribute to the query
             for (var i = 0; i < this.components.length; i++) {
                 var component = this.components[i];
@@ -72,20 +70,20 @@ var edges = {
                 success: edges.objClosure(this, "querySuccess", ["raw"]),
                 complete: edges.objClosure(this, "queryComplete")
             })
-        },
+        };
 
-        querySuccess : function(params) {
+        this.querySuccess = function(params) {
             this.state.raw = params.raw;
-        },
+        };
 
-        queryComplete : function() {
+        this.queryComplete = function() {
             for (var i = 0; i < this.components.length; i++) {
                 var component = this.components[i];
                 component.draw(this);
             }
-        },
+        };
 
-        getRenderPackFunction : function(fname) {
+        this.getRenderPackFunction = function(fname) {
             for (var i = 0; i < this.renderPacks.length; i++) {
                 var rp = this.renderPacks[i];
                 if (rp.hasOwnProperty(fname)) {
@@ -93,36 +91,162 @@ var edges = {
                 }
             }
             return function() {}
-        },
+        };
 
-        hasHits : function() {
+        this.hasHits = function() {
             return this.state.raw && this.state.raw.hits && this.state.raw.hits.hits.length > 0;
         }
     },
 
-    ComponentPrototype : {
-        init : function() {},
-        draw : function() {},
-        contrib: function() {}
+    newComponent : function(params) {
+        return new edges.Component(params);
     },
+    Component : function(params) {
+        this.id = params.id;
+        this.renderer = params.renderer;
+        this.category = params.category || "none";
 
-    ///////////////////////////////////////////////////////////////////
-    // Functions around page state
-
-    newState :  function() {
-        // this is where we construct the page state object
-        var State = function() {
-            this.query = es.newQuery();
-            this.raw = undefined;
+        this.init = function(edge) {};
+        this.draw = function() {
+            if (this.renderer) {
+                this.renderer(this);
+            }
         };
-        State.prototype = edges.StatePrototype;
-        return new State();
-    },
-    StatePrototype : {
-        // this is where state-specific functions can go
+        this.contrib = function(query) {};
     },
 
-    //////////////////////////////////////////////////////////////////
+    newState : function(params) {
+        return new edges.State(params);
+    },
+    State : function(params) {
+        this.query = es.newQuery();
+        this.raw = undefined;
+    },
+
+    newTermSelector : function(params) {
+        edges.TermSelector.prototype = edges.newComponent(params);
+        return new edges.TermSelector(params);
+    },
+    TermSelector : function(params) {
+        this.field = params.field;
+        this.display = params.display;
+        this.category = params.category || "selector";
+        this.filters = params.filters || [];
+
+        this.init = function(edge) {
+            // record a reference to the parent object
+            this.edge = edge;
+
+            // set the renderer from default if necessary
+            if (!this.renderer) {
+                this.renderer = this.edge.getRenderPackFunction("renderTermSelector");
+            }
+        };
+
+        this.contrib = function(query) {
+            query.addAggregation({
+                aggregation: es.newAggregation({
+                    name : this.id,
+                    type : "terms",
+                    body : {field : this.field}
+                })
+            });
+
+            if (this.filters.length > 0) {
+                for (var i = 0; i < this.filters.length; i++) {
+                    query.addMust(es.newTermFilter({
+                        field: this.field,
+                        value: this.filters[i]
+                    }))
+                }
+            }
+        };
+
+        this.selectTerm = function(element) {
+            var term = $(element).attr("data-key");
+            this.filters.push(term);
+            this.edge.doQuery();
+        };
+    },
+
+    newResultsDisplay : function(params) {
+        edges.ResultsDisplay.prototype = edges.newComponent(params);
+        return new edges.ResultsDisplay(params);
+    },
+    ResultsDisplay : function(params) {
+        this.category = params.category || "results";
+
+        this.init = function(edge) {
+            // record a reference to the parent object
+            this.edge = edge;
+
+            // set the renderer from default if necessary
+            if (!this.renderer) {
+                this.renderer = this.edge.getRenderPackFunction("renderResultsDisplay");
+            }
+        };
+    },
+
+    newChart : function(params) {
+        edges.Chart.prototype = edges.newComponent(params);
+        return new edges.Chart(params);
+    },
+    Chart : function(params) {
+        this.aggregations = params.aggregations || [];
+        this.seriesKeys = params.seriesKeys || {};
+        this.dataSeries = params.dataSeries || false;
+        this.dataFunction = params.dataFunction || false;
+
+        this.init = function(edge) {
+            this.edge = edge;
+            if (!this.renderer) {
+                this.renderer = this.edge.getRenderPackFunction("multiBar");
+            }
+            if (!this.dataFunction) {
+                this.dataFunction = _dataFunction
+            }
+        };
+
+        this.draw = function() {
+            this.dataSeries = this.dataFunction(this);
+            this.renderer(this);
+        };
+
+        this.contrib = function(query) {
+            for (var i = 0; i < this.aggregations.length; i++) {
+                query.addAggregation({aggregation : this.aggregations[i]});
+            }
+        };
+
+        // effectively private methods
+        // must be called with apply(this, args) where appropriate
+
+        function _dataFunction(ch) {
+            // for each aggregation, get the results and add them to the data series
+            var data_series = [];
+            if (!ch.edge.state.raw) {
+                return data_series;
+            }
+            for (var i = 0; i < ch.aggregations.length; i++) {
+                // get the facet, the field name and the size
+                var agg = ch.aggregations[i];
+                var buckets = ch.edge.state.raw.aggregations[agg.name].buckets;
+
+                var series = {};
+                series["key"] = this.seriesKeys[agg.name];
+                series["values"] = [];
+
+                for (var j = 0; j < buckets.length; j++) {
+                    var doccount = buckets[j].doc_count;
+                    var key = buckets[j].key;
+                    series.values.push({label : key, value: doccount});
+                }
+
+                data_series.push(series);
+            }
+            return data_series;
+        }
+    },
 
     //////////////////////////////////////////////////////////////////
     // Closures for integrating the object with other modules
@@ -153,152 +277,6 @@ var edges = {
     },
 
     //////////////////////////////////////////////////////////////////
-
-    //////////////////////////////////////////////////////////////////
-    // Some standard components (might live somewhere else later)
-
-    newTermSelector : function(params) {
-        var TermSelector = function(args) {
-            this.id = args.id;
-            this.field = args.field;
-            this.display = args.display;
-            this.renderer = args.renderer;
-            this.category = args.category || "selector";
-            this.filters = args.filters || [];
-        };
-        TermSelector.prototype = edges.TermSelectorPrototype;
-        return new TermSelector(params)
-    },
-    TermSelectorPrototype : {
-        init : function(edge) {
-            // record a reference to the parent object
-            this.edge = edge;
-
-            // set the renderer from default if necessary
-            if (!this.renderer) {
-                this.renderer = this.edge.getRenderPackFunction("renderTermSelector");
-            }
-        },
-
-        draw : function(edge) {
-            this.renderer(this);
-        },
-
-        contrib : function(query) {
-            query.addAggregation({
-                aggregation: es.newAggregation({
-                    name : this.id,
-                    type : "terms",
-                    body : {field : this.field}
-                })
-            });
-
-            if (this.filters.length > 0) {
-                for (var i = 0; i < this.filters.length; i++) {
-                    query.addMust(es.newTermFilter({
-                        field: this.field,
-                        value: this.filters[i]
-                    }))
-                }
-            }
-        },
-
-        selectTerm : function(element) {
-            var term = $(element).attr("data-key");
-            this.filters.push(term);
-            this.edge.doQuery();
-        }
-    },
-
-    newResultsDisplay : function(params) {
-        var ResultsDisplay = function(args) {
-            this.id = args.id;
-            this.category = args.category || "results";
-            this.renderer = args.renderer;
-        };
-        ResultsDisplay.prototype = edges.ResultsDisplayPrototype;
-        return new ResultsDisplay(params);
-    },
-    ResultsDisplayPrototype : {
-        init : function(edge) {
-            // record a reference to the parent object
-            this.edge = edge;
-
-            // set the renderer from default if necessary
-            // set the renderer from default if necessary
-            if (!this.renderer) {
-                this.renderer = this.edge.getRenderPackFunction("renderResultsDisplay");
-            }
-        },
-
-        draw : function(edge) {
-            this.renderer(this);
-        },
-
-        contrib : function(query) {}
-    },
-
-    newChart : function(params) {
-        var Chart = function(args) {
-            this.id = args.id;
-            this.aggregations = args.aggregations || [];
-            this.seriesKeys = args.seriesKeys || {};
-            this.dataSeries = args.dataSeries || false;
-            this.dataFunction = args.dataFunction || false;
-            this.renderer = args.renderer;
-        };
-        Chart.prototype = edges.ChartPrototype;
-        return new Chart(params);
-    },
-    ChartPrototype : {
-        init : function(edge) {
-            this.edge = edge;
-            if (!this.renderer) {
-                this.renderer = this.edge.getRenderPackFunction("multiBar");
-            }
-            if (!this.dataFunction) {
-                this.dataFunction = this._dataFunction
-            }
-        },
-        draw : function(edge) {
-            this.dataSeries = this.dataFunction(this);
-            this.renderer(this);
-        },
-        contrib: function(query) {
-            for (var i = 0; i < this.aggregations.length; i++) {
-                query.addAggregation({aggregation : this.aggregations[i]});
-            }
-        },
-        _dataFunction : function(ch) {
-            // for each aggregation, get the results and add them to the data series
-            var data_series = [];
-            if (!ch.edge.state.raw) {
-                return data_series;
-            }
-            for (var i = 0; i < ch.aggregations.length; i++) {
-                // get the facet, the field name and the size
-                var agg = ch.aggregations[i];
-                var buckets = ch.edge.state.raw.aggregations[agg.name].buckets;
-
-                var series = {};
-                series["key"] = this.seriesKeys[agg.name];
-                series["values"] = [];
-
-                for (var j = 0; j < buckets.length; j++) {
-                    var doccount = buckets[j].doc_count;
-                    var key = buckets[j].key;
-                    series.values.push({label : key, value: doccount});
-                }
-
-                data_series.push(series);
-            }
-            return data_series;
-        }
-    },
-
-    //////////////////////////////////////////////////////////////////
-
-    //////////////////////////////////////////////////////////////////
     // Shared utilities
 
     escapeHtml : function(unsafe) {
@@ -312,4 +290,5 @@ var edges = {
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
     }
+
 };

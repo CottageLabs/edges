@@ -1,4 +1,5 @@
 jQuery(document).ready(function($) {
+
     e = edges.init({
         selector: "#edges",
         template: edges.bs3.facetview,
