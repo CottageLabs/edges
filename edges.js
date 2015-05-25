@@ -25,7 +25,7 @@ var edges = {
 
             // render the template if necessary
             if (this.template) {
-                this.template(this);
+                this.template.draw(this);
             }
 
             // call each of the components to initialise themselves
@@ -106,13 +106,29 @@ var edges = {
         this.renderer = params.renderer;
         this.category = params.category || "none";
 
-        this.init = function(edge) {};
+        this.init = function(edge) {
+            // record a reference to the parent object
+            this.edge = edge;
+
+            // set the renderer from default if necessary
+            if (!this.renderer) {
+                this.renderer = this.edge.getRenderPackFunction("renderComponent");
+            }
+        };
+
         this.draw = function() {
             if (this.renderer) {
                 this.renderer(this);
             }
         };
         this.contrib = function(query) {};
+    },
+
+    newTemplate : function(params) {
+        return new edges.Template(params);
+    },
+    Template : function(params) {
+        this.draw = function(edge) {}
     },
 
     newState : function(params) {
@@ -123,15 +139,16 @@ var edges = {
         this.raw = undefined;
     },
 
-    newTermSelector : function(params) {
-        edges.TermSelector.prototype = edges.newComponent(params);
-        return new edges.TermSelector(params);
+    newBasicTermSelector : function(params) {
+        edges.BasicTermSelector.prototype = edges.newComponent(params);
+        return new edges.BasicTermSelector(params);
     },
-    TermSelector : function(params) {
+    BasicTermSelector : function(params) {
         this.field = params.field;
         this.display = params.display;
         this.category = params.category || "selector";
         this.filters = params.filters || [];
+        this.size = params.size;
 
         this.init = function(edge) {
             // record a reference to the parent object
@@ -144,11 +161,15 @@ var edges = {
         };
 
         this.contrib = function(query) {
+            var body = {field : this.field};
+            if (this.size) {
+                body["size"] = this.size;
+            }
             query.addAggregation({
                 aggregation: es.newAggregation({
                     name : this.id,
                     type : "terms",
-                    body : {field : this.field}
+                    body : body
                 })
             });
 
@@ -192,6 +213,8 @@ var edges = {
         return new edges.Chart(params);
     },
     Chart : function(params) {
+        this.category = params.category || "chart";
+        this.display = params.display || "";
         this.aggregations = params.aggregations || [];
         this.seriesKeys = params.seriesKeys || {};
         this.dataSeries = params.dataSeries || false;
@@ -200,10 +223,10 @@ var edges = {
         this.init = function(edge) {
             this.edge = edge;
             if (!this.renderer) {
-                this.renderer = this.edge.getRenderPackFunction("multiBar");
+                this.renderer = this.edge.getRenderPackFunction("renderChart");
             }
             if (!this.dataFunction) {
-                this.dataFunction = _dataFunction
+                this.dataFunction = this.termsAgg2SeriesDataFunction;
             }
         };
 
@@ -218,10 +241,7 @@ var edges = {
             }
         };
 
-        // effectively private methods
-        // must be called with apply(this, args) where appropriate
-
-        function _dataFunction(ch) {
+        this.termsAgg2SeriesDataFunction = function(ch) {
             // for each aggregation, get the results and add them to the data series
             var data_series = [];
             if (!ch.edge.state.raw) {
@@ -246,6 +266,59 @@ var edges = {
             }
             return data_series;
         }
+    },
+
+    newHorizontalMultibar : function(params) {
+        edges.HorizontalMultibar.prototype = edges.newChart(params);
+        return new edges.HorizontalMultibar(params);
+    },
+    HorizontalMultibar : function(params) {
+        this.init = function(edge) {
+            this.edge = edge;
+            if (!this.renderer) {
+                this.renderer = this.edge.getRenderPackFunction("renderHorizontalMultibar");
+            }
+            if (!this.dataFunction) {
+                this.dataFunction = this.termsAgg2SeriesDataFunction;
+            }
+        };
+    },
+
+    newMultiDateRangeEntry : function(params) {
+        edges.MultiDateRangeEntry.prototype = edges.newComponent(params);
+        return new edges.MultiDateRangeEntry(params);
+    },
+    MultiDateRangeEntry : function(params) {
+        this.fields = params.fields || [];
+        this.earliest = params.earliest || {};
+        this.latest = params.latest || {};
+        this.category = params.category || "selector";
+
+        this.init = function(edge) {
+            // record a reference to the parent object
+            this.edge = edge;
+
+            // set the renderer from default if necessary
+            if (!this.renderer) {
+                this.renderer = this.edge.getRenderPackFunction("renderMultiDateRangeEntry");
+            }
+        };
+    },
+
+    newAutocompleteTermSelector : function(params) {
+        edges.AutocompleteTermSelector.prototype = edges.newComponent(params);
+        return new edges.AutocompleteTermSelector(params);
+    },
+    AutocompleteTermSelector : function(params) {
+        this.init = function(edge) {
+            // record a reference to the parent object
+            this.edge = edge;
+
+            // set the renderer from default if necessary
+            if (!this.renderer) {
+                this.renderer = this.edge.getRenderPackFunction("renderAutocompleteTermSelector");
+            }
+        };
     },
 
     //////////////////////////////////////////////////////////////////

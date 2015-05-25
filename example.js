@@ -1,30 +1,111 @@
 jQuery(document).ready(function($) {
 
+    function earliestDate() {
+
+    }
+
+    function latestDate() {
+
+    }
+
     e = edges.init({
         selector: "#edges",
-        template: edges.bs3.facetview,
-        search_url: "http://localhost:9200/doaj/journal/_search",
+        template: edges.bs3.newTabbed(),
+        search_url: "http://localhost:9200/allapc/institutional/_search",
         components: [
-            edges.newTermSelector({
-                id: "publisher",
-                field: "index.publisher.exact",
-                display: "Publisher"
+            edges.newMultiDateRangeEntry({
+                id : "date_range",
+                fields : [
+                    "monitor.rioxxterms:publication_date",
+                    "monitor.jm:dateApplied",
+                    "monitor.jm:apc.date_paid"
+                ],
+                earliest : {
+                    "monitor.rioxxterms:publication_date" : earliestDate,
+                    "monitor.jm:dateApplied" : earliestDate,
+                    "monitor.jm:apc.date_paid" : earliestDate
+                },
+                latest : {
+                    "monitor.rioxxterms:publication_date" : latestDate,
+                    "monitor.jm:dateApplied" : latestDate,
+                    "monitor.jm:apc.date_paid" : latestDate
+                },
+                category : "lhs"
             }),
-            edges.newResultsDisplay({
-                id: "results"
+            edges.newAutocompleteTermSelector({
+                id : "publisher",
+                field : "monitor.dcterms:publisher.name.exact",
+                display : "Choose publishers to display",
+                category: "lhs"
             }),
-            edges.newChart({
-                id: "license",
+            edges.newBasicTermSelector({
+                id: "institution",
+                field: "monitor.jm:apc.name.exact",
+                display: "Limit by Institution",
+                size: 15,
+                category: "lhs"
+            }),
+            edges.newHorizontalMultibar({
+                id: "apc_count",
+                display: "APC Count",
                 aggregations : [
                     es.newAggregation({
-                        name : "license",
+                        name : "apc_count",
                         type: "terms",
-                        body: {field: "index.license.exact"}
+                        body: {field: "monitor.dcterms:publisher.name.exact"},
+                        size : 10
                     })
                 ],
                 seriesKeys : {
-                    "license" : "License"
-                }
+                    "apc_count" : "Number of APCs paid"
+                },
+                category : "tab"
+            }),
+            edges.newHorizontalMultibar({
+                id: "total_expenditure",
+                display: "Total Expenditure",
+                aggregations : [
+                    es.newAggregation({
+                        name : "total_expenditure_term",
+                        type: "terms",
+                        body: {field: "monitor.dcterms:publisher.name.exact"},
+                        size : 10,
+                        aggregations : [
+                            es.newAggregation({
+                                name : "total_expenditure_stats",
+                                type : "stats",
+                                body: {field: "monitor.jm:apc.amount_gbp"}
+                            })
+                        ]
+                    })
+                ],
+                seriesKeys : {
+                    "total_expenditure_stats" : "Total Expenditure"
+                },
+                category : "tab"
+            }),
+            edges.newHorizontalMultibar({
+                id: "min_max_mean",
+                display: "Min, Max, Mean",
+                aggregations : [
+                    es.newAggregation({
+                        name : "min_max_mean_term",
+                        type: "terms",
+                        body: {field: "monitor.dcterms:publisher.name.exact"},
+                        size : 10,
+                        aggregations : [
+                            es.newAggregation({
+                                name : "min_max_mean_stats",
+                                type : "stats",
+                                body: {field: "monitor.jm:apc.amount_gbp"}
+                            })
+                        ]
+                    })
+                ],
+                seriesKeys : {
+                    "total_expenditure_stats" : "Min, Max, Mean"
+                },
+                category : "tab"
             })
         ]
     });

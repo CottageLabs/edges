@@ -137,6 +137,7 @@ var es = {
             this.type = args.type;
             this.body = args.body;      // FIXME: this assumes ES knowledge outside the module
             this.aggregations = undefined;
+            this.size = args.size || 10;
         };
         Aggregation.prototype = es.AggregationPrototype;
         return new Aggregation(params);
