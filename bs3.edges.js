@@ -85,10 +85,10 @@ $.extend(edges, {
                     var containerId = "edges-tabbed-container-" + tab.id;
                     tabIds.push(tab.id);
                     tabLabels += '<li><a href="#" id="edges-tabbed-tab-' + tab.id + '" data-id="' + tab.id + '"><strong>' + tab.display + '</strong></a></li>';
-                    tabContents += '<div id="' + containerId + '">\
+                    tabContents += '<div class="edges-tabbed-container" id="' + containerId + '">\
                             <div class="row">\
                                 <div class="col-md-12"> \
-                                    <div id="' + tab.id + '"></div>\
+                                    <div class="tab" id="' + tab.id + '"></div>\
                                 </div> \
                             </div>\
                         </div>';
@@ -202,42 +202,141 @@ $.extend(edges, {
             $("#" + rd.id, edge.context).html(results);
         },
 
-        renderBasicTermSelector : function(ts) {
-            var edge = ts.edge;
-            var results = "Loading...";
-            if (edge.state.raw) {
-                results = "";
-                var buckets = edge.state.raw.aggregations[ts.id].buckets;
-                for (var i = 0; i < buckets.length; i++) {
-                    var bucket = buckets[i];
-                    results += '<a href="#" class="edges_bs3_term_selector_term" data-key="' + edges.escapeHtml(bucket.key) + '">' +
-                        edges.escapeHtml(bucket.key) + "</a> (" + bucket.doc_count + ")<br>";
+        newBasicTermSelectorRenderer : function(params) {
+            edges.bs3.BasicTermSelectorRenderer.prototype = edges.Renderer(params);
+            return new edges.bs3.BasicTermSelectorRenderer(params);
+        },
+        BasicTermSelectorRenderer : function(params) {
+            this.ts = false;
+
+            this.draw = function(ts) {
+                this.ts = ts;
+
+                var edge = ts.edge;
+                var results = "Loading...";
+                if (edge.state.raw) {
+                    results = "";
+                    var buckets = edge.state.raw.aggregations[ts.id].buckets;
+                    for (var i = 0; i < buckets.length; i++) {
+                        var bucket = buckets[i];
+                        results += '<a href="#" class="edges_bs3_term_selector_term" data-key="' + edges.escapeHtml(bucket.key) + '">' +
+                            edges.escapeHtml(bucket.key) + "</a> (" + bucket.doc_count + ")<br>";
+                    }
                 }
+
+                var frag = '<div class="row"> \
+                            <div class="col-md-12">\
+                                <strong>{{display}}</strong>\
+                            </div>\
+                        </div>\
+                        <div class="row">\
+                            <div class="col-md-12">\
+                                {{results}}\
+                            </div>\
+                        </div>';
+
+                frag = frag.replace(/{{display}}/g, ts.display)
+                            .replace(/{{results}}/g, results);
+
+                // now render it into the page
+                $("#" + ts.id, edge.context).html(frag);
+
+                // and set up the click bindings
+                $(".edges_bs3_term_selector_term", edge.context).bind("click.edges_bs3_term_selector_term", edges.eventClosure(this, "termSelected"))
+            };
+
+            this.termSelected = function(element) {
+                var term = $(element).attr("data-key");
+                this.ts.selectTerm(term);
+            };
+        },
+
+        newMultiDateRangeRenderer : function(params) {
+
+        },
+        MutliDateRangeRenderer : function(params) {
+            this.dre = false;
+
+            this.draw = function(dre) {
+                this.dre = dre;
+
+                var selectId = dre.id + "_date-type";
+                var fromId = dre.id + "_date-from";
+                var toId = dre.id + "_date-to";
+
+                var options = "";
+                for (var i = 0; i < dre.fields.length; i++) {
+                    var field = dre.fields[i];
+                    options += '<option value="' + field.field + '">' + field.display + '</option>';
+                }
+
+                var frag = '<select class="multi-date-range-select" name="' + selectId + '" id="' + selectId + '">' + options + '</select><br>';
+
+                frag += '<label for="' + fromId + '">From</label>\
+                    <input class="multi-date-range-input" type="text" name="' + fromId + '" id="' + fromId + '" placeholder="earliest date">\
+                    <label for="' + toId + '">To</label>\
+                    <input class="multi-date-range-input" type="text" name="' + toId + '" id="' + toId + '" placeholder="latest date">';
+
+                $("#" + dre.id, dre.edge.context).html(frag);
+
+                // populate and set the bindings on the date selectors
+                $("#" + fromId).datepicker({
+                    dateFormat: "dd-mm-yy",
+                    constrainInput: true,
+                    changeYear: true,
+                    maxDate: 0
+                }).bind("change", edges.eventClosure(dre, "dateChanged"));
+
+                $("#" + toId).datepicker({
+                    dateFormat: "dd-mm-yy",
+                    constrainInput: true,
+                    defaultDate: 0,
+                    changeYear: true,
+                    maxDate: 0
+                }).bind("change", edges.eventClosure(dre, "dateChanged"));
+
+                $("#date_type").select2().bind("change", edges.eventClosure(dre, "dateTypeChanged"));
             }
-
-            var frag = '<div class="row"> \
-                        <div class="col-md-12">\
-                            <strong>{{display}}</strong>\
-                        </div>\
-                    </div>\
-                    <div class="row">\
-                        <div class="col-md-12">\
-                            {{results}}\
-                        </div>\
-                    </div>';
-
-            frag = frag.replace(/{{display}}/g, ts.display)
-                        .replace(/{{results}}/g, results);
-
-            // now render it into the page
-            $("#" + ts.id, edge.context).html(frag);
-
-            // and set up the click bindings
-            $(".edges_bs3_term_selector_term", edge.context).bind("click.edges_bs3_term_selector_term", edges.eventClosure(ts, "selectTerm"))
         },
 
         renderMultiDateRangeEntry : function(dre) {
 
+            var selectId = dre.id + "_date-type";
+            var fromId = dre.id + "_date-from";
+            var toId = dre.id + "_date-to";
+
+            var options = "";
+            for (var i = 0; i < dre.fields.length; i++) {
+                var field = dre.fields[i];
+                options += '<option value="' + field.field + '">' + field.display + '</option>';
+            }
+
+            var frag = '<select class="multi-date-range-select" name="' + selectId + '" id="' + selectId + '">' + options + '</select><br>';
+
+            frag += '<label for="' + fromId + '">From</label>\
+                <input class="multi-date-range-input" type="text" name="' + fromId + '" id="' + fromId + '" placeholder="earliest date">\
+                <label for="' + toId + '">To</label>\
+                <input class="multi-date-range-input" type="text" name="' + toId + '" id="' + toId + '" placeholder="latest date">';
+
+            $("#" + dre.id, dre.edge.context).html(frag);
+
+            // populate and set the bindings on the date selectors
+            $("#" + fromId).datepicker({
+                dateFormat: "dd-mm-yy",
+                constrainInput: true,
+                changeYear: true,
+                maxDate: 0
+            }).bind("change", edges.eventClosure(dre, "dateChanged"));
+
+            $("#" + toId).datepicker({
+                dateFormat: "dd-mm-yy",
+                constrainInput: true,
+                defaultDate: 0,
+                changeYear: true,
+                maxDate: 0
+            }).bind("change", edges.eventClosure(dre, "dateChanged"));
+
+            $("#date_type").select2().bind("change", edges.eventClosure(dre, "dateTypeChanged"));
         }
     }
 });

@@ -16,9 +16,9 @@ jQuery(document).ready(function($) {
             edges.newMultiDateRangeEntry({
                 id : "date_range",
                 fields : [
-                    "monitor.rioxxterms:publication_date",
-                    "monitor.jm:dateApplied",
-                    "monitor.jm:apc.date_paid"
+                    {field : "monitor.rioxxterms:publication_date", display: "Publication Date"},
+                    {field : "monitor.jm:dateApplied", display: "APC Application"},
+                    {field : "monitor.jm:apc.date_paid", display: "APC Paid"}
                 ],
                 earliest : {
                     "monitor.rioxxterms:publication_date" : earliestDate,

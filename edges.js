@@ -93,9 +93,26 @@ var edges = {
             return function() {}
         };
 
+        this.getRenderPackObject = function(oname, params) {
+            for (var i = 0; i < this.renderPacks.length; i++) {
+                var rp = this.renderPacks[i];
+                if (rp.hasOwnProperty(oname)) {
+                    return rp[oname](params);
+                }
+            }
+
+        };
+
         this.hasHits = function() {
             return this.state.raw && this.state.raw.hits && this.state.raw.hits.hits.length > 0;
         }
+    },
+
+    newRenderer : function(params) {
+        return new edges.Renderer(params);
+    },
+    Renderer : function(params) {
+        this.draw = function(edge) {}
     },
 
     newComponent : function(params) {
@@ -118,7 +135,11 @@ var edges = {
 
         this.draw = function() {
             if (this.renderer) {
-                this.renderer(this);
+                if (this.renderer.hasOwnProperty("draw")) {
+                    this.renderer.draw(this);
+                } else {
+                    this.renderer(this);
+                }
             }
         };
         this.contrib = function(query) {};
@@ -156,7 +177,7 @@ var edges = {
 
             // set the renderer from default if necessary
             if (!this.renderer) {
-                this.renderer = this.edge.getRenderPackFunction("renderTermSelector");
+                this.renderer = this.edge.getRenderPackObject("newBasicTermSelectorRenderer");
             }
         };
 
@@ -183,8 +204,7 @@ var edges = {
             }
         };
 
-        this.selectTerm = function(element) {
-            var term = $(element).attr("data-key");
+        this.selectTerm = function(term) {
             this.filters.push(term);
             this.edge.doQuery();
         };
@@ -302,6 +322,34 @@ var edges = {
             if (!this.renderer) {
                 this.renderer = this.edge.getRenderPackFunction("renderMultiDateRangeEntry");
             }
+        };
+
+        this.dateChanged = function(element) {
+            this.triggerSearch();
+        };
+
+        this.dateTypeChanged = function(element) {
+            var date_type = $(element).select2("val");
+            prepDates();
+
+            // if dates are specified, trigger the search
+            var fr = $("#date_from").val();
+            var to = $("#date_to").val();
+            if (to || fr) {
+                triggerSearch();
+            }
+        };
+
+        this.prepDates = function() {
+            var min = octopus.page[octopus.page.date_type];
+            $("#date_from").datepicker("option", "minDate", min)
+                .datepicker("option", "defaultDate", min);
+
+            $("#date_to").datepicker("option", "minDate", min);
+        };
+
+        this.triggerSearch = function() {
+
         };
     },
 
