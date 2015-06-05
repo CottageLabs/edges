@@ -1,11 +1,11 @@
 jQuery(document).ready(function($) {
 
     function earliestDate() {
-
+        return new Date(0);
     }
 
     function latestDate() {
-
+        return new Date();
     }
 
     e = edges.init({

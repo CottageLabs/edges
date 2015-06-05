@@ -173,6 +173,27 @@ var es = {
         }
     },
 
+    newRangeFilter : function(params) {
+        return new es.RangeFilter(params);
+    },
+    RangeFilter : function(params) {
+        this.field = params.field;
+        this.lt = params.lt;
+        this.gte = params.gte;
+
+        this.objectify = function() {
+            var obj = {range: {}};
+            obj.range[this.field] = {};
+            if (this.lt) {
+                obj.range[this.field]["lt"] = this.lt;
+            }
+            if (this.gte) {
+                obj.range[this.field]["gte"] = this.gte;
+            }
+            return obj;
+        }
+    },
+
     ////////////////////////////////////////////////////
     // Primary functions for interacting with elasticsearch
 

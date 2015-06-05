@@ -10,7 +10,7 @@ var edges = {
         return new edges.Edge(params);
     },
     Edge : function(params) {
-        this.query = es.newQuery();
+        this.baseQuery = es.newQuery();
         this.state = edges.newState();
         this.components = params.components || [];
         this.search_url = params.search_url;
@@ -56,6 +56,9 @@ var edges = {
         };
 
         this.doQuery = function() {
+            // start a new query in the state
+            this.state.query = $.extend(true, {}, this.baseQuery);
+
             // request the components to contribute to the query
             for (var i = 0; i < this.components.length; i++) {
                 var component = this.components[i];
@@ -105,7 +108,12 @@ var edges = {
 
         this.hasHits = function() {
             return this.state.raw && this.state.raw.hits && this.state.raw.hits.hits.length > 0;
-        }
+        };
+
+        // get the jquery object for the desired element, in the correct context
+        this.jq = function(selector) {
+            return $(selector, this.context);
+        };
     },
 
     newRenderer : function(params) {
@@ -313,6 +321,15 @@ var edges = {
         this.earliest = params.earliest || {};
         this.latest = params.latest || {};
         this.category = params.category || "selector";
+        this.defaultEarliest = params.defaultEarliest || new Date(0);
+        this.defaultLatest = params.defaultLatest || new Date();
+
+        this.currentField = false;
+        this.fromDate = false;
+        this.toDate = false;
+
+        this.touched = false;
+        this.dateOptions = {};
 
         this.init = function(edge) {
             // record a reference to the parent object
@@ -320,37 +337,102 @@ var edges = {
 
             // set the renderer from default if necessary
             if (!this.renderer) {
-                this.renderer = this.edge.getRenderPackFunction("renderMultiDateRangeEntry");
+                this.renderer = this.edge.getRenderPackObject("newMultiDateRangeRenderer");
+            }
+
+            // set the initial field
+            this.currentField = this.fields[0].field;
+
+            // load the dates once at the init - this means they can't
+            // be responsive to the filtering unless they are loaded
+            // again at a later date
+            this.loadDates();
+        };
+
+        this.contrib = function(query) {
+            // only contrib if there's anything to actuall do
+            if (!this.currentField || (!this.toDate && !this.fromDate)) {
+                return;
+            }
+
+            var range = {field : this.currentField};
+            if (this.toDate) {
+                range["lt"] = this.toDate;
+            }
+            if (this.fromDate) {
+                range["gte"] = this.fromDate;
+            }
+            query.addMust(es.newRangeFilter(range));
+        };
+
+        this.changeField = function(newField) {
+            if (newField !== this.currentField) {
+                this.touched = true;
+                this.currentField = newField;
             }
         };
 
-        this.dateChanged = function(element) {
-            this.triggerSearch();
-        };
-
-        this.dateTypeChanged = function(element) {
-            var date_type = $(element).select2("val");
-            prepDates();
-
-            // if dates are specified, trigger the search
-            var fr = $("#date_from").val();
-            var to = $("#date_to").val();
-            if (to || fr) {
-                triggerSearch();
+        this.setFrom = function(from) {
+            if (from !== this.fromDate) {
+                this.touched = true;
+                this.fromDate = from;
             }
         };
 
-        this.prepDates = function() {
-            var min = octopus.page[octopus.page.date_type];
-            $("#date_from").datepicker("option", "minDate", min)
-                .datepicker("option", "defaultDate", min);
-
-            $("#date_to").datepicker("option", "minDate", min);
+        this.setTo = function(to) {
+            if (to !== this.toDate) {
+                this.touched = true;
+                this.toDate = to;
+            }
         };
 
         this.triggerSearch = function() {
-
+            if (this.touched) {
+                this.touched = false;
+                this.edge.doQuery();
+            }
         };
+
+        this.loadDates = function() {
+            for (var i = 0; i < this.fields.length; i++) {
+                var field = this.fields[i].field;
+                var earlyFn = this.earliest[field];
+                var lateFn = this.latest[field];
+
+                var early = this.defaultEarliest;
+                if (earlyFn) {
+                    early = earlyFn();
+                }
+
+                var late = this.defaultLatest;
+                if (lateFn) {
+                    late = lateFn();
+                }
+
+                this.dateOptions[field] = {
+                    earliest : early,
+                    latest : late
+                }
+            }
+        };
+
+        this.currentEarliest = function() {
+            if (!this.currentField) {
+                return
+            }
+            if (this.dateOptions[this.currentField]) {
+                return this.dateOptions[this.currentField].earliest;
+            }
+        };
+
+        this.currentLatest = function() {
+            if (!this.currentField) {
+                return
+            }
+            if (this.dateOptions[this.currentField]) {
+                return this.dateOptions[this.currentField].latest;
+            }
+        }
     },
 
     newAutocompleteTermSelector : function(params) {
@@ -410,6 +492,6 @@ var edges = {
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
-    }
+    },
 
 };

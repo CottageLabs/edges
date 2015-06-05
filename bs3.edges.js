@@ -252,91 +252,128 @@ $.extend(edges, {
         },
 
         newMultiDateRangeRenderer : function(params) {
-
+            edges.bs3.MultiDateRangeRenderer.prototype = edges.Renderer(params);
+            return new edges.bs3.MultiDateRangeRenderer(params);
         },
-        MutliDateRangeRenderer : function(params) {
+        MultiDateRangeRenderer : function(params) {
             this.dre = false;
+
+            this.selectId = false;
+            this.fromId = false;
+            this.toId = false;
+
+            this.selectJq = false;
+            this.fromJq = false;
+            this.toJq = false;
 
             this.draw = function(dre) {
                 this.dre = dre;
 
-                var selectId = dre.id + "_date-type";
-                var fromId = dre.id + "_date-from";
-                var toId = dre.id + "_date-to";
+                this.selectId = dre.id + "_date-type";
+                this.fromId = dre.id + "_date-from";
+                this.toId = dre.id + "_date-to";
 
                 var options = "";
                 for (var i = 0; i < dre.fields.length; i++) {
                     var field = dre.fields[i];
-                    options += '<option value="' + field.field + '">' + field.display + '</option>';
+                    var selected = dre.currentField == field.field ? ' selected="selected" ' : "";
+                    options += '<option value="' + field.field + '"' + selected + '>' + field.display + '</option>';
                 }
 
-                var frag = '<select class="multi-date-range-select" name="' + selectId + '" id="' + selectId + '">' + options + '</select><br>';
+                var frag = '<select class="multi-date-range-select" name="' + this.selectId + '" id="' + this.selectId + '">' + options + '</select><br>';
 
-                frag += '<label for="' + fromId + '">From</label>\
-                    <input class="multi-date-range-input" type="text" name="' + fromId + '" id="' + fromId + '" placeholder="earliest date">\
-                    <label for="' + toId + '">To</label>\
-                    <input class="multi-date-range-input" type="text" name="' + toId + '" id="' + toId + '" placeholder="latest date">';
+                frag += '<label for="' + this.fromId + '">From</label>\
+                    <input class="multi-date-range-input" type="text" name="' + this.fromId + '" id="' + this.fromId + '" placeholder="earliest date">\
+                    <label for="' + this.toId + '">To</label>\
+                    <input class="multi-date-range-input" type="text" name="' + this.toId + '" id="' + this.toId + '" placeholder="latest date">';
 
-                $("#" + dre.id, dre.edge.context).html(frag);
+                this.dre.edge.jq("#" + dre.id).html(frag);
+
+                this.selectJq = this.dre.edge.jq("#" + this.selectId);
+                this.fromJq = this.dre.edge.jq("#" + this.fromId);
+                this.toJq = this.dre.edge.jq("#" + this.toId);
 
                 // populate and set the bindings on the date selectors
-                $("#" + fromId).datepicker({
+                this.fromJq.datepicker({
                     dateFormat: "dd-mm-yy",
                     constrainInput: true,
                     changeYear: true,
                     maxDate: 0
-                }).bind("change", edges.eventClosure(dre, "dateChanged"));
+                }).bind("change", edges.eventClosure(this, "dateChanged"));
 
-                $("#" + toId).datepicker({
+                this.toJq.datepicker({
                     dateFormat: "dd-mm-yy",
                     constrainInput: true,
                     defaultDate: 0,
                     changeYear: true,
                     maxDate: 0
-                }).bind("change", edges.eventClosure(dre, "dateChanged"));
+                }).bind("change", edges.eventClosure(this, "dateChanged"));
 
-                $("#date_type").select2().bind("change", edges.eventClosure(dre, "dateTypeChanged"));
-            }
-        },
+                this.selectJq.select2().bind("change", edges.eventClosure(this, "dateChanged"));
 
-        renderMultiDateRangeEntry : function(dre) {
+                this.prepDates();
+            };
 
-            var selectId = dre.id + "_date-type";
-            var fromId = dre.id + "_date-from";
-            var toId = dre.id + "_date-to";
+            this.dateChanged = function(element) {
+                // a date or type has been changed, so set up the parent object
 
-            var options = "";
-            for (var i = 0; i < dre.fields.length; i++) {
-                var field = dre.fields[i];
-                options += '<option value="' + field.field + '">' + field.display + '</option>';
-            }
+                // ensure that the correct field is set (it may initially be not set)
+                var date_type = this.selectJq.select2("val");
+                this.dre.changeField(date_type);
 
-            var frag = '<select class="multi-date-range-select" name="' + selectId + '" id="' + selectId + '">' + options + '</select><br>';
+                var fr = this.fromJq.val();
+                if (fr) {
+                    fr = $.datepicker.parseDate("dd-mm-yy", fr);
+                    fr = $.datepicker.formatDate("yy-mm-dd", fr);
+                    this.dre.setFrom(fr);
+                } else {
+                    this.dre.setFrom(false);
+                }
 
-            frag += '<label for="' + fromId + '">From</label>\
-                <input class="multi-date-range-input" type="text" name="' + fromId + '" id="' + fromId + '" placeholder="earliest date">\
-                <label for="' + toId + '">To</label>\
-                <input class="multi-date-range-input" type="text" name="' + toId + '" id="' + toId + '" placeholder="latest date">';
+                var to = this.toJq.val();
+                if (to) {
+                    to = $.datepicker.parseDate("dd-mm-yy", to);
+                    to = $.datepicker.formatDate("yy-mm-dd", to);
+                    this.dre.setTo(to);
+                } else {
+                    this.dre.setTo(false);
+                }
 
-            $("#" + dre.id, dre.edge.context).html(frag);
+                // this action should trigger a search (the parent object will
+                // decide if that's required)
+                this.dre.triggerSearch();
+            };
 
-            // populate and set the bindings on the date selectors
-            $("#" + fromId).datepicker({
-                dateFormat: "dd-mm-yy",
-                constrainInput: true,
-                changeYear: true,
-                maxDate: 0
-            }).bind("change", edges.eventClosure(dre, "dateChanged"));
+            this.prepDates = function() {
+                var min = this.dre.currentEarliest();
+                var max = this.dre.currentLatest();
+                var fr = this.dre.fromDate;
+                var to = this.dre.toDate;
 
-            $("#" + toId).datepicker({
-                dateFormat: "dd-mm-yy",
-                constrainInput: true,
-                defaultDate: 0,
-                changeYear: true,
-                maxDate: 0
-            }).bind("change", edges.eventClosure(dre, "dateChanged"));
+                if (min) {
+                    this.fromJq.datepicker("option", "minDate", min);
+                    this.fromJq.datepicker("option", "defaultDate", min);
+                    this.toJq.datepicker("option", "minDate", min);
+                }
 
-            $("#date_type").select2().bind("change", edges.eventClosure(dre, "dateTypeChanged"));
+                if (max) {
+                    this.fromJq.datepicker("option", "maxDate", max);
+                    this.toJq.datepicker("option", "maxDate", max);
+                    this.toJq.datepicker("option", "defaultDate", max);
+                }
+
+                if (fr) {
+                    fr = $.datepicker.parseDate("yy-mm-dd", fr);
+                    fr = $.datepicker.formatDate("dd-mm-yy", fr);
+                    this.fromJq.val(fr);
+                }
+
+                if (to) {
+                    to = $.datepicker.parseDate("yy-mm-dd", to);
+                    to = $.datepicker.formatDate("dd-mm-yy", to);
+                    this.toJq.val(to);
+                }
+            };
         }
     }
 });
