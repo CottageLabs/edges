@@ -57,9 +57,9 @@ var es = {
         removeFacet : function() {},
         clearFacets : function() {},
 
-        addAggregation : function(params) {
+        addAggregation : function(agg) {
             // FIXME: this may want to check for duplication
-            this.aggs.push(params.aggregation)
+            this.aggs.push(agg);
         },
         removeAggregation : function() {},
         clearAggregations : function() {},
@@ -136,7 +136,7 @@ var es = {
             this.name = args.name;
             this.type = args.type;
             this.body = args.body;      // FIXME: this assumes ES knowledge outside the module
-            this.aggregations = undefined;
+            this.aggregations = args.aggregations || false;
             this.size = args.size || 10;
         };
         Aggregation.prototype = es.AggregationPrototype;
@@ -152,7 +152,13 @@ var es = {
             obj[this.name] = {};
             obj[this.name][this.type] = this.body;
 
-            // FIXME: not dealing with nested aggregations yet
+            if (this.aggregations) {
+                obj[this.name]["aggs"] = {};
+                for (var i = 0; i < this.aggregations.length; i++) {
+                    $.extend(obj[this.name]["aggs"], this.aggregations[i].objectify())
+                }
+            }
+
             return obj;
         }
     },

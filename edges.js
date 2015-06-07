@@ -10,7 +10,7 @@ var edges = {
         return new edges.Edge(params);
     },
     Edge : function(params) {
-        this.baseQuery = es.newQuery();
+        this.baseQuery = params.baseQuery || es.newQuery();
         this.state = edges.newState();
         this.components = params.components || [];
         this.search_url = params.search_url;
@@ -194,13 +194,13 @@ var edges = {
             if (this.size) {
                 body["size"] = this.size;
             }
-            query.addAggregation({
-                aggregation: es.newAggregation({
+            query.addAggregation(
+                es.newAggregation({
                     name : this.id,
                     type : "terms",
                     body : body
                 })
-            });
+            );
 
             if (this.filters.length > 0) {
                 for (var i = 0; i < this.filters.length; i++) {
@@ -243,18 +243,49 @@ var edges = {
     Chart : function(params) {
         this.category = params.category || "chart";
         this.display = params.display || "";
-        this.aggregations = params.aggregations || [];
-        this.seriesKeys = params.seriesKeys || {};
+
+        // actual data series that the renderer will render
         this.dataSeries = params.dataSeries || false;
+
+        // function which will generate the data series, which will be
+        // written to this.dataSeries if that is not provided
         this.dataFunction = params.dataFunction || false;
+
+        // the list of aggregations upon which we'll base the data
+        this.aggregations = params.aggregations || [];
+
+        // the default data function will be to use the basic aggregation
+        // to series conversion, which is configured with these options...
+
+        this.dfArgs = params.dfArgs || {
+            // the name of the aggregation(s) to be used.  If specified they will
+            // be drawn from the final query, so you may specify shared aggregations
+            // via the baseQuery on the Edge.
+            useAggregations : [],
+
+            // the keys to relate each aggregation name to it's display key
+            seriesKeys : {}
+        };
 
         this.init = function(edge) {
             this.edge = edge;
+
+            // get the default chart renderer
             if (!this.renderer) {
                 this.renderer = this.edge.getRenderPackFunction("renderChart");
             }
+
+            // copy over the names of the aggregations that we're going to read from
+            for (var i = 0; i < this.aggregations.length; i++) {
+                var agg = this.aggregations[i];
+                if ($.inArray(agg.name, this.dfArgs.useAggregations) === -1) {
+                    this.dfArgs.useAggregations.push(agg.name);
+                }
+            }
+
+            // bind the default data function generator
             if (!this.dataFunction) {
-                this.dataFunction = this.termsAgg2SeriesDataFunction;
+                this.dataFunction = edges.ChartDataFunctions.terms(this.dfArgs);
             }
         };
 
@@ -265,34 +296,80 @@ var edges = {
 
         this.contrib = function(query) {
             for (var i = 0; i < this.aggregations.length; i++) {
-                query.addAggregation({aggregation : this.aggregations[i]});
+                query.addAggregation(this.aggregations[i]);
             }
         };
+    },
+    ChartDataFunctions : {
+        terms : function(params) {
 
-        this.termsAgg2SeriesDataFunction = function(ch) {
-            // for each aggregation, get the results and add them to the data series
-            var data_series = [];
-            if (!ch.edge.state.raw) {
+            var useAggregations = params.useAggregations || [];
+            var seriesKeys = params.seriesKeys || {};
+
+            return function (ch) {
+                // for each aggregation, get the results and add them to the data series
+                var data_series = [];
+                if (!ch.edge.state.raw) {
+                    return data_series;
+                }
+                for (var i = 0; i < useAggregations.length; i++) {
+                    var agg = useAggregations[i];
+                    var buckets = ch.edge.state.raw.aggregations[agg].buckets;
+
+                    var series = {};
+                    series["key"] = seriesKeys[agg];
+                    series["values"] = [];
+
+                    for (var j = 0; j < buckets.length; j++) {
+                        var doccount = buckets[j].doc_count;
+                        var key = buckets[j].key;
+                        series.values.push({label: key, value: doccount});
+                    }
+
+                    data_series.push(series);
+                }
                 return data_series;
             }
-            for (var i = 0; i < ch.aggregations.length; i++) {
-                // get the facet, the field name and the size
-                var agg = ch.aggregations[i];
-                var buckets = ch.edge.state.raw.aggregations[agg.name].buckets;
+        },
 
-                var series = {};
-                series["key"] = this.seriesKeys[agg.name];
-                series["values"] = [];
+        termsStats : function(params) {
 
-                for (var j = 0; j < buckets.length; j++) {
-                    var doccount = buckets[j].doc_count;
-                    var key = buckets[j].key;
-                    series.values.push({label : key, value: doccount});
+            var useAggregations = params.useAggregations || [];
+            var seriesKeys = params.seriesKeys || {};
+            var seriesFor = params.seriesFor || [];
+
+            return function(ch) {
+                // for each aggregation, get the results and add them to the data series
+                var data_series = [];
+                if (!ch.edge.state.raw) {
+                    return data_series;
                 }
 
-                data_series.push(series);
+                for (var i = 0; i < useAggregations.length; i++) {
+                    var agg = useAggregations[i];
+                    var parts = agg.split(" ");
+
+                    for (var j = 0; j < seriesFor.length; j++) {
+                        var seriesStat = seriesFor[j];
+
+                        var series = {};
+                        series["key"] = seriesKeys[agg + " " + seriesStat];
+                        series["values"] = [];
+
+                        var buckets = ch.edge.state.raw.aggregations[parts[0]].buckets;
+                        for (var k = 0; k < buckets.length; k++) {
+                            var stats = buckets[k][parts[1]];
+                            var key = buckets[k].key;
+                            var val = stats[seriesStat];
+                            series.values.push({label : key, value: val});
+                        }
+
+                        data_series.push(series);
+                    }
+                }
+
+                return data_series;
             }
-            return data_series;
         }
     },
 
@@ -302,13 +379,10 @@ var edges = {
     },
     HorizontalMultibar : function(params) {
         this.init = function(edge) {
-            this.edge = edge;
             if (!this.renderer) {
-                this.renderer = this.edge.getRenderPackFunction("renderHorizontalMultibar");
+                this.renderer = edge.getRenderPackFunction("renderHorizontalMultibar");
             }
-            if (!this.dataFunction) {
-                this.dataFunction = this.termsAgg2SeriesDataFunction;
-            }
+            this.__proto__.init(edge);
         };
     },
 
