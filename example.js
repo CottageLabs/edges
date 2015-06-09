@@ -1,5 +1,79 @@
 jQuery(document).ready(function($) {
 
+    //////////////////////////////////////////////////////////////
+    // this stuff tests the building of a complicated query
+
+    d = false;
+    function cb(data) {
+        d = data;
+    }
+
+    q = es.newQuery({
+        filtered: true,
+        size : 12,
+        from : 1,
+        queryString: {queryString: "UCL", defaultOperator: "AND", defaultField: "monitor.jm:apc.name.exact"},
+        sortBy : {field: "id", direction: "asc"},
+        fields: ["id"],
+        aggs : [
+            es.newTermsAggregation({
+                name : "richard",
+                field: "monitor.jm:apc.name.exact",
+                size: 4,
+                orderBy: "term",
+                orderDir: "asc",
+                aggs : [
+                    es.newRangeAggregation({
+                        name: "jones",
+                        field : "monitor.jm:apc.amount_gbp",
+                        ranges: [
+                            {to: 1000},
+                            {from: 1000, to: 2000},
+                            {from: 2000}
+                        ]
+                    })
+                ]
+            }),
+            es.newStatsAggregation({
+                name: "david",
+                field : "monitor.jm:apc.amount_gbp"
+            }),
+            es.newDateHistogramAggregation({
+                name: "hist",
+                field : "created_date",
+                format: "yyyy-MM-dd"
+            })
+        ],
+        must : [
+            es.newTermFilter({
+                field: "monitor.rioxxterms:project.name.exact",
+                value: "EPSRC"
+            }),
+            es.newTermsFilter({
+                field: "monitor.ali:license_ref.exact",
+                values: ["CC-BY"]
+            }),
+            es.newRangeFilter({
+                field: "monitor.jm:apc.amount_gbp",
+                lt: 2300,
+                gte: 900
+            })
+        ]
+    });
+
+    o = q.objectify();
+
+    es.doQuery({
+        search_url: "http://localhost:9200/allapc/institutional/_search",
+        queryobj: q.objectify(),
+        datatype: "jsonp",
+        success: cb
+
+    });
+
+    ///////////////////////////////////////////////////
+    // this stuff generates the demo report
+
     function earliestDate() {
         return new Date(0);
     }
@@ -10,16 +84,14 @@ jQuery(document).ready(function($) {
 
     var base_query = es.newQuery();
     base_query.addAggregation(
-        es.newAggregation({
+        es.newTermsAggregation({
             name : "apc_count",
-            type: "terms",
-            body: {field: "monitor.dcterms:publisher.name.exact"},
+            field : "monitor.dcterms:publisher.name.exact",
             size : 10,
-            aggregations : [
-                es.newAggregation({
+            aggs : [
+                es.newStatsAggregation({
                     name : "publisher_stats",
-                    type : "stats",
-                    body: {field: "monitor.jm:apc.amount_gbp"}
+                    field: "monitor.jm:apc.amount_gbp"
                 })
             ]
         })

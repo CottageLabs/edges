@@ -190,16 +190,15 @@ var edges = {
         };
 
         this.contrib = function(query) {
-            var body = {field : this.field};
+            var params = {
+                name: this.id,
+                field: this.field
+            };
             if (this.size) {
-                body["size"] = this.size;
+                params["size"] = this.size
             }
             query.addAggregation(
-                es.newAggregation({
-                    name : this.id,
-                    type : "terms",
-                    body : body
-                })
+                es.newTermsAggregation(params)
             );
 
             if (this.filters.length > 0) {
@@ -566,6 +565,6 @@ var edges = {
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
-    },
+    }
 
 };
