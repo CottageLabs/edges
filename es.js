@@ -25,6 +25,38 @@ var es = {
     ////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////
+    // object factories
+
+    aggregationFactory : function(type, params) {
+        var constructors = {
+            terms: es.newTermsAggregation,
+            range: es.newRangeAggregation,
+            geo_distance: es.newGeoDistanceAggregation,
+            date_histogram: es.newDateHistogramAggregation,
+            stats: es.StatsAggregation
+        };
+
+        if (constructors[type]) {
+            return constructors[type](params);
+        }
+
+    },
+
+    filterFactory : function(type, params) {
+        var constructors = {
+            query_string: es.newQueryString,
+            term: es.newTermFilter,
+            terms: es.newTermsFilter,
+            range: es.newRangeFilter,
+            geo_distance_range: es.newGeoDistanceRangeFilter
+        };
+
+        if (constructors[type]) {
+            return constructors[type](params);
+        }
+    },
+
+    ////////////////////////////////////////////////////
     // Query objects for standard query structure
 
     newQuery : function(params) {
@@ -42,7 +74,6 @@ var es = {
         this.fields = params.fields || [];
         this.aggs = params.aggs || [];
         this.must = params.must || [];
-        this.minimumShouldMatch = params.minimumShouldMatch || 1;
 
         // defaults from properties that will be set through their setters (see the bottom
         // of the function)
@@ -55,6 +86,7 @@ var es = {
         this.mustNot = params.mustNot || [];
         this.partialFields = params.partialFields || false;
         this.scriptFields = params.scriptFields || false;
+        this.minimumShouldMatch = params.minimumShouldMatch || 1;
 
         // for old versions of ES, so are not necessarily going to be implemented
         this.facets = params.facets || [];
@@ -206,6 +238,82 @@ var es = {
 
         this.parse = function(obj) {
 
+            function parseBool(bool, target) {
+                if (bool.must) {
+                    for (var i = 0; i < bool.must.length; i++) {
+                        var type = Object.keys(bool.must[i])[0];
+                        var fil = es.filterFactory(type, {raw: bool.must[i]});
+                        if (fil) {
+                            target.addMust(fil);
+                        }
+                    }
+                }
+            }
+
+            function parseQuery(q, target) {
+                var keys = Object.keys(q);
+                for (var i = 0; i < keys.length; i++) {
+                    var type = keys[i];
+                    var impl = es.filterFactory(type, {raw: q[type]});
+                    if (impl) {
+                        if (type === "query_string") {
+                            target.setQueryString(impl);
+                        }
+                        // FIXME: other non-filtered queries?
+                    }
+                }
+            }
+
+            // parse the query itself
+            if (obj.query) {
+                if (obj.query.filtered) {
+                    this.filtered = true;
+                    var bool = obj.query.filtered.filter.bool;
+                    if (bool) {
+                        parseBool(bool, this);
+                    }
+                    var q = obj.query.filtered.query;
+                    parseQuery(q, this);
+                } else {
+                    var q = obj.query;
+                    parseQuery(q, this);
+                }
+            }
+
+            if (obj.size) {
+                this.size = obj.size;
+            }
+
+            if (obj.from) {
+                this.from = obj.from;
+            }
+
+            if (obj.fields) {
+                this.fields = obj.fields;
+            }
+
+            if (obj.sort) {
+                for (var i = 0; i < obj.sort.length; i++) {
+                    var so = obj.sort[i];
+                    this.addSortBy(es.newSort({raw: so}));
+                }
+            }
+
+            if (obj.aggs || obj.aggregations) {
+                var aggs = obj.aggs ? obj.aggs : obj.aggregations;
+                var anames = Object.keys(aggs);
+                for (var i = 0; i < anames.length; i++) {
+                    var name = anames[i];
+                    var agg = aggs[name];
+                    var type = Object.keys(agg)[0];
+                    var raw = {};
+                    raw[name] = agg;
+                    var oa = es.aggregationFactory(type, {raw: raw});
+                    if (oa) {
+                        this.addAggregation(oa);
+                    }
+                }
+            }
         };
 
         ///////////////////////////////////////////////////////////
@@ -218,6 +326,11 @@ var es = {
 
         if (params.sortBy) {
             this.setSortBy(params.sortBy);
+        }
+
+        // finally, if we're given a raw query, parse it
+        if (params.raw) {
+            this.parse(params.raw)
         }
     },
 
@@ -241,6 +354,23 @@ var es = {
                 obj.query_string["default_field"] = this.defaultField;
             }
             return obj;
+        };
+
+        this.parse = function(obj) {
+            if (obj.query_string) {
+                obj = obj.query_string;
+            }
+            this.queryString = obj.query;
+            if (obj.default_operator) {
+                this.defaultOperator = obj.default_operator;
+            }
+            if (obj.default_field) {
+                this.defaultField = obj.default_field;
+            }
+        };
+
+        if (params.raw) {
+            this.parse(params.raw);
         }
     },
 
@@ -252,12 +382,23 @@ var es = {
     },
     Sort : function(params) {
         this.field = params.field;
-        this.direction = params.direction || "asc";
+        this.order = params.order || "asc";
 
         this.objectify = function() {
             var obj = {};
-            obj[this.field] = {order: this.direction};
+            obj[this.field] = {order: this.order};
             return obj;
+        };
+
+        this.parse = function(obj) {
+            this.field = Object.keys(obj)[0];
+            if (obj[this.field].order) {
+                this.order = obj[this.field].order;
+            }
+        };
+
+        if (params.raw) {
+            this.parse(params.raw);
         }
     },
 
@@ -298,6 +439,29 @@ var es = {
 
             return obj;
         };
+
+        this._parse_wrapper = function(obj, type) {
+            this.name = Object.keys(obj)[0];
+            var body = obj[this.name][type];
+
+            var aggs = obj[this.name].aggs ? obj[this.name].aggs : obj[this.name].aggregations;
+            if (aggs) {
+                var anames = Object.keys(aggs);
+                for (var i = 0; i < anames.length; i++) {
+                    var name = anames[i];
+                    var agg = aggs[anames[i]];
+                    var subtype = Object.keys(agg)[0];
+                    var raw = {};
+                    raw[name] = agg;
+                    var oa = es.aggregationFactory(subtype, {raw: raw});
+                    if (oa) {
+                        this.addAggregation(oa);
+                    }
+                }
+            }
+
+            return body;
+        }
     },
 
     newTermsAggregation : function(params) {
@@ -322,6 +486,22 @@ var es = {
             var body = {field: this.field, size: this.size, order: {}};
             body.order[this.orderBy] = this.orderDir;
             return this._make_aggregation("terms", body);
+        };
+
+        this.parse = function(obj) {
+            var body = this._parse_wrapper(obj, "terms");
+            this.field = body.field;
+            if (body.size) {
+                this.size = body.size;
+            }
+            if (body.order) {
+                this.orderBy = Object.keys(body.order)[0];
+                this.orderDir = body.order[this.orderBy];
+            }
+        };
+
+        if (params.raw) {
+            this.parse(params.raw);
         }
     },
 
@@ -336,6 +516,16 @@ var es = {
         this.objectify = function() {
             var body = {field: this.field, ranges: this.ranges};
             return this._make_aggregation("range", body);
+        };
+
+        this.parse = function(obj) {
+            var body = this._parse_wrapper(obj, "range");
+            this.field = body.field;
+            this.ranges = body.ranges;
+        };
+
+        if (params.raw) {
+            this.parse(params.raw);
         }
     },
 
@@ -348,7 +538,7 @@ var es = {
         this.lat = params.lat || false;
         this.lon = params.lon || false;
         this.unit = params.unit || "m";
-        this.distance_type = params.distance_type || "plane";
+        this.distance_type = params.distance_type || "sloppy_arc";
         this.ranges = params.ranges || [];
 
         this.objectify = function() {
@@ -360,6 +550,35 @@ var es = {
                 ranges: this.ranges
             };
             return this._make_aggregation("geo_distance", body);
+        };
+
+        this.parse = function(obj) {
+            var body = this._parse_wrapper(obj, "range");
+            this.field = body.field;
+
+            // FIXME: only handles the lat/lon object - but there are several forms
+            // this origin could take
+            var origin = body.origin;
+            if (origin.lat) {
+                this.lat = origin.lat;
+            }
+            if (origin.lon) {
+                this.lon = origin.lon;
+            }
+
+            if (body.unit) {
+                this.unit = body.unit;
+            }
+
+            if (body.distance_type) {
+                this.distance_type = body.distance_type;
+            }
+
+            this.ranges = body.ranges;
+        };
+
+        if (params.raw) {
+            this.parse(params.raw);
         }
     },
 
@@ -373,6 +592,14 @@ var es = {
         this.objectify = function() {
             var body = {field: this.field};
             return this._make_aggregation("stats", body);
+        };
+
+        this.parse = function(obj) {
+
+        };
+
+        if (params.raw) {
+            this.parse(params.raw);
         }
     },
 
@@ -391,6 +618,21 @@ var es = {
                 body["format"] = this.format;
             }
             return this._make_aggregation("date_histogram", body);
+        };
+
+        this.parse = function(obj) {
+            var body = this._parse_wrapper(obj, "date_histogram");
+            this.field = body.field;
+            if (body.interval) {
+                this.interval = body.interval;
+            }
+            if (body.format) {
+                this.format = body.format;
+            }
+        };
+
+        if (params.raw) {
+            this.parse(params.raw);
         }
     },
 
@@ -409,6 +651,18 @@ var es = {
             obj.term[this.field] = this.value;
             return obj;
         };
+
+        this.parse = function(obj) {
+            if (obj.term) {
+                obj = obj.term;
+            }
+            this.field = Object.keys(obj)[0];
+            this.value = obj[this.field];
+        };
+
+        if (params.raw) {
+            this.parse(params.raw);
+        }
     },
 
     newTermsFilter : function(params) {
@@ -427,6 +681,21 @@ var es = {
             }
             return obj;
         };
+
+        this.parse = function(obj) {
+            if (obj.terms) {
+                obj = obj.terms;
+            }
+            this.field = Object.keys(obj)[0];
+            this.values = obj[this.field];
+            if (obj.execution) {
+                this.execution = obj.execution;
+            }
+        };
+
+        if (params.raw) {
+            this.parse(params.raw);
+        }
     },
 
     newRangeFilter : function(params) {
@@ -447,6 +716,23 @@ var es = {
                 obj.range[this.field]["gte"] = this.gte;
             }
             return obj;
+        };
+
+        this.parse = function(obj) {
+            if (obj.range) {
+                obj = obj.range;
+            }
+            this.field = Object.keys(obj)[0];
+            if (obj[this.field].lt) {
+                this.lt = obj[this.field].lt;
+            }
+            if (obj[this.field].gte) {
+                this.gte = obj[this.field].gte;
+            }
+        };
+
+        if (params.raw) {
+            this.parse(params.raw);
         }
     },
 
@@ -471,6 +757,53 @@ var es = {
                 obj.geo_distance_range["gte"] = this.gte + this.unit;
             }
             return obj;
+        };
+
+        this.parse = function(obj) {
+            function endsWith(str, suffix) {
+                return str.indexOf(suffix, str.length - suffix.length) !== -1;
+            }
+
+            function splitUnits(str) {
+                var unit = false;
+                for (var i = 0; i < es.distanceUnits.length; i++) {
+                    var cu = es.distanceUnits[i];
+                    if (endsWith(str, cu)) {
+                        str = str.substring(0, str.length - cu.length);
+                        unit = str.substring(str.length - cu.length);
+                    }
+                }
+
+                return [str, unit];
+            }
+
+            if (obj.geo_distance_range) {
+                obj = obj.geo_distance_range;
+            }
+            this.field = Object.keys(obj)[0];
+            this.lat = obj[this.field].lat;
+            this.lon = obj[this.field].lon;
+
+            var lt = obj[this.field].lt;
+            var gte = obj[this.field].gte;
+
+            if (lt) {
+                lt = lt.trim();
+                var parts = splitUnits(lt);
+                this.lt = parts[0];
+                this.unit = parts[1];
+            }
+
+            if (gte) {
+                gte = gte.trim();
+                var parts = splitUnits(gte);
+                this.gte = parts[0];
+                this.unit = parts[1];
+            }
+        };
+
+        if (params.raw) {
+            this.parse(params.raw);
         }
     },
 
@@ -550,7 +883,9 @@ var es = {
         }
 
         return value;
-    }
+    },
 
     /////////////////////////////////////////////////////
+
+
 };

@@ -13,7 +13,7 @@ jQuery(document).ready(function($) {
         size : 12,
         from : 1,
         queryString: {queryString: "UCL", defaultOperator: "AND", defaultField: "monitor.jm:apc.name.exact"},
-        sortBy : {field: "id", direction: "asc"},
+        sort : {field: "id", order: "asc"},
         fields: ["id"],
         aggs : [
             es.newTermsAggregation({
@@ -70,6 +70,76 @@ jQuery(document).ready(function($) {
         success: cb
 
     });
+
+    ///////////////////////////////////////////////////
+    // test parsing of a query
+
+    raw = {
+        query: {
+            filtered : {
+                filter: {
+                    bool: {
+                        must : [
+                            {term: {"monitor.rioxxterms:project.name.exact" : "EPSRC"}},
+                            {terms: {"monitor.jm:apc.amount_gbp" : ["CC-BY"]}},
+                            {
+                                range: {
+                                    "monitor.jm:apc.amount_gbp" : {
+                                        lt: 2300,
+                                        gte: 900
+                                    }
+                                }
+                            }
+                        ]
+                    }
+                },
+                query: {
+                    query_string: {query: "UCL", default_field: "monitor.jm:apc.name.exact", default_operator: "AND" }
+                }
+            }
+        },
+        size: 12,
+        from: 2,
+        fields: ["id"],
+        sort: [
+            {id: {order: "asc"}}
+        ],
+        aggs : {
+            richard: {
+                terms: {
+                    field: "monitor.jm:apc.name.exact",
+                    size: 4,
+                    order: {_term : "asc"}
+                },
+                aggs : {
+                    jones: {
+                        range: {
+                            field: "monitor.jm:apc.amount_gbp",
+                            ranges: [
+                                {to: 1000},
+                                {from: 1000, to: 2000},
+                                {from: 2000}
+                            ]
+                        }
+                    }
+                }
+            },
+            david : {
+                stats : {
+                    field: "monitor.jm:apc.amount_gbp"
+                }
+            },
+            hist: {
+                date_histogram: {
+                    field: "created_date",
+                    format: "yyyy-MM-dd"
+                }
+            }
+        }
+    };
+    q2 = es.newQuery({raw: raw});
+
+    o2 = q2.objectify();
 
     ///////////////////////////////////////////////////
     // this stuff generates the demo report
