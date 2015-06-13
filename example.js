@@ -12,7 +12,7 @@ jQuery(document).ready(function($) {
         filtered: true,
         size : 12,
         from : 1,
-        queryString: {queryString: "UCL", defaultOperator: "AND", defaultField: "monitor.jm:apc.name.exact"},
+        queryString: {queryString: "UCL:University College London", defaultOperator: "AND", defaultField: "monitor.jm:apc.name"},
         sort : {field: "id", order: "asc"},
         fields: ["id"],
         aggs : [
@@ -94,7 +94,7 @@ jQuery(document).ready(function($) {
                     }
                 },
                 query: {
-                    query_string: {query: "UCL", default_field: "monitor.jm:apc.name.exact", default_operator: "AND" }
+                    query_string: {query: "UCL: University College London", default_field: "monitor.jm:apc.name.exact", default_operator: "AND" }
                 }
             }
         },

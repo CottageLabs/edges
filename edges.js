@@ -70,13 +70,13 @@ var edges = {
                 search_url: this.search_url,
                 queryobj: this.state.query.objectify(),
                 datatype: "jsonp",
-                success: edges.objClosure(this, "querySuccess", ["raw"]),
+                success: edges.objClosure(this, "querySuccess", ["result"]),
                 complete: edges.objClosure(this, "queryComplete")
             })
         };
 
         this.querySuccess = function(params) {
-            this.state.raw = params.raw;
+            this.state.result = params.result;
         };
 
         this.queryComplete = function() {
@@ -107,7 +107,7 @@ var edges = {
         };
 
         this.hasHits = function() {
-            return this.state.raw && this.state.raw.hits && this.state.raw.hits.hits.length > 0;
+            return this.state.result && this.state.result.data.hits && this.state.result.data.hits.hits.length > 0;
         };
 
         // get the jquery object for the desired element, in the correct context
@@ -165,7 +165,7 @@ var edges = {
     },
     State : function(params) {
         this.query = es.newQuery();
-        this.raw = undefined;
+        this.result = undefined;
     },
 
     newBasicTermSelector : function(params) {
@@ -308,12 +308,12 @@ var edges = {
             return function (ch) {
                 // for each aggregation, get the results and add them to the data series
                 var data_series = [];
-                if (!ch.edge.state.raw) {
+                if (!ch.edge.state.result) {
                     return data_series;
                 }
                 for (var i = 0; i < useAggregations.length; i++) {
                     var agg = useAggregations[i];
-                    var buckets = ch.edge.state.raw.aggregations[agg].buckets;
+                    var buckets = ch.edge.state.result.data.aggregations[agg].buckets;
 
                     var series = {};
                     series["key"] = seriesKeys[agg];
@@ -340,7 +340,7 @@ var edges = {
             return function(ch) {
                 // for each aggregation, get the results and add them to the data series
                 var data_series = [];
-                if (!ch.edge.state.raw) {
+                if (!ch.edge.state.result) {
                     return data_series;
                 }
 
@@ -355,7 +355,7 @@ var edges = {
                         series["key"] = seriesKeys[agg + " " + seriesStat];
                         series["values"] = [];
 
-                        var buckets = ch.edge.state.raw.aggregations[parts[0]].buckets;
+                        var buckets = ch.edge.state.result.data.aggregations[parts[0]].buckets;
                         for (var k = 0; k < buckets.length; k++) {
                             var stats = buckets[k][parts[1]];
                             var key = buckets[k].key;

@@ -87,6 +87,8 @@ var es = {
         this.partialFields = params.partialFields || false;
         this.scriptFields = params.scriptFields || false;
         this.minimumShouldMatch = params.minimumShouldMatch || 1;
+        this.partialFields = params.partialFields || false;
+        this.scriptFields = params.scriptFields || false;
 
         // for old versions of ES, so are not necessarily going to be implemented
         this.facets = params.facets || [];
@@ -167,7 +169,19 @@ var es = {
             return this.must.length > 0 || this.should.length > 0 || this.mustNot.length > 0
         };
 
-        this.objectify = function() {
+        this.objectify = function(params) {
+            if (!params) {
+                params = {};
+            }
+            // this allows you to specify which bits of the query get objectified
+            var include_query_string = params.include_query_string || true;
+            var include_filters = params.include_filters || true;
+            var include_paging = params.include_paging || true;
+            var include_sort = params.include_sort || true;
+            var include_fields = params.include_fields || true;
+            var include_aggregations = params.include_aggregations || true;
+            var include_facets = params.include_facets || true;
+
             // queries will be separated in queries and bool filters, which may then be
             // combined later
             var q = {};
@@ -175,18 +189,20 @@ var es = {
             var bool = {};
 
             // query string
-            if (this.queryString) {
+            if (this.queryString && include_query_string) {
                 $.extend(query_part, this.queryString.objectify());
             }
 
-            // add any MUST filters
-            if (this.must.length > 0) {
-                var musts = [];
-                for (var i = 0; i < this.must.length; i++) {
-                    var m = this.must[i];
-                    musts.push(m.objectify());
+            if (include_filters) {
+                // add any MUST filters
+                if (this.must.length > 0) {
+                    var musts = [];
+                    for (var i = 0; i < this.must.length; i++) {
+                        var m = this.must[i];
+                        musts.push(m.objectify());
+                    }
+                    bool["must"] = musts;
                 }
-                bool["must"] = musts;
             }
 
             // add the bool to the query in the correct place (depending on filtering)
@@ -205,14 +221,16 @@ var es = {
                 q["query"] = query_part;
             }
 
-            // page size
-            q["size"] = this.size;
+            if (include_paging) {
+                // page size
+                q["size"] = this.size;
 
-            // page number (from)
-            q["from"] = this.from;
+                // page number (from)
+                q["from"] = this.from;
+            }
 
             // sort option
-            if (this.sort.length > 0) {
+            if (this.sort.length > 0 && include_sort) {
                 q["sort"] = [];
                 for (var i = 0; i < this.sort.length; i++) {
                     q.sort.push(this.sort[i].objectify())
@@ -220,12 +238,12 @@ var es = {
             }
 
             // fields
-            if (this.fields.length > 0) {
+            if (this.fields.length > 0 && include_fields) {
                 q["fields"] = this.fields;
             }
 
             // add any aggregations
-            if (this.aggs.length > 0) {
+            if (this.aggs.length > 0 && include_aggregations) {
                 q["aggs"] = {};
                 for (var i = 0; i < this.aggs.length; i++) {
                     var agg = this.aggs[i];
@@ -345,8 +363,14 @@ var es = {
         this.defaultField = params.defaultField || false;
         this.defaultOperator = params.defaultOperator || "OR";
 
+        this.fuzzify = params.fuzzify || false;     // * or ~
+        this.escapeSet = params.escapeSet || es.specialCharsSubSet;
+        this.pairs = params.pairs || es.characterPairs;
+        this.unEscapeSet = params.unEscapeSet || es.specialChars;
+
         this.objectify = function() {
-            var obj = {query_string : {query : this.queryString}};
+            var qs = this._escape(this._fuzzify(this.queryString));
+            var obj = {query_string : {query : qs}};
             if (this.defaultOperator) {
                 obj.query_string["default_operator"] = this.defaultOperator;
             }
@@ -360,13 +384,81 @@ var es = {
             if (obj.query_string) {
                 obj = obj.query_string;
             }
-            this.queryString = obj.query;
+            this.queryString = this._unescape(obj.query);
             if (obj.default_operator) {
                 this.defaultOperator = obj.default_operator;
             }
             if (obj.default_field) {
                 this.defaultField = obj.default_field;
             }
+        };
+
+        this._fuzzify = function(str) {
+            if (!this.fuzzify || !(this.fuzzify === "*" || this.fuzzify === "~")) {
+                return str;
+            }
+
+            if (!(str.indexOf('*') === -1 && str.indexOf('~') === -1 && str.indexOf(':') === -1)) {
+                return str;
+            }
+
+            var pq = "";
+            var optparts = str.split(' ');
+            for (var i = 0; i < optparts.length; i++) {
+                var oip = optparts[i];
+                if (oip.length > 0) {
+                    oip = oip + this.fuzzify;
+                    this.fuzzify == "*" ? oip = "*" + oip : false;
+                    pq += oip + " ";
+                }
+            }
+            return pq;
+        };
+
+        this._escapeRegExp = function(string) {
+            return string.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
+        };
+
+        this._replaceAll = function(string, find, replace) {
+            return string.replace(new RegExp(this._escapeRegExp(find), 'g'), replace);
+        };
+
+        this._unReplaceAll = function(string, find) {
+            return string.replace(new RegExp("\\\\(" + this._escapeRegExp(find) + ")", 'g'), "$1");
+        }
+
+        this._paired = function(string, pair) {
+            var matches = (string.match(new RegExp(this._escapeRegExp(pair), "g"))) || [];
+            return matches.length % 2 === 0;
+        };
+
+        this._escape = function(str) {
+            // make a copy of the special characters (we may modify it in a moment)
+            var scs = this.escapeSet.slice(0);
+
+            // first check for pairs, and push any extra characters to be escaped
+            for (var i = 0; i < this.pairs.length; i++) {
+                var char = this.pairs[i];
+                if (!this._paired(str, char)) {
+                    scs.push(char);
+                }
+            }
+
+            // now do the escape
+            for (var i = 0; i < scs.length; i++) {
+                var char = scs[i];
+                str = this._replaceAll(str, char, "\\" + char);
+            }
+
+            return str;
+        };
+
+        this._unescape = function(str) {
+            for (var i = 0; i < this.unEscapeSet.length; i++) {
+                var char = this.unEscapeSet[i];
+                str = this._unReplaceAll(str, char)
+            }
+            return str;
         };
 
         if (params.raw) {
@@ -808,22 +900,29 @@ var es = {
     },
 
     ////////////////////////////////////////////////////
-    // Primary functions for interacting with elasticsearch
+    // The result object
 
-    serialiseQueryObject : function(qs) {
-        return JSON.stringify(qs, es.jsonStringEscape);
+    newResult : function(params) {
+        return new es.Result(params);
     },
+    Result : function(params) {
+        this.data = params.raw;
+    },
+
+
+    ////////////////////////////////////////////////////
+    // Primary functions for interacting with elasticsearch
 
     doQuery : function(params) {
         // extract the parameters of the request
-        var success_callback = params.success;
-        var complete_callback = params.complete;
+        var success = params.success;
+        var complete = params.complete;
         var search_url = params.search_url;
         var queryobj = params.queryobj;
         var datatype = params.datatype;
 
         // serialise the query
-        var querystring = es.serialiseQueryObject(queryobj);
+        var querystring = JSON.stringify(queryobj);
 
         // make the call to the elasticsearch web service
         $.ajax({
@@ -831,61 +930,17 @@ var es = {
             url: search_url,
             data: {source: querystring},
             dataType: datatype,
-            success: es.querySuccess(success_callback),     // FIXME: this is probably not what we want to do here now
-            complete: complete_callback
+            success: es.querySuccess(success),
+            complete: complete
         });
     },
 
-    //////////////////////////////////////////////////////
-    // Supporting functions for interacting with elasticsearch
-
     querySuccess : function(callback) {
         return function(data) {
-            callback(data)
+            var result = es.newResult({raw: data});
+            callback(result);
         }
-    },
-
-    jsonStringEscape : function(key, value) {
-
-        function escapeRegExp(string) {
-            return string.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
-        }
-
-        function replaceAll(string, find, replace) {
-          return string.replace(new RegExp(escapeRegExp(find), 'g'), replace);
-        }
-
-        function paired(string, pair) {
-            var matches = (string.match(new RegExp(escapeRegExp(pair), "g"))) || [];
-            return matches.length % 2 === 0;
-        }
-
-        // if we are looking at the query string, make sure that it is escaped
-        // (note that this precludes the use of queries like "name:bob", as the ":" would
-        // get escaped)
-        if (key === "query" && typeof(value) === 'string') {
-
-            var scs = es.specialCharsSubSet.slice(0);
-
-            // first check for pairs
-            for (var i = 0; i < es.characterPairs.length; i++) {
-                var char = es.characterPairs[i];
-                if (!paired(value, char)) {
-                    scs.push(char);
-                }
-            }
-
-            for (var i = 0; i < scs.length; i++) {
-                var char = scs[i];
-                value = replaceAll(value, char, "\\" + char);
-            }
-
-        }
-
-        return value;
-    },
+    }
 
     /////////////////////////////////////////////////////
-
-
 };
