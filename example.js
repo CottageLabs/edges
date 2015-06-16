@@ -167,7 +167,7 @@ jQuery(document).ready(function($) {
         })
     );
 
-    e = edges.init({
+    e = edges.newEdge({
         selector: "#edges",
         template: edges.bs3.newTabbed(),
         search_url: "http://localhost:9200/allapc/institutional/_search",

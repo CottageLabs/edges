@@ -2,6 +2,7 @@ $.extend(edges, {
     bs3 : {
 
         newTabbed : function(params) {
+            if (!params) { params = {} }
             edges.bs3.Tabbed.prototype = edges.newTemplate(params);
             return new edges.bs3.Tabbed(params);
         },
@@ -123,10 +124,14 @@ $.extend(edges, {
         // main template function, producing something that looks like the
         // old facetview interface
         newFacetview : function(params) {
+            if (!params) { params = {} }
             edges.bs3.Facetview.prototype = edges.newTemplate(params);
             return new edges.bs3.Facetview(params);
         },
         Facetview : function(params) {
+            // after search, the results will fade in over this number of milliseconds
+            this.fadeIn = params.fadeIn || 800;
+
             this.draw = function(edge) {
                 // the facet view object to be appended to the page
                 var thefacetview = '<div id="facetview"><div class="row">';
@@ -193,8 +198,8 @@ $.extend(edges, {
 
             var results = "";
             if (edge.hasHits()) {
-                for (var i = 0; i < edge.state.raw.hits.hits.length; i++) {
-                    var hit = edge.state.raw.hits.hits[i];
+                for (var i = 0; i < edge.state.result.data.hits.hits.length; i++) {
+                    var hit = edge.state.result.data.hits.hits[i];
                     results += '<div class="row"><div class="col-md-12">' + hit._id + '</div></div>';
                 }
             }
@@ -203,6 +208,7 @@ $.extend(edges, {
         },
 
         newBasicTermSelectorRenderer : function(params) {
+            if (!params) { params = {} }
             edges.bs3.BasicTermSelectorRenderer.prototype = edges.Renderer(params);
             return new edges.bs3.BasicTermSelectorRenderer(params);
         },
@@ -214,9 +220,9 @@ $.extend(edges, {
 
                 var edge = ts.edge;
                 var results = "Loading...";
-                if (edge.state.raw) {
+                if (edge.state.result) {
                     results = "";
-                    var buckets = edge.state.raw.aggregations[ts.id].buckets;
+                    var buckets = edge.state.result.data.aggregations[ts.id].buckets;
                     for (var i = 0; i < buckets.length; i++) {
                         var bucket = buckets[i];
                         results += '<a href="#" class="edges_bs3_term_selector_term" data-key="' + edges.escapeHtml(bucket.key) + '">' +
@@ -251,7 +257,26 @@ $.extend(edges, {
             };
         },
 
+        newSearchControllerRenderer : function(params) {
+            if (!params) { params = {} }
+            edges.bs3.SearchControllerRenderer.prototype = edges.Renderer(params);
+            return new edges.bs3.SearchControllerRenderer(params);
+        },
+        SearchControllerRenderer : function(params) {
+            // enable the search button
+            this.searchButton = params.searchButton || false;
+
+            // amount of time between finishing typing and when a query is executed from the search box
+            this.freetextSubmitDelay = params.freetextSubmitDelay || 500;
+
+            ////////////////////////////////////////
+            // state variables
+
+            this.showShortUrl = false;
+        },
+
         newMultiDateRangeRenderer : function(params) {
+            if (!params) { params = {} }
             edges.bs3.MultiDateRangeRenderer.prototype = edges.Renderer(params);
             return new edges.bs3.MultiDateRangeRenderer(params);
         },

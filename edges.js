@@ -1,27 +1,52 @@
 var edges = {
 
-    init : function(params) {
-        var e = edges.newEdge(params);
-        e.startup();
-        return e;
-    },
+    //////////////////////////////////////////////////////
+    // main function to run to start a new Edge
 
     newEdge : function(params) {
+        if (!params) { params = {} }
         return new edges.Edge(params);
     },
     Edge : function(params) {
-        this.baseQuery = params.baseQuery || es.newQuery();
-        this.state = edges.newState();
-        this.components = params.components || [];
+        // the base search url which will respond to elasticsearch queries.  Generally ends with _search
         this.search_url = params.search_url;
+
+        // datatype for ajax requests to use - overall recommend using jsonp
+        this.datatype = params.datatype || "jsonp";
+
+        // query that forms the basis of all queries that are assembled and run
+        // all query defaults like page size and sort options
+        this.baseQuery = params.baseQuery || es.newQuery();
+
+        // should the init process do a search
+        this.initialSearch = params.initialSearch || true;
+
+        // should the search url be synchronised with the browser's url bar after search
+        // and should queries be retrieved from the url on init
+        this.manageUrl = params.manageUrl || false;
+
+
+        this.components = params.components || [];
+
         this.selector = params.selector;
         this.renderPacks = params.renderPacks || [edges.bs3, edges.nvd3];
         this.template = params.template;
         this.debug = params.debug || false;
 
+        /////////////////////////////////////////////
+        // operation status
+
+        this.state = edges.newState();
+
+        this.searching = false;
+
+        // at the bottom of this constructor, we'll call this function
         this.startup = function() {
             // obtain the jquery context for all our operations
             this.context = $(this.selector);
+
+            // trigger the edges:init event
+            this.context.trigger("edges:pre-init");
 
             // render the template if necessary
             if (this.template) {
@@ -40,6 +65,9 @@ var edges = {
                 component.draw(this);
             }
 
+            // trigger the edges:started event
+            this.context.trigger("edges:post-init");
+
             // now issue a query
             this.doQuery();
         };
@@ -56,6 +84,9 @@ var edges = {
         };
 
         this.doQuery = function() {
+            // pre query event
+            this.context.trigger("edges:pre-query");
+
             // start a new query in the state
             this.state.query = $.extend(true, {}, this.baseQuery);
 
@@ -69,7 +100,7 @@ var edges = {
             es.doQuery({
                 search_url: this.search_url,
                 queryobj: this.state.query.objectify(),
-                datatype: "jsonp",
+                datatype: this.datatype,
                 success: edges.objClosure(this, "querySuccess", ["result"]),
                 complete: edges.objClosure(this, "queryComplete")
             })
@@ -80,10 +111,24 @@ var edges = {
         };
 
         this.queryComplete = function() {
+            // post-query trigger
+            this.context.trigger("edges:post-query");
+
             for (var i = 0; i < this.components.length; i++) {
                 var component = this.components[i];
-                component.draw(this);
+                component.populate()
             }
+
+            // pre-render trigger
+            this.context.trigger("edges:pre-render");
+
+            for (var i = 0; i < this.components.length; i++) {
+                var component = this.components[i];
+                component.draw();
+            }
+
+            // post render trigger
+            this.context.trigger("edges.post-render");
         };
 
         this.getRenderPackFunction = function(fname) {
@@ -114,16 +159,36 @@ var edges = {
         this.jq = function(selector) {
             return $(selector, this.context);
         };
+
+        /////////////////////////////////////////////
+        // final bits of construction
+        this.startup();
     },
 
+    // running state
+
+    newState : function(params) {
+        if (!params) { params = {} }
+        return new edges.State(params);
+    },
+    State : function(params) {
+        this.query = es.newQuery();
+        this.result = undefined;
+    },
+
+    /////////////////////////////////////////////
+    // Base classes for the various kinds of components
+
     newRenderer : function(params) {
+        if (!params) { params = {} }
         return new edges.Renderer(params);
     },
     Renderer : function(params) {
-        this.draw = function(edge) {}
+        this.draw = function(component) {}
     },
 
     newComponent : function(params) {
+        if (!params) { params = {} }
         return new edges.Component(params);
     },
     Component : function(params) {
@@ -150,34 +215,92 @@ var edges = {
                 }
             }
         };
+
         this.contrib = function(query) {};
+        this.populate = function() {};
+    },
+
+    newSelector : function(params) {
+        if (!params) { params = {} }
+        edges.Selector.prototype = edges.newComponent(params);
+        return new edges.Selector(params);
+    },
+    Selector : function(params) {
+        // field upon which to build the selector
+        this.field = params.field;
+
+        // display name for the UI
+        this.display = params.display || this.field;
+
+        // whether the facet should be open or closed (initially)
+        this.open = params.open || false;
+
+        // whether the facet should be displayed at all (e.g. you may just want the data for a callback)
+        this.hidden = params.hidden || false;
+
+        // whether the facet should be acted upon in any way.  This might be useful if you want to enable/disable facets under different circumstances via a callback
+        this.disabled = params.disabled || false;
+
+        this.category = params.category || "selector";
     },
 
     newTemplate : function(params) {
+        if (!params) { params = {} }
         return new edges.Template(params);
     },
     Template : function(params) {
         this.draw = function(edge) {}
     },
 
-    newState : function(params) {
-        return new edges.State(params);
-    },
-    State : function(params) {
-        this.query = es.newQuery();
-        this.result = undefined;
-    },
+    ///////////////////////////////////////////////////
+    // Selector implementations
 
     newBasicTermSelector : function(params) {
-        edges.BasicTermSelector.prototype = edges.newComponent(params);
+        if (!params) { params = {} }
+        edges.BasicTermSelector.prototype = edges.newSelector(params);
         return new edges.BasicTermSelector(params);
     },
     BasicTermSelector : function(params) {
-        this.field = params.field;
-        this.display = params.display;
-        this.category = params.category || "selector";
+        ////////////////////////////////////////////
+        // configurations to be passed in
+
+        // how many terms should the facet limit to
+        this.size = params.size || 10;
+
+        // which ordering to use term/count and asc/desc
+        this.orderBy = params.orderBy || "count";
+        this.orderDir = params.orderDir || "desc";
+
+        // number of facet terms below which the facet is disabled
+        this.deactivateThreshold = params.deactivateThreshold || false;
+
+        // whether to hide or just disable the facet if below deactivate threshold
+        this.hideInactive = params.hideInactive || false;
+
+        // should the facet sort/size controls be shown?
+        this.controls = params.controls || true;
+
+        // should the terms facet ignore empty strings in display
+        this.ignoreEmptyString = params.ignoreEmptyString || true;
+
+        // provide a map of values for terms to displayable terms, or a function
+        // which can be used to translate terms to displyable values
+        this.valueMap = params.valueMap || false;
+        this.valueFunction = params.valueFunction || false;
+
+        // due to a limitation in elasticsearch's clustered node facet counts, we need to inflate
+        // the number of facet results we need to ensure that the results we actually want are
+        // accurate.  This option tells us by how much.
+        this.inflation = params.inflation || 100;
+
+        //////////////////////////////////////////
+        // properties used to store internal state
+
+        // filters that have been selected via this component
         this.filters = params.filters || [];
-        this.size = params.size;
+
+        // values that the renderer should render
+        this.values = [];
 
         this.init = function(edge) {
             // record a reference to the parent object
@@ -211,181 +334,104 @@ var edges = {
             }
         };
 
+        this.populate = function() {
+            // set the values
+        };
+
         this.selectTerm = function(term) {
             this.filters.push(term);
             this.edge.doQuery();
         };
     },
 
-    newResultsDisplay : function(params) {
-        edges.ResultsDisplay.prototype = edges.newComponent(params);
-        return new edges.ResultsDisplay(params);
+    newBasicRangeSelector : function(params) {
+        if (!params) { params = {} }
+        edges.BasicRangeSelector.prototype = edges.newSelector(params);
+        return new edges.BasicRangeSelector(params);
     },
-    ResultsDisplay : function(params) {
-        this.category = params.category || "results";
+    BasicRangeSelector : function(params) {
+        // list of ranges (in order) which define the filters
+        // {"from" : <num>, "to" : <num>, "display" : "<display name>"}
+        this.ranges = params.ranges || [];
 
-        this.init = function(edge) {
-            // record a reference to the parent object
-            this.edge = edge;
+        // if there are no results for a given range, should it be hidden
+        this.hideEmptyRange = params.hideEmptyRange || true;
 
-            // set the renderer from default if necessary
-            if (!this.renderer) {
-                this.renderer = this.edge.getRenderPackFunction("renderResultsDisplay");
-            }
+        //////////////////////////////////////////////
+        // values to be rendered
+
+        this.values = [];
+
+        this.populate = function() {
+            // set the values
         };
     },
 
-    newChart : function(params) {
-        edges.Chart.prototype = edges.newComponent(params);
-        return new edges.Chart(params);
+    newBasicGeoDistanceRangeSelector : function(params) {
+        if (!params) { params = {} }
+        edges.BasicGeoDistanceRangeSelector.prototype = edges.newSelector(params);
+        return new edges.BasicGeoDistanceRangeSelector(params);
     },
-    Chart : function(params) {
-        this.category = params.category || "chart";
-        this.display = params.display || "";
+    BasicGeoDistanceRangeSelector : function(params) {
+        // list of distances (in order) which define the filters
+        // {"from" : <num>, "to" : <num>, "display" : "<display name>"}
+        this.distances = params.distances || [];
 
-        // actual data series that the renderer will render
-        this.dataSeries = params.dataSeries || false;
+        // if there are no results for a given distance range, should it be hidden
+        this.hideEmptyDistance = params.hideEmptyDistance || true;
 
-        // function which will generate the data series, which will be
-        // written to this.dataSeries if that is not provided
-        this.dataFunction = params.dataFunction || false;
+        // unit to measure distances in
+        this.unit = params.unit || "m";
 
-        // the list of aggregations upon which we'll base the data
-        this.aggregations = params.aggregations || [];
+        // lat/lon of centre point from which to measure distance
+        this.lat = params.lat || false;
+        this.lon = params.lon || false;
 
-        // the default data function will be to use the basic aggregation
-        // to series conversion, which is configured with these options...
+        //////////////////////////////////////////////
+        // values to be rendered
 
-        this.dfArgs = params.dfArgs || {
-            // the name of the aggregation(s) to be used.  If specified they will
-            // be drawn from the final query, so you may specify shared aggregations
-            // via the baseQuery on the Edge.
-            useAggregations : [],
+        this.values = [];
 
-            // the keys to relate each aggregation name to it's display key
-            seriesKeys : {}
-        };
-
-        this.init = function(edge) {
-            this.edge = edge;
-
-            // get the default chart renderer
-            if (!this.renderer) {
-                this.renderer = this.edge.getRenderPackFunction("renderChart");
-            }
-
-            // copy over the names of the aggregations that we're going to read from
-            for (var i = 0; i < this.aggregations.length; i++) {
-                var agg = this.aggregations[i];
-                if ($.inArray(agg.name, this.dfArgs.useAggregations) === -1) {
-                    this.dfArgs.useAggregations.push(agg.name);
-                }
-            }
-
-            // bind the default data function generator
-            if (!this.dataFunction) {
-                this.dataFunction = edges.ChartDataFunctions.terms(this.dfArgs);
-            }
-        };
-
-        this.draw = function() {
-            this.dataSeries = this.dataFunction(this);
-            this.renderer(this);
-        };
-
-        this.contrib = function(query) {
-            for (var i = 0; i < this.aggregations.length; i++) {
-                query.addAggregation(this.aggregations[i]);
-            }
+        this.populate = function() {
+            // set the values
         };
     },
-    ChartDataFunctions : {
-        terms : function(params) {
 
-            var useAggregations = params.useAggregations || [];
-            var seriesKeys = params.seriesKeys || {};
-
-            return function (ch) {
-                // for each aggregation, get the results and add them to the data series
-                var data_series = [];
-                if (!ch.edge.state.result) {
-                    return data_series;
-                }
-                for (var i = 0; i < useAggregations.length; i++) {
-                    var agg = useAggregations[i];
-                    var buckets = ch.edge.state.result.data.aggregations[agg].buckets;
-
-                    var series = {};
-                    series["key"] = seriesKeys[agg];
-                    series["values"] = [];
-
-                    for (var j = 0; j < buckets.length; j++) {
-                        var doccount = buckets[j].doc_count;
-                        var key = buckets[j].key;
-                        series.values.push({label: key, value: doccount});
-                    }
-
-                    data_series.push(series);
-                }
-                return data_series;
-            }
-        },
-
-        termsStats : function(params) {
-
-            var useAggregations = params.useAggregations || [];
-            var seriesKeys = params.seriesKeys || {};
-            var seriesFor = params.seriesFor || [];
-
-            return function(ch) {
-                // for each aggregation, get the results and add them to the data series
-                var data_series = [];
-                if (!ch.edge.state.result) {
-                    return data_series;
-                }
-
-                for (var i = 0; i < useAggregations.length; i++) {
-                    var agg = useAggregations[i];
-                    var parts = agg.split(" ");
-
-                    for (var j = 0; j < seriesFor.length; j++) {
-                        var seriesStat = seriesFor[j];
-
-                        var series = {};
-                        series["key"] = seriesKeys[agg + " " + seriesStat];
-                        series["values"] = [];
-
-                        var buckets = ch.edge.state.result.data.aggregations[parts[0]].buckets;
-                        for (var k = 0; k < buckets.length; k++) {
-                            var stats = buckets[k][parts[1]];
-                            var key = buckets[k].key;
-                            var val = stats[seriesStat];
-                            series.values.push({label : key, value: val});
-                        }
-
-                        data_series.push(series);
-                    }
-                }
-
-                return data_series;
-            }
-        }
+    newDateHistogramSelector : function(params) {
+        if (!params) { params = {} }
+        edges.BasicRangeSelector.prototype = edges.newSelector(params);
+        return new edges.BasicRangeSelector(params);
     },
+    DateHistogramSelector : function(params) {
+        // "year, quarter, month, week, day, hour, minute ,second"
+        // period to use for date histogram
+        this.interval = params.interval || "year";
 
-    newHorizontalMultibar : function(params) {
-        edges.HorizontalMultibar.prototype = edges.newChart(params);
-        return new edges.HorizontalMultibar(params);
-    },
-    HorizontalMultibar : function(params) {
-        this.init = function(edge) {
-            if (!this.renderer) {
-                this.renderer = edge.getRenderPackFunction("renderHorizontalMultibar");
-            }
-            this.__proto__.init(edge);
+        // "asc|desc"
+        // which ordering to use for date histogram
+        this.sort = params.sort || "asc";
+
+        // whether to suppress display of date range with no values
+        this.hideEmptyDateBin = params.hideEmptyDateBin || true;
+
+        // the number of values to show initially (note you should set size=false)
+        this.shortDisplay = params.shortDisplay || false;
+
+        //////////////////////////////////////////////
+        // values to be rendered
+
+        this.values = [];
+
+        this.populate = function() {
+            // set the values
         };
     },
+
+    ////////////////////////////////////////////////////
+    // Specialised data entry components
 
     newMultiDateRangeEntry : function(params) {
+        if (!params) { params = {} }
         edges.MultiDateRangeEntry.prototype = edges.newComponent(params);
         return new edges.MultiDateRangeEntry(params);
     },
@@ -509,6 +555,7 @@ var edges = {
     },
 
     newAutocompleteTermSelector : function(params) {
+        if (!params) { params = {} }
         edges.AutocompleteTermSelector.prototype = edges.newComponent(params);
         return new edges.AutocompleteTermSelector(params);
     },
@@ -521,6 +568,260 @@ var edges = {
             if (!this.renderer) {
                 this.renderer = this.edge.getRenderPackFunction("renderAutocompleteTermSelector");
             }
+        };
+    },
+
+    //////////////////////////////////////////////////
+    // Search controller implementation
+
+    newSearchController : function(params) {
+        if (!params) { params = {} }
+        edges.SearchController.prototype = edges.newComponent(params);
+        return new edges.SearchController(params);
+    },
+    SearchController : function(params) {
+        // if set, should be either * or ~
+        // if *, * will be prepended and appended to each string in the freetext search term
+        // if ~, ~ then ~ will be appended to each string in the freetext search term.
+        // If * or ~ or : are already in the freetext search term, no action will be taken.
+        this.fuzzify = params.fuzzify || false;
+
+        // list of options by which the search results can be sorted
+        // of the form of a list of: { '<field to sort by>' : '<display name>'},
+        this.sortOptions = params.sortOptions || false;
+
+        // list of options for fields to which free text search can be constrained
+        // of the form of a list of: { '<field to search on>' : '<display name>' },
+        this.fieldOptions = params.fieldOptions || false;
+
+        // enable the share/save link feature
+        this.shareLink = params.shareLink || false;
+
+        // provide a function which will do url shortening for the share/save link
+        this.urlShortener = params.urlShortener || false;
+
+        // on free-text search, default operator for the elasticsearch query system to use
+        this.defaultOperator = params.defaultOperator || "OR";
+
+        ///////////////////////////////////////////////
+        // properties which are set by the widget but
+        // can also be passed in
+
+        // field on which to focus the freetext search (initially)
+        this.searchField = params.searchField || false;
+
+        // freetext search string
+        this.searchString = params.searchString || false;
+
+        // the short url for the current search, if it has been generated
+        this.shortUrl = false;
+
+        this.init = function(edge) {
+            // record a reference to the parent object
+            this.edge = edge;
+
+            // set the renderer from default if necessary
+            if (!this.renderer) {
+                this.renderer = this.edge.getRenderPackObject("newSearchControllerRenderer");
+            }
+        };
+    },
+
+    ////////////////////////////////////////////////
+    // Results list implementation
+
+    newResultsDisplay : function(params) {
+        if (!params) { params = {} }
+        edges.ResultsDisplay.prototype = edges.newComponent(params);
+        return new edges.ResultsDisplay(params);
+    },
+    ResultsDisplay : function(params) {
+        this.category = params.category || "results";
+
+        this.init = function(edge) {
+            // record a reference to the parent object
+            this.edge = edge;
+
+            // set the renderer from default if necessary
+            if (!this.renderer) {
+                this.renderer = this.edge.getRenderPackFunction("renderResultsDisplay");
+            }
+        };
+    },
+
+    ////////////////////////////////////////////////
+    // Common Chart implementation and associated data functions
+
+    newChart : function(params) {
+        if (!params) { params = {} }
+        edges.Chart.prototype = edges.newComponent(params);
+        return new edges.Chart(params);
+    },
+    Chart : function(params) {
+        this.category = params.category || "chart";
+        this.display = params.display || "";
+
+        // actual data series that the renderer will render
+        this.dataSeries = params.dataSeries || false;
+
+        // function which will generate the data series, which will be
+        // written to this.dataSeries if that is not provided
+        this.dataFunction = params.dataFunction || false;
+
+        // the list of aggregations upon which we'll base the data
+        this.aggregations = params.aggregations || [];
+
+        // the default data function will be to use the basic aggregation
+        // to series conversion, which is configured with these options...
+
+        this.dfArgs = params.dfArgs || {
+            // the name of the aggregation(s) to be used.  If specified they will
+            // be drawn from the final query, so you may specify shared aggregations
+            // via the baseQuery on the Edge.
+            useAggregations : [],
+
+            // the keys to relate each aggregation name to it's display key
+            seriesKeys : {}
+        };
+
+        this.init = function(edge) {
+            this.edge = edge;
+
+            // get the default chart renderer
+            if (!this.renderer) {
+                this.renderer = this.edge.getRenderPackObject("newMultibarRenderer");
+            }
+
+            // copy over the names of the aggregations that we're going to read from
+            for (var i = 0; i < this.aggregations.length; i++) {
+                var agg = this.aggregations[i];
+                if ($.inArray(agg.name, this.dfArgs.useAggregations) === -1) {
+                    this.dfArgs.useAggregations.push(agg.name);
+                }
+            }
+
+            // bind the default data function generator
+            if (!this.dataFunction) {
+                this.dataFunction = edges.ChartDataFunctions.terms(this.dfArgs);
+            }
+        };
+
+        this.draw = function() {
+            this.dataSeries = this.dataFunction(this);
+            if (this.renderer.hasOwnProperty("draw")) {
+                this.renderer.draw(this);
+            } else {
+                this.renderer(this);
+            }
+        };
+
+        this.contrib = function(query) {
+            for (var i = 0; i < this.aggregations.length; i++) {
+                query.addAggregation(this.aggregations[i]);
+            }
+        };
+    },
+    ChartDataFunctions : {
+        terms : function(params) {
+
+            var useAggregations = params.useAggregations || [];
+            var seriesKeys = params.seriesKeys || {};
+
+            return function (ch) {
+                // for each aggregation, get the results and add them to the data series
+                var data_series = [];
+                if (!ch.edge.state.result) {
+                    return data_series;
+                }
+                for (var i = 0; i < useAggregations.length; i++) {
+                    var agg = useAggregations[i];
+                    var buckets = ch.edge.state.result.data.aggregations[agg].buckets;
+
+                    var series = {};
+                    series["key"] = seriesKeys[agg];
+                    series["values"] = [];
+
+                    for (var j = 0; j < buckets.length; j++) {
+                        var doccount = buckets[j].doc_count;
+                        var key = buckets[j].key;
+                        series.values.push({label: key, value: doccount});
+                    }
+
+                    data_series.push(series);
+                }
+                return data_series;
+            }
+        },
+
+        termsStats : function(params) {
+
+            var useAggregations = params.useAggregations || [];
+            var seriesKeys = params.seriesKeys || {};
+            var seriesFor = params.seriesFor || [];
+
+            return function(ch) {
+                // for each aggregation, get the results and add them to the data series
+                var data_series = [];
+                if (!ch.edge.state.result) {
+                    return data_series;
+                }
+
+                for (var i = 0; i < useAggregations.length; i++) {
+                    var agg = useAggregations[i];
+                    var parts = agg.split(" ");
+
+                    for (var j = 0; j < seriesFor.length; j++) {
+                        var seriesStat = seriesFor[j];
+
+                        var series = {};
+                        series["key"] = seriesKeys[agg + " " + seriesStat];
+                        series["values"] = [];
+
+                        var buckets = ch.edge.state.result.data.aggregations[parts[0]].buckets;
+                        for (var k = 0; k < buckets.length; k++) {
+                            var stats = buckets[k][parts[1]];
+                            var key = buckets[k].key;
+                            var val = stats[seriesStat];
+                            series.values.push({label : key, value: val});
+                        }
+
+                        data_series.push(series);
+                    }
+                }
+
+                return data_series;
+            }
+        }
+    },
+
+    ///////////////////////////////////////////////////////
+    // Specific chart implementations
+
+    newPieChart : function(params) {
+        if (!params) { params = {} }
+        edges.PieChart.prototype = edges.newChart(params);
+        return new edges.PieChart(params);
+    },
+    PieChart : function(params) {
+        this.init = function(edge) {
+            if (!this.renderer) {
+                this.renderer = edge.getRenderPackObject("newPieChartRenderer");
+            }
+            this.__proto__.init(edge);
+        };
+    },
+
+    newHorizontalMultibar : function(params) {
+        if (!params) { params = {} }
+        edges.HorizontalMultibar.prototype = edges.newChart(params);
+        return new edges.HorizontalMultibar(params);
+    },
+    HorizontalMultibar : function(params) {
+        this.init = function(edge) {
+            if (!this.renderer) {
+                this.renderer = edge.getRenderPackObject("newHorizontalMultibarRenderer");
+            }
+            this.__proto__.init(edge);
         };
     },
 

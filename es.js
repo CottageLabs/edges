@@ -60,13 +60,10 @@ var es = {
     // Query objects for standard query structure
 
     newQuery : function(params) {
+        if (!params) { params = {} }
         return new es.Query(params);
     },
     Query : function(params) {
-        if (!params) {
-            params = {};
-        }
-
         // properties that can be set directly
         this.filtered = params.filtered || true;
         this.size = params.size || 10;
@@ -356,6 +353,7 @@ var es = {
     // Query String
 
     newQueryString : function(params) {
+        if (!params) { params = {} }
         return new es.QueryString(params);
     },
     QueryString : function(params) {
@@ -425,7 +423,7 @@ var es = {
 
         this._unReplaceAll = function(string, find) {
             return string.replace(new RegExp("\\\\(" + this._escapeRegExp(find) + ")", 'g'), "$1");
-        }
+        };
 
         this._paired = function(string, pair) {
             var matches = (string.match(new RegExp(this._escapeRegExp(pair), "g"))) || [];
@@ -470,6 +468,7 @@ var es = {
     // Sort Option
 
     newSort : function(params) {
+        if (!params) { params = {} }
         return new es.Sort(params);
     },
     Sort : function(params) {
@@ -498,6 +497,7 @@ var es = {
     // Root Aggregation and aggregation implementations
 
     newAggregation : function(params) {
+        if (!params) { params = {} }
         return new es.Aggregation(params);
     },
     Aggregation : function(params) {
@@ -557,6 +557,7 @@ var es = {
     },
 
     newTermsAggregation : function(params) {
+        if (!params) { params = {} }
         es.TermsAggregation.prototype = es.newAggregation(params);
         return new es.TermsAggregation(params);
     },
@@ -598,6 +599,7 @@ var es = {
     },
 
     newRangeAggregation : function(params) {
+        if (!params) { params = {} }
         es.RangeAggregation.prototype = es.newAggregation(params);
         return new es.RangeAggregation(params);
     },
@@ -622,6 +624,7 @@ var es = {
     },
 
     newGeoDistanceAggregation : function(params) {
+        if (!params) { params = {} }
         es.GeoDistanceAggregation.prototype = es.newAggregation(params);
         return new es.GeoDistanceAggregation(params);
     },
@@ -675,6 +678,7 @@ var es = {
     },
 
     newStatsAggregation : function(params) {
+        if (!params) { params = {} }
         es.StatsAggregation.prototype = es.newAggregation(params);
         return new es.StatsAggregation(params);
     },
@@ -696,6 +700,7 @@ var es = {
     },
 
     newDateHistogramAggregation : function(params) {
+        if (!params) { params = {} }
         es.DateHistogramAggregation.prototype = es.newAggregation(params);
         return new es.DateHistogramAggregation(params);
     },
@@ -732,6 +737,7 @@ var es = {
     // Filters
 
     newTermFilter : function(params) {
+        if (!params) { params = {} }
         return new es.TermFilter(params);
     },
     TermFilter : function(params) {
@@ -758,6 +764,7 @@ var es = {
     },
 
     newTermsFilter : function(params) {
+        if (!params) { params = {} }
         return new es.TermsFilter(params);
     },
     TermsFilter : function(params) {
@@ -791,6 +798,7 @@ var es = {
     },
 
     newRangeFilter : function(params) {
+        if (!params) { params = {} }
         return new es.RangeFilter(params);
     },
     RangeFilter : function(params) {
@@ -829,6 +837,7 @@ var es = {
     },
 
     newGeoDistanceRangeFilter : function(params) {
+        if (!params) { params = {} }
         return new es.GeoDistanceRangeFilter(params);
     },
     GeoDistanceRangeFilter : function(params) {
@@ -903,6 +912,7 @@ var es = {
     // The result object
 
     newResult : function(params) {
+        if (!params) { params = {} }
         return new es.Result(params);
     },
     Result : function(params) {
