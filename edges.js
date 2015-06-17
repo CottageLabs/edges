@@ -208,7 +208,7 @@ var edges = {
 
         this.draw = function() {
             if (this.renderer) {
-                if (this.renderer.hasOwnProperty("draw")) {
+                if ("draw" in this.renderer) {
                     this.renderer.draw(this);
                 } else {
                     this.renderer(this);
@@ -572,7 +572,7 @@ var edges = {
     },
 
     //////////////////////////////////////////////////
-    // Search controller implementation
+    // Search controller implementation and supporting search navigation/management
 
     newSearchController : function(params) {
         if (!params) { params = {} }
@@ -625,6 +625,33 @@ var edges = {
                 this.renderer = this.edge.getRenderPackObject("newSearchControllerRenderer");
             }
         };
+    },
+
+    newSelectedFilters : function(params) {
+        if (!params) { params = {} }
+        edges.SelectedFilters.prototype = edges.newComponent(params);
+        return new edges.SelectedFilters(params);
+    },
+    SelectedFilters : function(params) {
+
+    },
+
+    newPager : function(params) {
+        if (!params) { params = {} }
+        edges.Pager.prototype = edges.newComponent(params);
+        return new edges.Pager(params);
+    },
+    Pager : function(params) {
+
+    },
+
+    newSearchingNotification : function(params) {
+        if (!params) { params = {} }
+        edges.SearchingNotification.prototype = edges.newComponent(params);
+        return new edges.SearchingNotification(params);
+    },
+    SearchingNotification : function(params) {
+
     },
 
     ////////////////////////////////////////////////
@@ -708,7 +735,7 @@ var edges = {
 
         this.draw = function() {
             this.dataSeries = this.dataFunction(this);
-            if (this.renderer.hasOwnProperty("draw")) {
+            if ("draw" in this.renderer) {
                 this.renderer.draw(this);
             } else {
                 this.renderer(this);

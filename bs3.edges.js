@@ -134,55 +134,66 @@ $.extend(edges, {
 
             this.draw = function(edge) {
                 // the facet view object to be appended to the page
-                var thefacetview = '<div id="facetview"><div class="row">';
+                var thefacetview = '<div id="edges-facetview"><div class="row">';
 
                 // if there are facets, give them span3 to exist, otherwise, take up all the space
-                var facets = edge.category("selector");
+                var facets = edge.category("facet");
                 var facetContainers = "";
 
                 if (facets.length > 0) {
                     thefacetview += '<div class="col-md-3">\
-                        <div id="facetview_filters" style="padding-top:45px;">{{FACETS}}</div>\
+                        <div id="edges-facetivew-filters" style="padding-top:45px;">{{FACETS}}</div>\
                     </div>';
-                    thefacetview += '<div class="col-md-9" id="facetview_rightcol">';
+                    thefacetview += '<div class="col-md-9" id="edges-facetview-panel">';
 
                     for (var i = 0; i < facets.length; i++) {
                         facetContainers += '<div id="' + facets[i].id + '"></div>';
                     }
                 } else {
-                    thefacetview += '<div class="col-md-12" id="facetview_rightcol">';
+                    thefacetview += '<div class="col-md-12" id="edges-facetview-panel">';
                 }
 
-                // for the moment, a place to stick the test chart
-                thefacetview += '<div class="col-md-12"><div id="license"></div></div>';
+                // make space for the search options container at the top
+                var controller = edge.category("controller");
+                if (controller.length > 0) {
+                    thefacetview += '<div id="edges-faceview-search-controller"><div id="' + controller[0].id + '"></div></div>';
+                }
 
-                // insert the div within which the results actually will go
-                thefacetview += '<div class="table table-striped table-bordered" id="results" dir="auto"></div>';
+                // make space for the selected filters
+                var selectedFilters = edge.category("selected-filters");
+                if (selectedFilters.length > 0) {
+                    thefacetview += '<div style="margin-top: 20px"> \
+                                        <div class="row">\
+                                            <div class="col-md-12">\
+                                                <div class="btn-toolbar" id="edges-facetview-selected-filters"><div id="' + selectedFilters[0].id + '"></div></div>\
+                                            </div>\
+                                        </div>\
+                                    </div>';
+                }
 
-                /*
-                 // make space for the search options container at the top
-                 thefacetview += '<div class="facetview_search_options_container"></div>';
+                // make space at the top for the page
+                var topPagers = edge.category("top-pager");
+                if (topPagers.length > 0) {
+                    thefacetview += '<div class="edges-facetview-pager" style="margin-top:20px;"><div id="' + topPagers[0].id + '"></div></div>';
+                }
 
-                 // make space for the selected filters
-                 thefacetview += '<div style="margin-top: 20px"><div class="row"><div class="col-md-12"><div class="btn-toolbar" id="facetview_selectedfilters"></div></div></div></div>';
+                // loading notification
+                var loading = edge.category("searching-notification");
+                if (loading.length > 0) {
+                    thefacetview += '<div class="edges-facetview-searching" style="display:none"><div id="' + loading[0].id + '"></div></div>'
+                }
 
-                 // make space at the top for the pager
-                 thefacetview += '<div class="facetview_metadata" style="margin-top:20px;"></div>';
+                // insert the frame within which the results actually will go
+                var results = edge.category("results");
+                if (results.length > 0) {
+                    thefacetview += '<div class="table table-striped table-bordered" id="edges-facetivew-results" dir="auto"><div id="' + results[0].id + '"></div></div>';
+                }
 
-                 // insert loading notification
-                 thefacetview += '<div class="facetview_searching" style="display:none"></div>'
-
-                 // insert the table within which the results actually will go
-                 thefacetview += '<div class="table table-striped table-bordered" id="facetview_results" dir="auto"></div>';
-
-                 // make space at the bottom for the pager
-                 thefacetview += '<div class="facetview_metadata"></div>';
-
-                 // debug window near the bottom
-                 if (edge.debug) {
-                 thefacetview += '<div class="facetview_debug" style="display:none"><textarea style="width: 95%; height: 300px"></textarea></div>'
-                 }
-                 */
+                // make space at the bottom for the pager
+                var bottomPagers = edge.category("bottom-pager");
+                if (bottomPagers.length > 0) {
+                    thefacetview += '<div class="edges-facetview-pager" style="margin-top:20px;"><div id="' + bottomPagers[0].id + '"></div></div>';
+                }
 
                 // close off all the big containers and return
                 thefacetview += '</div></div></div>';
@@ -209,7 +220,7 @@ $.extend(edges, {
 
         newBasicTermSelectorRenderer : function(params) {
             if (!params) { params = {} }
-            edges.bs3.BasicTermSelectorRenderer.prototype = edges.Renderer(params);
+            edges.bs3.BasicTermSelectorRenderer.prototype = edges.newRenderer(params);
             return new edges.bs3.BasicTermSelectorRenderer(params);
         },
         BasicTermSelectorRenderer : function(params) {
@@ -259,7 +270,7 @@ $.extend(edges, {
 
         newSearchControllerRenderer : function(params) {
             if (!params) { params = {} }
-            edges.bs3.SearchControllerRenderer.prototype = edges.Renderer(params);
+            edges.bs3.SearchControllerRenderer.prototype = edges.newRenderer(params);
             return new edges.bs3.SearchControllerRenderer(params);
         },
         SearchControllerRenderer : function(params) {
@@ -277,7 +288,7 @@ $.extend(edges, {
 
         newMultiDateRangeRenderer : function(params) {
             if (!params) { params = {} }
-            edges.bs3.MultiDateRangeRenderer.prototype = edges.Renderer(params);
+            edges.bs3.MultiDateRangeRenderer.prototype = edges.newRenderer(params);
             return new edges.bs3.MultiDateRangeRenderer(params);
         },
         MultiDateRangeRenderer : function(params) {

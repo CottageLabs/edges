@@ -141,8 +141,50 @@ jQuery(document).ready(function($) {
 
     o2 = q2.objectify();
 
+    //////////////////////////////////////////////////
+    // this generates the basic facetview style page
+
+    e2 = edges.newEdge({
+        selector: "#facetview",
+        template: edges.bs3.newFacetview(),
+        search_url: "http://localhost:9200/allapc/institutional/_search",
+        components : [
+            edges.newBasicTermSelector({
+                id: "institution",
+                field: "monitor.jm:apc.name.exact",
+                display: "Institution",
+                size: 10,
+                category: "facet"
+            }),
+            edges.newSearchController({
+                id: "search-controller",
+                category: "controller"
+            }),
+            edges.newSelectedFilters({
+                id: "selected-filters",
+                category: "selected-filters"
+            }),
+            edges.newPager({
+                id: "top-pager",
+                category: "top-pager"
+            }),
+            edges.newPager({
+                id: "bottom-pager",
+                category: "bottom-pager"
+            }),
+            edges.newSearchingNotification({
+                id: "searching-notification",
+                category: "searching-notification"
+            }),
+            edges.newResultsDisplay({
+                id: "results",
+                category: "results"
+            })
+        ]
+    });
+
     ///////////////////////////////////////////////////
-    // this stuff generates the demo report
+    // this stuff generates the demo apc report
 
     function earliestDate() {
         return new Date(0);
