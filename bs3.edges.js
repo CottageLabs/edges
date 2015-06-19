@@ -133,6 +133,8 @@ $.extend(edges, {
             this.fadeIn = params.fadeIn || 800;
 
             this.draw = function(edge) {
+                this.edge = edge;
+
                 // the facet view object to be appended to the page
                 var thefacetview = '<div id="edges-facetview"><div class="row">';
 
@@ -201,6 +203,21 @@ $.extend(edges, {
                 thefacetview = thefacetview.replace(/{{FACETS}}/g, facetContainers);
 
                 edge.context.html(thefacetview);
+
+                //////////////////////////////////////////////
+                // now set up the various event bindings
+
+                // before executing a query, show the loading function
+                edge.context.bind("edges:pre-query", edges.eventClosure(this, "showSearching"));
+                edge.context.bind("edges:pre-render", edges.eventClosure(this, "hideSearching"));
+            };
+
+            this.showSearching = function() {
+                this.edge.jq(".edges-facetview-searching").show();
+            };
+
+            this.hideSearching = function() {
+                this.edge.jq(".edges-facetview-searching").hide();
             }
         },
 
@@ -209,8 +226,8 @@ $.extend(edges, {
 
             var results = "";
             if (edge.hasHits()) {
-                for (var i = 0; i < edge.state.result.data.hits.hits.length; i++) {
-                    var hit = edge.state.result.data.hits.hits[i];
+                for (var i = 0; i < edge.result.data.hits.hits.length; i++) {
+                    var hit = edge.result.data.hits.hits[i];
                     results += '<div class="row"><div class="col-md-12">' + hit._id + '</div></div>';
                 }
             }
@@ -231,9 +248,9 @@ $.extend(edges, {
 
                 var edge = ts.edge;
                 var results = "Loading...";
-                if (edge.state.result) {
+                if (edge.result) {
                     results = "";
-                    var buckets = edge.state.result.data.aggregations[ts.id].buckets;
+                    var buckets = edge.result.data.aggregations[ts.id].buckets;
                     for (var i = 0; i < buckets.length; i++) {
                         var bucket = buckets[i];
                         results += '<a href="#" class="edges_bs3_term_selector_term" data-key="' + edges.escapeHtml(bucket.key) + '">' +
@@ -323,11 +340,11 @@ $.extend(edges, {
                     <label for="' + this.toId + '">To</label>\
                     <input class="multi-date-range-input" type="text" name="' + this.toId + '" id="' + this.toId + '" placeholder="latest date">';
 
-                this.dre.edge.jq("#" + dre.id).html(frag);
+                this.dre.jq("#" + dre.id).html(frag);
 
-                this.selectJq = this.dre.edge.jq("#" + this.selectId);
-                this.fromJq = this.dre.edge.jq("#" + this.fromId);
-                this.toJq = this.dre.edge.jq("#" + this.toId);
+                this.selectJq = this.dre.jq("#" + this.selectId);
+                this.fromJq = this.dre.jq("#" + this.fromId);
+                this.toJq = this.dre.jq("#" + this.toId);
 
                 // populate and set the bindings on the date selectors
                 this.fromJq.datepicker({

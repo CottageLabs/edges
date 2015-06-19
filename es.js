@@ -166,6 +166,11 @@ var es = {
             return this.must.length > 0 || this.should.length > 0 || this.mustNot.length > 0
         };
 
+        this.extend = function(source) {
+            // extend this query with the data from the passed query.
+            // existing values in this query always take precedence
+        };
+
         this.objectify = function(params) {
             if (!params) {
                 params = {};

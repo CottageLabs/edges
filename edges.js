@@ -8,6 +8,13 @@ var edges = {
         return new edges.Edge(params);
     },
     Edge : function(params) {
+
+        /////////////////////////////////////////////
+        // parameters that can be set via params arg
+
+        // the jquery selector for the element where the edge will be deployed
+        this.selector = params.selector || "body";
+
         // the base search url which will respond to elasticsearch queries.  Generally ends with _search
         this.search_url = params.search_url;
 
@@ -25,20 +32,43 @@ var edges = {
         // and should queries be retrieved from the url on init
         this.manageUrl = params.manageUrl || false;
 
+        // query parameter in which the query for this edge instance will be stored
+        this.urlQuerySource = params.urlQuerySource || "source";
 
+        // template object that will be used to draw the frame for the edge.  May be left
+        // blank, in which case the edge will assume that the elements are already rendered
+        // on the page by the caller
+        this.template = params.template || false;
+
+        // list of all the components that are involved in this edge
         this.components = params.components || [];
 
-        this.selector = params.selector;
-        this.renderPacks = params.renderPacks || [edges.bs3, edges.nvd3];
-        this.template = params.template;
-        this.debug = params.debug || false;
+        // render packs to use to source automatically assigned rendering objects
+        this.renderPacks = params.renderPacks || [edges.bs3, edges.nvd3, edges.highcharts];
 
         /////////////////////////////////////////////
-        // operation status
+        // operational properties
 
-        this.state = edges.newState();
+        // the query most recently read from the url
+        this.urlQuery = false;
 
+        // fragment identifier to be appended to any url generated
+        this.urlFragmentIdentifier = false;
+
+        // the short url for this page
+        this.shortUrl = false;
+
+        // the last primary ES query object that was executed
+        this.currentQuery = false;
+
+        // the last result object from the ES layer
+        this.results = false;
+
+        // if the search is currently executing
         this.searching = false;
+
+        // jquery object that represents the selected element
+        this.context = false;
 
         // at the bottom of this constructor, we'll call this function
         this.startup = function() {
@@ -47,6 +77,17 @@ var edges = {
 
             // trigger the edges:init event
             this.context.trigger("edges:pre-init");
+
+            // if we are to manage the URL, attempt to pull a query from it
+            if (this.manageUrl) {
+                var urlParams = this.getUrlVars();
+                if (this.urlQuerySource in urlParams) {
+                    this.urlQuery = es.newQuery({raw : urlParams[this.urlQuerySource]});
+                }
+                if (urlParams.url_fragment_identifier) {
+                    this.urlFragmentIdentifier = urlParams.url_fragment_identifier;
+                }
+            }
 
             // render the template if necessary
             if (this.template) {
@@ -72,6 +113,98 @@ var edges = {
             this.doQuery();
         };
 
+        ////////////////////////////////////////////////////
+        // functions to handle the query lifecycle
+
+        // execute the query and all the associated workflow
+        this.doQuery = function() {
+            // if a search is currently executing, don't do anything, else turn it on
+            // FIXME: should we queue them up?
+            if (this.searching) {
+                return
+            }
+            this.searching = true;
+
+            // invalidate the short url
+            this.shortUrl = false;
+
+            // pre query event
+            this.context.trigger("edges:pre-query");
+
+            // start a new query from the base query
+            this.currentQuery = $.extend(true, {}, this.baseQuery);
+
+            // if a url query is specified, then extend the base query with it, and then
+            // unset the url query, so it isn't used again
+            if (this.urlQuery) {
+                this.currentQuery.extend(this.urlQuery);
+                this.urlQuery = false;
+            }
+
+            // request the components to contribute to the query
+            for (var i = 0; i < this.components.length; i++) {
+                var component = this.components[i];
+                component.contrib(this.currentQuery);
+            }
+
+            // if we are managing the url space, use pushState to set it
+            if (this.manageUrl) {
+                if ('pushState' in window.history) {
+                    var q = JSON.stringify(this.currentQuery.objectify());
+                    var querypart = "?" + this.urlQuerySource + "=" + encodeURIComponent(q);
+                    window.history.pushState("", "", querypart);
+                }
+            }
+
+            // issue the query to elasticsearch
+            es.doQuery({
+                search_url: this.search_url,
+                queryobj: this.currentQuery.objectify(),
+                datatype: this.datatype,
+                success: edges.objClosure(this, "querySuccess", ["result"]),
+                error: edges.objClosure(this, "queryFail"),
+                complete: edges.objClosure(this, "queryComplete")
+            })
+        };
+
+        this.queryFail = function(params) {
+            this.context.trigger("edges:query-fail");
+        };
+
+        this.querySuccess = function(params) {
+            this.result = params.result;
+
+            // success trigger
+            this.context.trigger("edges:query-success");
+
+            // ask the components to prepare themselves based on the latest
+            // results
+            for (var i = 0; i < this.components.length; i++) {
+                var component = this.components[i];
+                component.populate()
+            }
+        };
+
+        this.queryComplete = function() {
+            // pre-render trigger
+            this.context.trigger("edges:pre-render");
+
+            for (var i = 0; i < this.components.length; i++) {
+                var component = this.components[i];
+                component.draw();
+            }
+
+            // post render trigger
+            this.context.trigger("edges.post-render");
+
+            // searching has completed, so flip the switch back
+            this.searching = false;
+        };
+
+        ////////////////////////////////////////////////
+        // various utility functions
+
+        // return components in the requested category
         this.category = function(cat) {
             var comps = [];
             for (var i = 0; i < this.components.length; i++) {
@@ -83,58 +216,10 @@ var edges = {
             return comps;
         };
 
-        this.doQuery = function() {
-            // pre query event
-            this.context.trigger("edges:pre-query");
-
-            // start a new query in the state
-            this.state.query = $.extend(true, {}, this.baseQuery);
-
-            // request the components to contribute to the query
-            for (var i = 0; i < this.components.length; i++) {
-                var component = this.components[i];
-                component.contrib(this.state.query);
-            }
-
-            // issue the query to elasticsearch
-            es.doQuery({
-                search_url: this.search_url,
-                queryobj: this.state.query.objectify(),
-                datatype: this.datatype,
-                success: edges.objClosure(this, "querySuccess", ["result"]),
-                complete: edges.objClosure(this, "queryComplete")
-            })
-        };
-
-        this.querySuccess = function(params) {
-            this.state.result = params.result;
-        };
-
-        this.queryComplete = function() {
-            // post-query trigger
-            this.context.trigger("edges:post-query");
-
-            for (var i = 0; i < this.components.length; i++) {
-                var component = this.components[i];
-                component.populate()
-            }
-
-            // pre-render trigger
-            this.context.trigger("edges:pre-render");
-
-            for (var i = 0; i < this.components.length; i++) {
-                var component = this.components[i];
-                component.draw();
-            }
-
-            // post render trigger
-            this.context.trigger("edges.post-render");
-        };
-
         this.getRenderPackFunction = function(fname) {
             for (var i = 0; i < this.renderPacks.length; i++) {
                 var rp = this.renderPacks[i];
-                if (rp.hasOwnProperty(fname)) {
+                if (rp && rp.hasOwnProperty(fname)) {
                     return rp[fname];
                 }
             }
@@ -144,7 +229,7 @@ var edges = {
         this.getRenderPackObject = function(oname, params) {
             for (var i = 0; i < this.renderPacks.length; i++) {
                 var rp = this.renderPacks[i];
-                if (rp.hasOwnProperty(oname)) {
+                if (rp && rp.hasOwnProperty(oname)) {
                     return rp[oname](params);
                 }
             }
@@ -152,28 +237,72 @@ var edges = {
         };
 
         this.hasHits = function() {
-            return this.state.result && this.state.result.data.hits && this.state.result.data.hits.hits.length > 0;
+            return this.result && this.result.data.hits && this.result.data.hits.hits.length > 0;
         };
 
         // get the jquery object for the desired element, in the correct context
+        // you should ALWAYS use this, rather than the standard jquery $ object
         this.jq = function(selector) {
             return $(selector, this.context);
+        };
+
+        /////////////////////////////////////////////////////
+        // URL management functions
+
+        this.getUrlVars = function() {
+            var params = {};
+            var url = window.location.href;
+            var anchor = false;
+
+            // break the anchor off the url
+            if (url.indexOf("#") > -1) {
+                anchor = url.slice(url.indexOf('#'));
+                url = url.substring(0, url.indexOf('#'));
+            }
+
+            // extract and split the query args
+            var args = url.slice(url.indexOf('?') + 1).split('&');
+
+            for (var i = 0; i < args.length; i++) {
+                var kv = args[i].split('=');
+                if (kv.length === 2) {
+                    var val = decodeURIComponent(kv[1]);
+                    if (val[0] == "[" || val[0] == "{") {
+                        // if it looks like a JSON object in string form...
+                        // remove " (double quotes) at beginning and end of string to make it a valid
+                        // representation of a JSON object, or the parser will complain
+                        val = val.replace(/^"/,"").replace(/"$/,"");
+                        val = JSON.parse(val);
+                    }
+                    params[kv[0]] = val;
+                }
+            }
+
+            // record the fragment identifier if required
+            if (anchor) {
+                params['url_fragment_identifier'] = anchor;
+            }
+
+            return params;
+        };
+
+        this.sharableUrl = function() {
+            var source = elasticSearchQuery({"options" : options, "include_facets" : options.include_facets_in_url, "include_fields" : options.include_fields_in_url})
+            var querypart = "?source=" + encodeURIComponent(serialiseQueryObject(source))
+            include_fragment = include_fragment === undefined ? true : include_fragment
+            if (include_fragment) {
+                var fragment_identifier = options.url_fragment_identifier ? options.url_fragment_identifier : "";
+                querypart += fragment_identifier
+            }
+            if (query_part_only) {
+                return querypart
+            }
+            return 'http://' + window.location.host + window.location.pathname + querypart
         };
 
         /////////////////////////////////////////////
         // final bits of construction
         this.startup();
-    },
-
-    // running state
-
-    newState : function(params) {
-        if (!params) { params = {} }
-        return new edges.State(params);
-    },
-    State : function(params) {
-        this.query = es.newQuery();
-        this.result = undefined;
     },
 
     /////////////////////////////////////////////
@@ -218,6 +347,11 @@ var edges = {
 
         this.contrib = function(query) {};
         this.populate = function() {};
+
+        // convenience method for any renderer rendering a component
+        this.jq = function(selector) {
+            return this.edge.jq(selector);
+        }
     },
 
     newSelector : function(params) {
@@ -757,12 +891,12 @@ var edges = {
             return function (ch) {
                 // for each aggregation, get the results and add them to the data series
                 var data_series = [];
-                if (!ch.edge.state.result) {
+                if (!ch.edge.result) {
                     return data_series;
                 }
                 for (var i = 0; i < useAggregations.length; i++) {
                     var agg = useAggregations[i];
-                    var buckets = ch.edge.state.result.data.aggregations[agg].buckets;
+                    var buckets = ch.edge.result.data.aggregations[agg].buckets;
 
                     var series = {};
                     series["key"] = seriesKeys[agg];
@@ -789,7 +923,7 @@ var edges = {
             return function(ch) {
                 // for each aggregation, get the results and add them to the data series
                 var data_series = [];
-                if (!ch.edge.state.result) {
+                if (!ch.edge.result) {
                     return data_series;
                 }
 
@@ -804,7 +938,7 @@ var edges = {
                         series["key"] = seriesKeys[agg + " " + seriesStat];
                         series["values"] = [];
 
-                        var buckets = ch.edge.state.result.data.aggregations[parts[0]].buckets;
+                        var buckets = ch.edge.result.data.aggregations[parts[0]].buckets;
                         for (var k = 0; k < buckets.length; k++) {
                             var stats = buckets[k][parts[1]];
                             var key = buckets[k].key;
