@@ -241,47 +241,198 @@ $.extend(edges, {
             return new edges.bs3.BasicTermSelectorRenderer(params);
         },
         BasicTermSelectorRenderer : function(params) {
+
+            ///////////////////////////////////////
+            // parameters that can be passed in
+
+            // whether to hide or just disable the facet if below deactivate threshold
+            this.hideInactive = params.hideInactive || false;
+
+            // should the facet sort/size controls be shown?
+            this.controls = params.controls || true;
+
+            // whether the facet should be open or closed
+            // can be initialised and is then used to track internal state
+            this.open = params.open || false;
+
+            // whether to display selected filters
+            this.showSelected = params.showSelected || true;
+
+            // sort cycle to use
+            this.sortCycle = params.sortCycle || ["count desc", "count asc", "term desc", "term asc"];
+
+            ///////////////////////////////////////
+            // internal state
+
             this.ts = false;
 
             this.draw = function(ts) {
                 this.ts = ts;
-
                 var edge = ts.edge;
+
+                // this is what's displayed in the body if there are no results
                 var results = "Loading...";
-                if (edge.result) {
+
+                // render a list of the values
+                if (this.ts.values.length > 0) {
                     results = "";
-                    var buckets = edge.result.data.aggregations[ts.id].buckets;
-                    for (var i = 0; i < buckets.length; i++) {
-                        var bucket = buckets[i];
-                        results += '<a href="#" class="edges_bs3_term_selector_term" data-key="' + edges.escapeHtml(bucket.key) + '">' +
-                            edges.escapeHtml(bucket.key) + "</a> (" + bucket.doc_count + ")<br>";
+
+                    // get the terms of the filters that have already been set
+                    var filterTerms = [];
+                    for (var i = 0; i < ts.filters.length; i++) {
+                        filterTerms.push(ts.filters[i].term.toString());
+                    }
+
+                    // render each value, if it is not also a filter that has been set
+                    for (var i = 0; i < this.ts.values.length; i++) {
+                        var val = this.ts.values[i];
+                        if ($.inArray(val.term.toString(), filterTerms) === -1) {   // the toString() helps us normalise other values, such as integers
+                            results += '<div class="edges-bs3-basic-term-selector-result"><a href="#" class="edges-bs3-basic-term-selector-value" data-key="' + edges.escapeHtml(val.term) + '">' +
+                                edges.escapeHtml(val.display) + "</a> (" + val.count + ")</div>";
+                        }
                     }
                 }
 
-                var frag = '<div class="row"> \
-                            <div class="col-md-12">\
-                                <strong>{{display}}</strong>\
+                // if we want to display the controls, render them
+                var controlFrag = "";
+                if (this.controls) {
+                    var ordering = '<a href="#" title=""><i class="glyphicon glyphicon-arrow-up"></i></a>';
+                    controlFrag = '<div class="edges-bs3-basic-term-selector-controls" style="display:none" id="edges-bs3-basic-term-selector-controls-{{ID}}"><div class="row"> \
+                        <div class="col-md-12">\
+                            <div class="btn-group">\
+                                <button class="btn btn-default btn-sm" id="edges-bs3-basic-term-selector-size-{{ID}}" title="List Size" href="#">0</button> \
+                                <button class="btn btn-default btn-sm" id="edges-bs3-basic-term-selector-order-{{ID}}" title="List Order" href="#"></button> \
                             </div>\
                         </div>\
-                        <div class="row">\
-                            <div class="col-md-12">\
-                                {{results}}\
-                            </div>\
-                        </div>';
+                    </div></div>';
+                }
 
-                frag = frag.replace(/{{display}}/g, ts.display)
-                            .replace(/{{results}}/g, results);
+                // if we want the active filters, render them
+                var filterFrag = "";
+                if (ts.filters.length > 0 && this.showSelected) {
+                    for (var i = 0; i < ts.filters.length; i++) {
+                        var filt = ts.filters[i];
+                        filterFrag += '<div class="edges-bs3-basic-term-selector-result"><strong>' + edges.escapeHtml(filt.display) + "&nbsp;";
+                        filterFrag += '<a href="#" class="edges-bs3-basic-term-selector-filter-remove" data-key="' + edges.escapeHtml(filt.term) + '">';
+                        filterFrag += '<i class="glyphicon glyphicon-black glyphicon-remove"></i></a>';
+                        filterFrag += "</strong></a></div>";
+                    }
+                }
+
+                // render the overall facet
+                var frag = '<div class="edges-bs3-basic-term-selector-facet">\
+                        <div class="edges-bs3-basic-term-selector-header"><div class="row"> \
+                            <div class="col-md-12">\
+                                <a href="#" id="edges-bs3-basic-term-selector-toggle-{{ID}}"><i class="glyphicon glyphicon-plus"></i>&nbsp;' + ts.display + '</a>\
+                            </div>\
+                        </div></div>\
+                        {{CONTROLS}}\
+                        <div class="row" style="display:none" id="edges-bs3-basic-term-selector-results-{{ID}}">\
+                            <div class="col-md-12">\
+                                {{SELECTED}}\
+                                {{RESULTS}}\
+                            </div>\
+                        </div></div>';
+
+                // substitute in the component parts
+                frag = frag.replace(/{{RESULTS}}/g, results)
+                        .replace(/{{CONTROLS}}/g, controlFrag)
+                        .replace(/{{SELECTED}}/g, filterFrag)
+                        .replace(/{{ID}}/g, this.ts.id);
 
                 // now render it into the page
-                $("#" + ts.id, edge.context).html(frag);
+                ts.jq("#" + ts.id).html(frag);
 
-                // and set up the click bindings
-                $(".edges_bs3_term_selector_term", edge.context).bind("click.edges_bs3_term_selector_term", edges.eventClosure(this, "termSelected"))
+                // trigger all the post-render set-up functions
+                this.setUISize();
+                this.setUISort();
+                this.setUIOpen();
+
+                // set up the click bindings
+                //
+                // for when a value in the facet is selected
+                ts.jq(".edges-bs3-basic-term-selector-value").bind("click.edges-bs3-basic-term-selector", edges.eventClosure(this, "termSelected"));
+                // for when the open button is clicked
+                ts.jq("#edges-bs3-basic-term-selector-toggle-" + ts.id).bind("click.edges-bs3-basic-term-selector", edges.eventClosure(this, "toggleOpen"));
+                // for when a filter remove button is clicked
+                ts.jq(".edges-bs3-basic-term-selector-filter-remove").bind("click.edges-b3-basic-term-selector", edges.eventClosure(this, "removeFilter"));
+                // for when a size change request is made
+                ts.jq("#edges-bs3-basic-term-selector-size-" + ts.id).bind("click.edges-bs3-basic-term-selector", edges.eventClosure(this, "changeSize"));
+                // when a sort order request is made
+                ts.jq("#edges-bs3-basic-term-selector-order-" + ts.id).bind("click.edges-bs3-basic-term-selector", edges.eventClosure(this, "changeSort"));
             };
+
+            /////////////////////////////////////////////////////
+            // UI behaviour functions
+
+            this.setUIOpen = function() {
+                var results = this.ts.jq("#edges-bs3-basic-term-selector-results-" + this.ts.id);
+                var controls = this.ts.jq("#edges-bs3-basic-term-selector-controls-" + this.ts.id);
+                var toggle = this.ts.jq("#edges-bs3-basic-term-selector-toggle-" + this.ts.id);
+                if (this.open) {
+                    toggle.find("i").removeClass("glyphicon-plus").addClass("glyphicon-minus");
+                    controls.show();
+                    results.show();
+                } else {
+                    toggle.find("i").removeClass("glyphicon-minus").addClass("glyphicon-plus");
+                    controls.hide();
+                    results.hide();
+                }
+            };
+
+            this.setUISize = function() {
+                this.ts.jq("#edges-bs3-basic-term-selector-size-" + this.ts.id).html(this.ts.size);
+            };
+
+            this.setUISort = function() {
+                var el = this.ts.jq("#edges-bs3-basic-term-selector-order-" + this.ts.id);
+                if (this.ts.orderBy === "count") {
+                    if (this.ts.orderDir === "asc") {
+                        el.html('count <i class="glyphicon glyphicon-arrow-down"></i>');
+                    } else if (this.ts.orderDir === "desc") {
+                        el.html('count <i class="glyphicon glyphicon-arrow-up"></i>');
+                    }
+                } else if (this.ts.orderBy === "term") {
+                    if (this.ts.orderDir === "asc") {
+                        el.html('a-z <i class="glyphicon glyphicon-arrow-down"></i>');
+                    } else if (this.ts.orderDir === "desc") {
+                        el.html('a-z <i class="glyphicon glyphicon-arrow-up"></i>');
+                    }
+                }
+            };
+
+            /////////////////////////////////////////////////////
+            // event handlers
 
             this.termSelected = function(element) {
                 var term = $(element).attr("data-key");
                 this.ts.selectTerm(term);
+            };
+
+            this.removeFilter = function(element) {
+                var term = $(element).attr("data-key");
+                this.ts.removeFilter(term);
+            };
+
+            this.toggleOpen = function(element) {
+                this.open = !this.open;
+                this.setUIOpen();
+            };
+
+            this.changeSize = function(element) {
+                var newSize = prompt('Currently displaying ' + this.ts.size +
+                    ' results per page. How many would you like instead?');
+                if (newSize) {
+                    this.ts.changeSize(parseInt(newSize));
+                }
+            };
+
+            this.changeSort = function(element) {
+                var current = this.ts.orderBy + " " + this.ts.orderDir;
+                var idx = $.inArray(current, this.sortCycle);
+                var next = this.sortCycle[(idx + 1) % 4];
+                var bits = next.split(" ");
+                this.ts.changeSort(bits[0], bits[1]);
             };
         },
 

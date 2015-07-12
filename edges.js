@@ -109,12 +109,45 @@ var edges = {
             // trigger the edges:started event
             this.context.trigger("edges:post-init");
 
+            // start a new query from the base query
+            this.currentQuery = $.extend(true, {}, this.baseQuery);
+
+            // if a url query is specified, then extend the base query with it, and then
+            // unset the url query, so it isn't used again
+            if (this.urlQuery) {
+                this.currentQuery.extend(this.urlQuery);
+                this.urlQuery = false;      // FIXME: may no longer need to do this
+            }
+
+            // request the components to contribute to the query
+            for (var i = 0; i < this.components.length; i++) {
+                var component = this.components[i];
+                component.contrib(this.currentQuery);
+            }
+
             // now issue a query
             this.doQuery();
         };
 
+        this.synchronise = function() {
+            // ask the components to synchronise themselves with the latest state
+            for (var i = 0; i < this.components.length; i++) {
+                var component = this.components[i];
+                component.synchronise()
+            }
+        };
+
         ////////////////////////////////////////////////////
         // functions to handle the query lifecycle
+
+        this.cloneQuery = function() {
+            return $.extend(true, {}, this.currentQuery);
+        };
+
+        this.pushQuery = function(query) {
+            // accept the new query as-is
+            this.currentQuery = query;
+        };
 
         // execute the query and all the associated workflow
         this.doQuery = function() {
@@ -131,21 +164,8 @@ var edges = {
             // pre query event
             this.context.trigger("edges:pre-query");
 
-            // start a new query from the base query
-            this.currentQuery = $.extend(true, {}, this.baseQuery);
-
-            // if a url query is specified, then extend the base query with it, and then
-            // unset the url query, so it isn't used again
-            if (this.urlQuery) {
-                this.currentQuery.extend(this.urlQuery);
-                this.urlQuery = false;
-            }
-
-            // request the components to contribute to the query
-            for (var i = 0; i < this.components.length; i++) {
-                var component = this.components[i];
-                component.contrib(this.currentQuery);
-            }
+            // at this point we need to ensure that the baseQuery is always represented
+            this.currentQuery.extend(this.baseQuery);
 
             // if we are managing the url space, use pushState to set it
             if (this.manageUrl) {
@@ -179,10 +199,7 @@ var edges = {
 
             // ask the components to prepare themselves based on the latest
             // results
-            for (var i = 0; i < this.components.length; i++) {
-                var component = this.components[i];
-                component.populate()
-            }
+            this.synchronise();
         };
 
         this.queryComplete = function() {
@@ -195,7 +212,7 @@ var edges = {
             }
 
             // post render trigger
-            this.context.trigger("edges.post-render");
+            this.context.trigger("edges:post-render");
 
             // searching has completed, so flip the switch back
             this.searching = false;
@@ -346,7 +363,7 @@ var edges = {
         };
 
         this.contrib = function(query) {};
-        this.populate = function() {};
+        this.synchronise = function() {};
 
         // convenience method for any renderer rendering a component
         this.jq = function(selector) {
@@ -366,11 +383,8 @@ var edges = {
         // display name for the UI
         this.display = params.display || this.field;
 
-        // whether the facet should be open or closed (initially)
-        this.open = params.open || false;
-
         // whether the facet should be displayed at all (e.g. you may just want the data for a callback)
-        this.hidden = params.hidden || false;
+        this.active = params.active || true;
 
         // whether the facet should be acted upon in any way.  This might be useful if you want to enable/disable facets under different circumstances via a callback
         this.disabled = params.disabled || false;
@@ -408,14 +422,11 @@ var edges = {
         // number of facet terms below which the facet is disabled
         this.deactivateThreshold = params.deactivateThreshold || false;
 
-        // whether to hide or just disable the facet if below deactivate threshold
-        this.hideInactive = params.hideInactive || false;
-
-        // should the facet sort/size controls be shown?
-        this.controls = params.controls || true;
-
         // should the terms facet ignore empty strings in display
         this.ignoreEmptyString = params.ignoreEmptyString || true;
+
+        // should filters defined in the baseQuery be excluded from the selector
+        this.excludePreDefinedFilters = params.excludePreDefinedFilters || true;
 
         // provide a map of values for terms to displayable terms, or a function
         // which can be used to translate terms to displyable values
@@ -431,9 +442,11 @@ var edges = {
         // properties used to store internal state
 
         // filters that have been selected via this component
-        this.filters = params.filters || [];
+        this.filters = [];
 
         // values that the renderer should render
+        // wraps an object (so the list is ordered) which in turn is the
+        // { display: <display>, term: <term>, count: <count> }
         this.values = [];
 
         this.init = function(edge) {
@@ -449,7 +462,9 @@ var edges = {
         this.contrib = function(query) {
             var params = {
                 name: this.id,
-                field: this.field
+                field: this.field,
+                orderBy: this.orderBy,
+                orderDir: this.orderDir
             };
             if (this.size) {
                 params["size"] = this.size
@@ -458,6 +473,9 @@ var edges = {
                 es.newTermsAggregation(params)
             );
 
+            /*
+            // if the new approach to contrib works, then this is no longer needed, unless initial
+            // filters can get passed in
             if (this.filters.length > 0) {
                 for (var i = 0; i < this.filters.length; i++) {
                     query.addMust(es.newTermFilter({
@@ -465,17 +483,148 @@ var edges = {
                         value: this.filters[i]
                     }))
                 }
+            }*/
+        };
+
+        this._translate = function(term) {
+            if (this.valueMap) {
+                if (term in this.valueMap) {
+                    return this.valueMap[term];
+                }
+            } else if (this.valueFunction) {
+                return this.valueFunction(term);
+            }
+            return term;
+        };
+
+        this.synchronise = function() {
+            // if there is a result object, pull and prepare the values
+            this.values = [];
+            if (this.edge.result) {
+                // assign the terms and counts from the aggregation
+                var buckets = this.edge.result.buckets(this.id);
+
+                if (buckets.length < this.deactivateThreshold) {
+                    this.active = false
+                } else {
+                    this.active = true;
+                }
+
+                // list all of the pre-defined filters for this field from the baseQuery
+                var predefined = [];
+                if (this.excludePreDefinedFilters) {
+                    predefined = this.edge.baseQuery.listFilters({
+                            boolType : "must",
+                            field: this.field,
+                            filterType: "term"
+                        });
+                }
+
+                var realCount = 0;
+                for (var i = 0; i < buckets.length; i++) {
+                    var bucket = buckets[i];
+
+                    // ignore empty strings
+                    if (this.ignoreEmptyString && bucket.key === "") {
+                        continue;
+                    }
+
+                    // ignore pre-defined filters
+                    if (this.excludePreDefinedFilters) {
+                        var exclude = false;
+                        for (var j = 0; j < predefined.length; j++) {
+                            var f = predefined[j];
+                            if (bucket.key === f.value) {
+                                exclude = true;
+                                break;
+                            }
+                        }
+                        if (exclude) {
+                            continue;
+                        }
+                    }
+
+                    // if we get to here we're going to add this to the values, so
+                    // increment the real count
+                    realCount++;
+
+                    // we must cut off at the set size, as there may be more
+                    // terms that we care about
+                    if (realCount > this.size) {
+                        break;
+                    }
+
+                    // translate the term if necessary
+                    var key = this._translate(bucket.key);
+
+                    // store the original value and the translated value plus the count
+                    var obj = {display: key, term: bucket.key, count: bucket.doc_count};
+                    this.values.push(obj);
+                }
+            }
+
+            // extract all the filter values that pertain to this selector
+            var filters = this.edge.currentQuery.listFilters({
+                boolType : "must",
+                field : this.field,
+                filterType : "term"
+            });
+
+            this.filters = [];
+            for (var i = 0; i < filters.length; i++) {
+                var val = filters[i].value;
+                val = this._translate(val);
+                this.filters.push({display: val, term: filters[i].value});
             }
         };
 
-        this.populate = function() {
-            // set the values
-        };
-
         this.selectTerm = function(term) {
-            this.filters.push(term);
+            var nq = this.edge.cloneQuery();
+            nq.addMust(es.newTermFilter({
+                field: this.field,
+                value: term
+            }));
+            nq.from = 0;
+            this.edge.pushQuery(nq);
             this.edge.doQuery();
         };
+
+        this.removeFilter = function(term) {
+            var nq = this.edge.cloneQuery();
+            nq.removeMust({
+                filterType: "term",
+                field: this.field,
+                value: term
+            });
+            nq.from = 0;
+            this.edge.pushQuery(nq);
+            this.edge.doQuery();
+        };
+
+        this.changeSize = function(newSize) {
+            this.size = newSize;
+
+            var nq = this.edge.cloneQuery();
+            var agg = nq.getAggregation({
+                name: this.id
+            });
+            agg.size = this.size;
+            this.edge.pushQuery(nq);
+            this.edge.doQuery();
+        };
+
+        this.changeSort = function(orderBy, orderDir) {
+            this.orderBy = orderBy;
+            this.orderDir = orderDir;
+
+            var nq = this.edge.cloneQuery();
+            var agg = nq.getAggregation({
+                name: this.id
+            });
+            agg.setOrdering(this.orderBy, this.orderDir);
+            this.edge.pushQuery(nq);
+            this.edge.doQuery();
+        }
     },
 
     newBasicRangeSelector : function(params) {
@@ -496,7 +645,7 @@ var edges = {
 
         this.values = [];
 
-        this.populate = function() {
+        this.synchronise = function() {
             // set the values
         };
     },
@@ -526,7 +675,7 @@ var edges = {
 
         this.values = [];
 
-        this.populate = function() {
+        this.synchronise = function() {
             // set the values
         };
     },
@@ -556,7 +705,7 @@ var edges = {
 
         this.values = [];
 
-        this.populate = function() {
+        this.synchronise = function() {
             // set the values
         };
     },
@@ -596,14 +745,19 @@ var edges = {
             // set the initial field
             this.currentField = this.fields[0].field;
 
+            // track the last field, for query building purposes
+            this.lastField = false;
+
             // load the dates once at the init - this means they can't
             // be responsive to the filtering unless they are loaded
             // again at a later date
             this.loadDates();
         };
 
+        /*
+        // new approach means contrib is no longer needed for this component
         this.contrib = function(query) {
-            // only contrib if there's anything to actuall do
+            // only contrib if there's anything to actually do
             if (!this.currentField || (!this.toDate && !this.fromDate)) {
                 return;
             }
@@ -617,8 +771,10 @@ var edges = {
             }
             query.addMust(es.newRangeFilter(range));
         };
+        */
 
         this.changeField = function(newField) {
+            this.lastField = this.currentField;
             if (newField !== this.currentField) {
                 this.touched = true;
                 this.currentField = newField;
@@ -639,9 +795,39 @@ var edges = {
             }
         };
 
+        /*
+        // see new version below for new approach to contrib
         this.triggerSearch = function() {
             if (this.touched) {
                 this.touched = false;
+                this.edge.doQuery();
+            }
+        };
+        */
+        this.triggerSearch = function() {
+            if (this.touched) {
+                this.touched = false;
+                var nq = this.edge.cloneQuery();
+
+                // remove the old filter
+                nq.removeMust({filterType: "range", field: this.lastField});
+
+                // only contrib if there's anything to actually do
+                if (!this.currentField || (!this.toDate && !this.fromDate)) {
+                    return;
+                }
+
+                var range = {field : this.currentField};
+                if (this.toDate) {
+                    range["lt"] = this.toDate;
+                }
+                if (this.fromDate) {
+                    range["gte"] = this.fromDate;
+                }
+                nq.addMust(es.newRangeFilter(range));
+
+                // push the new query and trigger the search
+                this.edge.pushQuery(nq);
                 this.edge.doQuery();
             }
         };

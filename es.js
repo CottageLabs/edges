@@ -137,6 +137,15 @@ var es = {
         this.removeFacet = function() {};
         this.clearFacets = function() {};
 
+        this.getAggregation = function(params) {
+            var name = params.name;
+            for (var i = 0; i < this.aggs.length; i++) {
+                var a = this.aggs[i];
+                if (a.name === name) {
+                    return a;
+                }
+            }
+        };
         this.addAggregation = function(agg) {
             for (var i = 0; i < this.aggs.length; i++) {
                 if (this.aggs[i].name === agg.name) {
@@ -151,7 +160,26 @@ var es = {
         this.addMust = function(filter) {
             this.must.push(filter);
         };
-        this.removeMust = function() {};
+        this.removeMust = function(params) {
+            var filterType = params.type || "term";
+            var field = params.field || false;
+            var value = params.value || undefined;
+
+            var remove = -1;
+            for (var i = 0; i < this.must.length; i++) {
+                var m = this.must[i];
+                if (m.field === field && m.type_name === filterType) {
+                    if (value === undefined || (value !== undefined && m.value === value)) {
+                        remove = i;
+                        break;
+                    }
+                }
+            }
+            if (remove > -1) {
+                this.must.splice(remove, 1);
+            }
+        };
+
         this.clearMust = function() {};
 
         this.addShould = function() {};
@@ -162,9 +190,41 @@ var es = {
         this.removeMustNot = function() {};
         this.removeMustNot = function() {};
 
+        /////////////////////////////////////////////////
+        // interrogative functions
+
         this.hasFilters = function() {
             return this.must.length > 0 || this.should.length > 0 || this.mustNot.length > 0
         };
+
+        this.listFilters = function(params) {
+            var boolType = params.boolType || "must";
+            var field = params.field || false;
+            var filterType = params.filterType || "term";
+
+            var filterList = [];
+
+            // first get the boolean filter field that we're going to look in
+            var bool = [];
+            if (boolType === "must") {
+                bool = this.must;
+            }
+
+            // go through each one looking for a matching type and field
+            for (var i = 0; i < bool.length; i++) {
+                var f = bool[i];
+                if (f.type_name && f.type_name === filterType) {
+                    if (f.field === field) {
+                        filterList.push(f);
+                    }
+                }
+            }
+
+            return filterList;
+        };
+
+        ////////////////////////////////////////////////
+        // create, parse, serialise functions
 
         this.extend = function(source) {
             // extend this query with the data from the passed query.
@@ -570,6 +630,7 @@ var es = {
         this.field = params.field || false;
         this.size = params.size || 10;
 
+        // set the ordering for the first time
         this.orderBy = "_count";
         if (params.orderBy) {
             this.orderBy = params.orderBy;
@@ -577,8 +638,16 @@ var es = {
                 this.orderBy = "_" + this.orderBy;
             }
         }
-
         this.orderDir = params.orderDir || "desc";
+
+        // provide a method to set and normalise the ordering in future
+        this.setOrdering = function(orderBy, orderDir) {
+            this.orderBy = orderBy;
+            if (this.orderBy[0] !== "_") {
+                this.orderBy = "_" + this.orderBy;
+            }
+            this.orderDir = orderDir;
+        };
 
         this.objectify = function() {
             var body = {field: this.field, size: this.size, order: {}};
@@ -741,12 +810,23 @@ var es = {
     ///////////////////////////////////////////////////
     // Filters
 
+    newFilter : function(params) {
+        if (!params) { params = {} }
+        return new es.Filter(params);
+    },
+    Filter : function(params) {
+        this.field = params.field;
+        this.type_name = params.type_name;
+    },
+
     newTermFilter : function(params) {
         if (!params) { params = {} }
+        params.type_name = "term";
+        es.TermFilter.prototype = es.newFilter(params);
         return new es.TermFilter(params);
     },
     TermFilter : function(params) {
-        this.field = params.field || false;
+        // this.filter handled by superclass
         this.value = params.value || false;
 
         this.objectify = function() {
@@ -770,10 +850,12 @@ var es = {
 
     newTermsFilter : function(params) {
         if (!params) { params = {} }
+        params.type_name = "terms";
+        es.TermsFilter.prototype = es.newFilter(params);
         return new es.TermsFilter(params);
     },
     TermsFilter : function(params) {
-        this.field = params.field || false;
+        // this.field handled by superclass
         this.values = params.values || [];
         this.execution = params.execution || false;
 
@@ -804,10 +886,12 @@ var es = {
 
     newRangeFilter : function(params) {
         if (!params) { params = {} }
+        params.type_name = "range";
+        es.RangeFilter.prototype = es.newFilter(params);
         return new es.RangeFilter(params);
     },
     RangeFilter : function(params) {
-        this.field = params.field;
+        // this.field handled by superclass
         this.lt = params.lt;
         this.gte = params.gte;
 
@@ -843,10 +927,12 @@ var es = {
 
     newGeoDistanceRangeFilter : function(params) {
         if (!params) { params = {} }
+        params.type_name = "geo_distance_range";
+        es.GeoDistanceRangeFilter.prototype = es.newFilter(params);
         return new es.GeoDistanceRangeFilter(params);
     },
     GeoDistanceRangeFilter : function(params) {
-        this.field = params.field || false;
+        // this.field is handled by superclass
         this.lt = params.lt || false;
         this.gte = params.gte || false;
         this.lat = params.lat || false;
@@ -922,6 +1008,10 @@ var es = {
     },
     Result : function(params) {
         this.data = params.raw;
+
+        this.buckets = function(agg_name) {
+            return this.data.aggregations[agg_name].buckets;
+        }
     },
 
 
