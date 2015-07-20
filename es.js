@@ -200,7 +200,7 @@ var es = {
         this.listFilters = function(params) {
             var boolType = params.boolType || "must";
             var field = params.field || false;
-            var filterType = params.filterType || "term";
+            var filterType = params.filterType || false;
 
             var filterList = [];
 
@@ -213,11 +213,19 @@ var es = {
             // go through each one looking for a matching type and field
             for (var i = 0; i < bool.length; i++) {
                 var f = bool[i];
-                if (f.type_name && f.type_name === filterType) {
-                    if (f.field === field) {
-                        filterList.push(f);
-                    }
+
+                // if we are filtering by filter type, and the types do not match, ignore this one
+                if (filterType && f.type_name !== filterType) {
+                    continue;
                 }
+
+                // if we are filtering by field name, and the names do not match, ignore this one
+                if (field && f.field !== field) {
+                    continue;
+                }
+
+                // otherwise, this filter matches the criteria
+                filterList.push(f);
             }
 
             return filterList;

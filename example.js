@@ -162,7 +162,10 @@ jQuery(document).ready(function($) {
             }),
             edges.newSelectedFilters({
                 id: "selected-filters",
-                category: "selected-filters"
+                category: "selected-filters",
+                fieldDisplays : {
+                    "monitor.jm:apc.name.exact" : "Institution"
+                }
             }),
             edges.newPager({
                 id: "top-pager",

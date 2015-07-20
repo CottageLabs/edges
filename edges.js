@@ -953,7 +953,84 @@ var edges = {
         return new edges.SelectedFilters(params);
     },
     SelectedFilters : function(params) {
+        //////////////////////////////////////////
+        // configuration options to be passed in
 
+        // mapping from fields to names to display them as
+        // if these come from a facet/selector, they should probably line up
+        this.fieldDisplays = params.fieldDisplays || {};
+
+        // value maps on a per-field basis, to apply to values before display.
+        // if these come from a facet/selector, they should probably be the same maps
+        this.valueMaps = params.valueMaps || {};
+
+        // value functions on a per-field basis, to apply to values before display.
+        // if these come from a facet/selector, they should probably be the same functions
+        this.valueFunctions = params.valueFunctions || {};
+
+        //////////////////////////////////////////
+        // properties used to store internal state
+
+        // active filters to be rendered out
+        // of the form:
+        /*
+        {
+            display: "<field display name>",
+            rel: "<relationship between values (e.g. AND, OR)>",
+            values: [
+                {display: "<display value>", val: "<actual value>"}
+            ]
+        }
+         */
+        this.activeFilters = {};
+
+        this.init = function(edge) {
+            // record a reference to the parent object
+            this.edge = edge;
+
+            // set the renderer from default if necessary
+            if (!this.renderer) {
+                this.renderer = this.edge.getRenderPackObject("newSelectedFiltersRenderer");
+            }
+        };
+
+        this.synchronise = function() {
+            this.activeFilters = {};
+            
+            var musts = this.edge.currentQuery.listFilters({boolType: "must"});
+            for (var i = 0; i < musts.length; i++) {
+                var f = musts[i];
+                if (f.type_name === "term") {
+                    this._synchronise_term(f);
+                } else if (f.type_name === "terms") {
+
+                } else if (f.type_name === "range") {
+
+                } else if (f.type_name === "geo_distance_range") {
+
+                }
+            }
+        };
+
+        this._synchronise_term = function(term) {
+            var display = this.fieldDisplays[term.field] || term.field;
+
+            this.activeFilters[term.field] = {
+                display: display,
+                values: [{val: term.value, display: this._translate(term.field, term.value)}]
+            }
+        };
+
+        this._translate = function(field, value) {
+            if (field in this.valueMaps) {
+                if (value in this.valueMaps[field]) {
+                    return this.valueMaps[field][value];
+                }
+            } else if (field in this.valueFunctions) {
+                return this.valueFunctions[field](value);
+            }
+            return value;
+        };
     },
 
     newPager : function(params) {

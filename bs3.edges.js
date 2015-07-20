@@ -578,6 +578,57 @@ $.extend(edges, {
                     this.toJq.val(to);
                 }
             };
+        },
+
+        newSelectedFiltersRenderer : function(params) {
+            if (!params) { params = {} }
+            edges.bs3.SelectedFiltersRenderer.prototype = edges.newRenderer(params);
+            return new edges.bs3.SelectedFiltersRenderer(params);
+        },
+        SelectedFiltersRenderer : function(params) {
+
+            this.showFilterField = params.showFilterField || true;
+
+            ///////////////////////////////////////
+            // internal state
+
+            this.sf = false;
+
+            this.draw = function(sf) {
+                this.sf = sf;
+                var edge = sf.edge;
+
+                var filters = "";
+
+                var fields = Object.keys(sf.activeFilters);
+                for (var i = 0; i < fields.length; i++) {
+                    var field = fields[i];
+                    var def = sf.activeFilters[field];
+
+                    if (this.showFilterField) {
+                        filters += '<span class="edges-bs3-selected-filters-fieldname"><strong>' + def.display + ':</strong>&nbsp;</span>';
+                    }
+
+                    for (var j = 0; j < def.values.length; j++) {
+                        var val = def.values[j];
+                        filters += '<span class="edges-bs3-selected-filters-value">' + val.display + '</span>&nbsp;';
+
+                        filters += '<a class="edges-bs3-selected-filters-clear" data-field="' + field + '" data-value="' + val.val + '" alt="Remove" title="Remove" href="#">';
+                        filters += '<i class="glyphicon glyphicon-black glyphicon-remove" style="margin-top:1px;"></i>';
+                        filters += "</a>";
+
+                        if (val.rel) {
+                            if (i !== def.values.length - 1) {
+                                filters += '<span class="edges-bs3-selected-filters-rel">&nbsp;<strong>' + val.rel + '</strong>&nbsp;</span>';
+                            }
+                        }
+                    }
+                }
+
+                var frag = '<div class="edges-bs3-selected-filters">{{FILTERS}}</div>';
+                frag = frag.replace(/{{FILTERS}}/g, filters);
+                sf.jq("#" + sf.id).html(frag);
+            }
         }
     }
 });
