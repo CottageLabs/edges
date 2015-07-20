@@ -28,6 +28,15 @@
     background-color: #eeeeee;
 }
 
+.edges-bs3-basic-term-selector-header a {
+    color: #000000;
+}
+
+.edges-bs3-basic-term-selector-header a:hover {
+    font-weight: bold;
+    text-decoration: none;
+}
+
 .edges-bs3-basic-term-selector-controls {
     padding-bottom: 5px;
     padding-left: 5px;
