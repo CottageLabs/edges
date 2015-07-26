@@ -261,20 +261,33 @@ $.extend(edges, {
             // sort cycle to use
             this.sortCycle = params.sortCycle || ["count desc", "count asc", "term desc", "term asc"];
 
-            ///////////////////////////////////////
-            // internal state
+            // namespace to use in the page
+            this.namespace = "edges-bs3-basic-term-selector";
 
-            this.ts = false;
+            this.draw = function() {
+                // for convenient short references ...
+                var ts = this.component;
+                var namespace = this.namespace;
 
-            this.draw = function(ts) {
-                this.ts = ts;
-                var edge = ts.edge;
+                // sort out all the classes that we're going to be using
+                var resultClass = edges.css_classes(namespace, "result", this);
+                var valClass = edges.css_classes(namespace, "value", this);
+                var controlClass = edges.css_classes(namespace, "controls", this);
+                var filterRemoveClass = edges.css_classes(namespace, "filter-remove", this);
+                var facetClass = edges.css_classes(namespace, "facet", this);
+                var headerClass = edges.css_classes(namespace, "header", this);
+
+                var controlId = edges.css_id(namespace, "controls", this);
+                var sizeId = edges.css_id(namespace, "size", this);
+                var orderId = edges.css_id(namespace, "order", this);
+                var toggleId = edges.css_id(namespace, "toggle", this);
+                var resultsId = edges.css_id(namespace, "results", this);
 
                 // this is what's displayed in the body if there are no results
                 var results = "Loading...";
 
                 // render a list of the values
-                if (this.ts.values.length > 0) {
+                if (ts.values.length > 0) {
                     results = "";
 
                     // get the terms of the filters that have already been set
@@ -284,10 +297,10 @@ $.extend(edges, {
                     }
 
                     // render each value, if it is not also a filter that has been set
-                    for (var i = 0; i < this.ts.values.length; i++) {
-                        var val = this.ts.values[i];
+                    for (var i = 0; i < ts.values.length; i++) {
+                        var val = ts.values[i];
                         if ($.inArray(val.term.toString(), filterTerms) === -1) {   // the toString() helps us normalise other values, such as integers
-                            results += '<div class="edges-bs3-basic-term-selector-result"><a href="#" class="edges-bs3-basic-term-selector-value" data-key="' + edges.escapeHtml(val.term) + '">' +
+                            results += '<div class="' + resultClass + '"><a href="#" class="' + valClass + '" data-key="' + edges.escapeHtml(val.term) + '">' +
                                 edges.escapeHtml(val.display) + "</a> (" + val.count + ")</div>";
                         }
                     }
@@ -297,11 +310,11 @@ $.extend(edges, {
                 var controlFrag = "";
                 if (this.controls) {
                     var ordering = '<a href="#" title=""><i class="glyphicon glyphicon-arrow-up"></i></a>';
-                    controlFrag = '<div class="edges-bs3-basic-term-selector-controls" style="display:none" id="edges-bs3-basic-term-selector-controls-{{ID}}"><div class="row"> \
+                    controlFrag = '<div class="' + controlClass + '" style="display:none" id="' + controlId + '"><div class="row"> \
                         <div class="col-md-12">\
                             <div class="btn-group">\
-                                <button class="btn btn-default btn-sm" id="edges-bs3-basic-term-selector-size-{{ID}}" title="List Size" href="#">0</button> \
-                                <button class="btn btn-default btn-sm" id="edges-bs3-basic-term-selector-order-{{ID}}" title="List Order" href="#"></button> \
+                                <button class="btn btn-default btn-sm" id="' + sizeId + '" title="List Size" href="#">0</button> \
+                                <button class="btn btn-default btn-sm" id="' + orderId + '" title="List Order" href="#"></button> \
                             </div>\
                         </div>\
                     </div></div>';
@@ -312,22 +325,22 @@ $.extend(edges, {
                 if (ts.filters.length > 0 && this.showSelected) {
                     for (var i = 0; i < ts.filters.length; i++) {
                         var filt = ts.filters[i];
-                        filterFrag += '<div class="edges-bs3-basic-term-selector-result"><strong>' + edges.escapeHtml(filt.display) + "&nbsp;";
-                        filterFrag += '<a href="#" class="edges-bs3-basic-term-selector-filter-remove" data-key="' + edges.escapeHtml(filt.term) + '">';
+                        filterFrag += '<div class="' + resultClass + '"><strong>' + edges.escapeHtml(filt.display) + "&nbsp;";
+                        filterFrag += '<a href="#" class="' + filterRemoveClass + '" data-key="' + edges.escapeHtml(filt.term) + '">';
                         filterFrag += '<i class="glyphicon glyphicon-black glyphicon-remove"></i></a>';
                         filterFrag += "</strong></a></div>";
                     }
                 }
 
                 // render the overall facet
-                var frag = '<div class="edges-bs3-basic-term-selector-facet">\
-                        <div class="edges-bs3-basic-term-selector-header"><div class="row"> \
+                var frag = '<div class="' + facetClass + '">\
+                        <div class="' + headerClass + '"><div class="row"> \
                             <div class="col-md-12">\
-                                <a href="#" id="edges-bs3-basic-term-selector-toggle-{{ID}}"><i class="glyphicon glyphicon-plus"></i>&nbsp;' + ts.display + '</a>\
+                                <a href="#" id="' + toggleId + '"><i class="glyphicon glyphicon-plus"></i>&nbsp;' + ts.display + '</a>\
                             </div>\
                         </div></div>\
                         {{CONTROLS}}\
-                        <div class="row" style="display:none" id="edges-bs3-basic-term-selector-results-{{ID}}">\
+                        <div class="row" style="display:none" id="' + resultsId + '">\
                             <div class="col-md-12">\
                                 {{SELECTED}}\
                                 {{RESULTS}}\
@@ -337,8 +350,7 @@ $.extend(edges, {
                 // substitute in the component parts
                 frag = frag.replace(/{{RESULTS}}/g, results)
                         .replace(/{{CONTROLS}}/g, controlFrag)
-                        .replace(/{{SELECTED}}/g, filterFrag)
-                        .replace(/{{ID}}/g, this.ts.id);
+                        .replace(/{{SELECTED}}/g, filterFrag);
 
                 // now render it into the page
                 ts.jq("#" + ts.id).html(frag);
@@ -348,27 +360,38 @@ $.extend(edges, {
                 this.setUISort();
                 this.setUIOpen();
 
-                // set up the click bindings
-                //
+                // sort out the selectors we're going to be needing
+                var valueSelector = edges.css_class_selector(namespace, "value", this);
+                var filterRemoveSelector = edges.css_class_selector(namespace, "filter-remove", this);
+                var toggleSelector = edges.css_id_selector(namespace, "toggle", this);
+                var sizeSelector = edges.css_id_selector(namespace, "size", this);
+                var orderSelector = edges.css_id_selector(namespace, "order", this);
+
                 // for when a value in the facet is selected
-                ts.jq(".edges-bs3-basic-term-selector-value").bind("click.edges-bs3-basic-term-selector", edges.eventClosure(this, "termSelected"));
-                // for when the open button is clicked
-                ts.jq("#edges-bs3-basic-term-selector-toggle-" + ts.id).bind("click.edges-bs3-basic-term-selector", edges.eventClosure(this, "toggleOpen"));
+                edges.on(valueSelector, "click", this, "termSelected");
+                 // for when the open button is clicked
+                edges.on(toggleSelector, "click", this, "toggleOpen");
                 // for when a filter remove button is clicked
-                ts.jq(".edges-bs3-basic-term-selector-filter-remove").bind("click.edges-b3-basic-term-selector", edges.eventClosure(this, "removeFilter"));
+                edges.on(filterRemoveSelector, "click", this, "removeFilter");
                 // for when a size change request is made
-                ts.jq("#edges-bs3-basic-term-selector-size-" + ts.id).bind("click.edges-bs3-basic-term-selector", edges.eventClosure(this, "changeSize"));
+                edges.on(sizeSelector, "click", this, "changeSize");
                 // when a sort order request is made
-                ts.jq("#edges-bs3-basic-term-selector-order-" + ts.id).bind("click.edges-bs3-basic-term-selector", edges.eventClosure(this, "changeSort"));
+                edges.on(orderSelector, "click", this, "changeSort");
             };
 
             /////////////////////////////////////////////////////
             // UI behaviour functions
 
             this.setUIOpen = function() {
-                var results = this.ts.jq("#edges-bs3-basic-term-selector-results-" + this.ts.id);
-                var controls = this.ts.jq("#edges-bs3-basic-term-selector-controls-" + this.ts.id);
-                var toggle = this.ts.jq("#edges-bs3-basic-term-selector-toggle-" + this.ts.id);
+                // the selectors that we're going to use
+                var resultsSelector = edges.css_id_selector(this.namespace, "results", this);
+                var controlsSelector = edges.css_id_selector(this.namespace, "controls", this);
+                var toggleSelector = edges.css_id_selector(this.namespace, "toggle", this);
+
+                var results = this.component.jq(resultsSelector);
+                var controls = this.component.jq(controlsSelector);
+                var toggle = this.component.jq(toggleSelector);
+
                 if (this.open) {
                     toggle.find("i").removeClass("glyphicon-plus").addClass("glyphicon-minus");
                     controls.show();
@@ -381,21 +404,24 @@ $.extend(edges, {
             };
 
             this.setUISize = function() {
-                this.ts.jq("#edges-bs3-basic-term-selector-size-" + this.ts.id).html(this.ts.size);
+                var sizeSelector = edges.css_id_selector(this.namespace, "size", this);
+                this.component.jq(sizeSelector).html(this.component.size);
             };
 
             this.setUISort = function() {
-                var el = this.ts.jq("#edges-bs3-basic-term-selector-order-" + this.ts.id);
-                if (this.ts.orderBy === "count") {
-                    if (this.ts.orderDir === "asc") {
+                var orderSelector = edges.css_id_selector(this.namespace, "order", this);
+                var el = this.component.jq(orderSelector);
+
+                if (this.component.orderBy === "count") {
+                    if (this.component.orderDir === "asc") {
                         el.html('count <i class="glyphicon glyphicon-arrow-down"></i>');
-                    } else if (this.ts.orderDir === "desc") {
+                    } else if (this.component.orderDir === "desc") {
                         el.html('count <i class="glyphicon glyphicon-arrow-up"></i>');
                     }
-                } else if (this.ts.orderBy === "term") {
-                    if (this.ts.orderDir === "asc") {
+                } else if (this.component.orderBy === "term") {
+                    if (this.component.orderDir === "asc") {
                         el.html('a-z <i class="glyphicon glyphicon-arrow-down"></i>');
-                    } else if (this.ts.orderDir === "desc") {
+                    } else if (this.component.orderDir === "desc") {
                         el.html('a-z <i class="glyphicon glyphicon-arrow-up"></i>');
                     }
                 }
@@ -405,13 +431,13 @@ $.extend(edges, {
             // event handlers
 
             this.termSelected = function(element) {
-                var term = $(element).attr("data-key");
-                this.ts.selectTerm(term);
+                var term = this.component.jq(element).attr("data-key");
+                this.component.selectTerm(term);
             };
 
             this.removeFilter = function(element) {
-                var term = $(element).attr("data-key");
-                this.ts.removeFilter(term);
+                var term = this.component.jq(element).attr("data-key");
+                this.component.removeFilter(term);
             };
 
             this.toggleOpen = function(element) {
@@ -420,19 +446,19 @@ $.extend(edges, {
             };
 
             this.changeSize = function(element) {
-                var newSize = prompt('Currently displaying ' + this.ts.size +
+                var newSize = prompt('Currently displaying ' + this.component.size +
                     ' results per page. How many would you like instead?');
                 if (newSize) {
-                    this.ts.changeSize(parseInt(newSize));
+                    this.component.changeSize(parseInt(newSize));
                 }
             };
 
             this.changeSort = function(element) {
-                var current = this.ts.orderBy + " " + this.ts.orderDir;
+                var current = this.component.orderBy + " " + this.component.orderDir;
                 var idx = $.inArray(current, this.sortCycle);
                 var next = this.sortCycle[(idx + 1) % 4];
                 var bits = next.split(" ");
-                this.ts.changeSort(bits[0], bits[1]);
+                this.component.changeSort(bits[0], bits[1]);
             };
         },
 
@@ -589,46 +615,74 @@ $.extend(edges, {
 
             this.showFilterField = params.showFilterField || true;
 
-            ///////////////////////////////////////
-            // internal state
+            this.namespace = "edges-bs3-selected-filters";
 
-            this.sf = false;
+            this.draw = function() {
+                // for convenient short references
+                var sf = this.component;
+                var ns = this.namespace;
 
-            this.draw = function(sf) {
-                this.sf = sf;
-                var edge = sf.edge;
+                // sort out the classes we are going to use
+                var fieldClass = edges.css_classes(ns, "field", this);
+                var fieldNameClass = edges.css_classes(ns, "fieldname", this);
+                var valClass = edges.css_classes(ns, "value", this);
+                var removeClass = edges.css_classes(ns, "remove", this);
+                var relClass = edges.css_classes(ns, "rel", this);
+                var containerClass = edges.css_classes(ns, "container", this);
 
                 var filters = "";
 
-                var fields = Object.keys(sf.activeFilters);
+                var fields = Object.keys(sf.mustFilters);
                 for (var i = 0; i < fields.length; i++) {
                     var field = fields[i];
-                    var def = sf.activeFilters[field];
+                    var def = sf.mustFilters[field];
 
+                    filters += '<span class="' + fieldClass + '">';
                     if (this.showFilterField) {
-                        filters += '<span class="edges-bs3-selected-filters-fieldname"><strong>' + def.display + ':</strong>&nbsp;</span>';
+                        filters += '<span class="' + fieldNameClass + '">' + def.display + ':</span>';
                     }
 
                     for (var j = 0; j < def.values.length; j++) {
                         var val = def.values[j];
-                        filters += '<span class="edges-bs3-selected-filters-value">' + val.display + '</span>&nbsp;';
+                        filters += '<span class="' + valClass + '">' + val.display + '</span>';
 
-                        filters += '<a class="edges-bs3-selected-filters-clear" data-field="' + field + '" data-value="' + val.val + '" alt="Remove" title="Remove" href="#">';
-                        filters += '<i class="glyphicon glyphicon-black glyphicon-remove" style="margin-top:1px;"></i>';
+                        filters += '<a class="' + removeClass + '" data-bool="must" data-filter="' + def.filter + '" data-field="' + field + '" data-value="' + val.val + '" alt="Remove" title="Remove" href="#">';
+                        filters += '<i class="glyphicon glyphicon-black glyphicon-remove"></i>';
                         filters += "</a>";
 
-                        if (val.rel) {
-                            if (i !== def.values.length - 1) {
-                                filters += '<span class="edges-bs3-selected-filters-rel">&nbsp;<strong>' + val.rel + '</strong>&nbsp;</span>';
+                        if (def.rel) {
+                            if (j + 1 < def.values.length) {
+                                filters += '<span class="' + relClass + '">' + def.rel + '</span>';
                             }
                         }
                     }
+                    filters += "</span>";
                 }
 
-                var frag = '<div class="edges-bs3-selected-filters">{{FILTERS}}</div>';
-                frag = frag.replace(/{{FILTERS}}/g, filters);
-                sf.jq("#" + sf.id).html(frag);
-            }
+                if (filters !== "") {
+                    var frag = '<div class="' + containerClass + '">{{FILTERS}}</div>';
+                    frag = frag.replace(/{{FILTERS}}/g, filters);
+                    sf.jq("#" + sf.id).html(frag);
+
+                    // click handler for when a filter remove button is clicked
+                    var removeSelector = edges.css_class_selector(ns, "remove", this);
+                    edges.on(removeSelector, "click", this, "removeFilter");
+                } else {
+                    sf.jq("#" + sf.id).html("");
+                }
+            };
+
+            /////////////////////////////////////////////////////
+            // event handlers
+
+            this.removeFilter = function(element) {
+                var el = this.component.jq(element);
+                var field = el.attr("data-field");
+                var value = el.attr("data-value");
+                var bool = el.attr("data-bool");
+                var ft = el.attr("data-filter");
+                this.component.removeFilter(bool, ft, field, value);
+            };
         }
     }
 });

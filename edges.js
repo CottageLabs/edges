@@ -330,6 +330,10 @@ var edges = {
         return new edges.Renderer(params);
     },
     Renderer : function(params) {
+        this.component = params.component || false;
+        this.init = function(component) {
+            this.component = component
+        };
         this.draw = function(component) {}
     },
 
@@ -341,6 +345,7 @@ var edges = {
         this.id = params.id;
         this.renderer = params.renderer;
         this.category = params.category || "none";
+        this.defaultRenderer = params.defaultRenderer || "newRenderer";
 
         this.init = function(edge) {
             // record a reference to the parent object
@@ -348,14 +353,17 @@ var edges = {
 
             // set the renderer from default if necessary
             if (!this.renderer) {
-                this.renderer = this.edge.getRenderPackFunction("renderComponent");
+                this.renderer = this.edge.getRenderPackObject(this.defaultRenderer);
+            }
+            if (this.renderer) {
+                this.renderer.init(this);
             }
         };
 
         this.draw = function() {
             if (this.renderer) {
                 if ("draw" in this.renderer) {
-                    this.renderer.draw(this);
+                    this.renderer.draw();
                 } else {
                     this.renderer(this);
                 }
@@ -438,6 +446,9 @@ var edges = {
         // accurate.  This option tells us by how much.
         this.inflation = params.inflation || 100;
 
+        // override the parent's defaultRenderer
+        this.defaultRenderer = "newBasicTermSelectorRenderer";
+
         //////////////////////////////////////////
         // properties used to store internal state
 
@@ -449,15 +460,17 @@ var edges = {
         // { display: <display>, term: <term>, count: <count> }
         this.values = [];
 
+        /*
         this.init = function(edge) {
             // record a reference to the parent object
             this.edge = edge;
 
             // set the renderer from default if necessary
             if (!this.renderer) {
-                this.renderer = this.edge.getRenderPackObject("newBasicTermSelectorRenderer");
+                this.renderer = this.edge.getRenderPackObject(this.defaultRenderer);
             }
         };
+        */
 
         this.contrib = function(query) {
             var params = {
@@ -472,18 +485,6 @@ var edges = {
             query.addAggregation(
                 es.newTermsAggregation(params)
             );
-
-            /*
-            // if the new approach to contrib works, then this is no longer needed, unless initial
-            // filters can get passed in
-            if (this.filters.length > 0) {
-                for (var i = 0; i < this.filters.length; i++) {
-                    query.addMust(es.newTermFilter({
-                        field: this.field,
-                        value: this.filters[i]
-                    }))
-                }
-            }*/
         };
 
         this._translate = function(term) {
@@ -564,26 +565,35 @@ var edges = {
             }
 
             // extract all the filter values that pertain to this selector
-            var filters = this.edge.currentQuery.listFilters({
-                boolType : "must",
-                field : this.field,
-                filterType : "term"
-            });
 
+            var filters = this.edge.currentQuery.listMust(es.newTermsFilter({field: this.field}));
             this.filters = [];
             for (var i = 0; i < filters.length; i++) {
-                var val = filters[i].value;
-                val = this._translate(val);
-                this.filters.push({display: val, term: filters[i].value});
+                for (var j = 0; j < filters[i].values.length; j++) {
+                    var val = filters[i].values[j];
+                    val = this._translate(val);
+                    this.filters.push({display: val, term: filters[i].values[j]});
+                }
             }
         };
 
         this.selectTerm = function(term) {
             var nq = this.edge.cloneQuery();
-            nq.addMust(es.newTermFilter({
-                field: this.field,
-                value: term
-            }));
+
+            // we're going to use a terms filter, so we can select multiple terms from the same field
+            var filters = nq.listMust(es.newTermsFilter({field: this.field}));
+            if (filters.length == 0) {
+                // create a new terms filter
+                nq.addMust(es.newTermsFilter({
+                    field: this.field,
+                    values: [term]
+                }));
+            } else {
+                filters[0].add_term(term);
+            }
+
+            // reset the search page to the start and then trigger the next query
+            nq.from = 0;
             nq.from = 0;
             this.edge.pushQuery(nq);
             this.edge.doQuery();
@@ -591,11 +601,21 @@ var edges = {
 
         this.removeFilter = function(term) {
             var nq = this.edge.cloneQuery();
-            nq.removeMust({
-                filterType: "term",
-                field: this.field,
-                value: term
-            });
+
+            // first find the term filter and remove the value
+            var filters = nq.listMust(es.newTermsFilter({field: this.field}));
+            for (var i = 0; i < filters.length; i++) {
+                if (filters[i].has_term(term)) {
+                    filters[i].remove_term(term);
+                }
+
+                // if this means the filter no longer has values, remove the filter
+                if (!filters[i].has_terms()) {
+                    nq.removeMust(filters[i]);
+                }
+            }
+
+            // reset the search page to the start and then trigger the next query
             nq.from = 0;
             this.edge.pushQuery(nq);
             this.edge.doQuery();
@@ -968,13 +988,17 @@ var edges = {
         // if these come from a facet/selector, they should probably be the same functions
         this.valueFunctions = params.valueFunctions || {};
 
+        // override the parent's default renderer
+        this.defaultRenderer = params.defaultRenderer || "newSelectedFiltersRenderer";
+
         //////////////////////////////////////////
         // properties used to store internal state
 
         // active filters to be rendered out
-        // of the form:
+        // each of the form:
         /*
         {
+            filter : "<type name of filter used>"
             display: "<field display name>",
             rel: "<relationship between values (e.g. AND, OR)>",
             values: [
@@ -982,28 +1006,18 @@ var edges = {
             ]
         }
          */
-        this.activeFilters = {};
-
-        this.init = function(edge) {
-            // record a reference to the parent object
-            this.edge = edge;
-
-            // set the renderer from default if necessary
-            if (!this.renderer) {
-                this.renderer = this.edge.getRenderPackObject("newSelectedFiltersRenderer");
-            }
-        };
+        this.mustFilters = {};
 
         this.synchronise = function() {
-            this.activeFilters = {};
-            
+            this.mustFilters = {};
+
             var musts = this.edge.currentQuery.listFilters({boolType: "must"});
             for (var i = 0; i < musts.length; i++) {
                 var f = musts[i];
                 if (f.type_name === "term") {
                     this._synchronise_term(f);
                 } else if (f.type_name === "terms") {
-
+                    this._synchronise_terms(f);
                 } else if (f.type_name === "range") {
 
                 } else if (f.type_name === "geo_distance_range") {
@@ -1012,12 +1026,77 @@ var edges = {
             }
         };
 
-        this._synchronise_term = function(term) {
-            var display = this.fieldDisplays[term.field] || term.field;
+        this.removeFilter = function(boolType, filterType, field, value) {
+            var nq = this.edge.cloneQuery();
 
-            this.activeFilters[term.field] = {
+            if (filterType === "term") {
+                var template = es.newTermFilter({field: field, value: value});
+
+                if (boolType === "must") {
+                    nq.removeMust(template);
+                }
+
+            } else if (filterType === "terms") {
+                var template = es.newTermsFilter({field: field});
+
+                if (boolType === "must") {
+                    var filters = nq.listMust(template);
+                    for (var i = 0; i < filters.length; i++) {
+                        if (filters[i].has_term(value)) {
+                            filters[i].remove_term(value);
+                        }
+
+                        // if this means the filter no longer has values, remove the filter
+                        if (!filters[i].has_terms()) {
+                            nq.removeMust(filters[i]);
+                        }
+                    }
+                }
+
+            } else if (filterType == "range") {
+
+            } else if (filterType == "geo_distance_range") {
+
+            }
+
+            // reset the page to zero and reissue the query
+            nq.from = 0;
+            this.edge.pushQuery(nq);
+            this.edge.doQuery();
+        };
+
+        this._synchronise_term = function(filter) {
+            var display = this.fieldDisplays[filter.field] || filter.field;
+
+            // multiple term filters mean AND, so group them together here
+            if (filter.field in this.mustFilters) {
+                this.mustFilters[filter.field].values.push({
+                    val: filter.value,
+                    display: this._translate(filter.field, filter.value)
+                })
+            } else {
+                this.mustFilters[filter.field] = {
+                    filter: filter.type_name,
+                    display: display,
+                    values: [{val: filter.value, display: this._translate(filter.field, filter.value)}],
+                    rel: "AND"
+                }
+            }
+        };
+
+        this._synchronise_terms = function(filter) {
+            var display = this.fieldDisplays[filter.field] || filter.field;
+            var values = [];
+            for (var i = 0; i < filter.values.length; i++) {
+                var v = filter.values[i];
+                var d = this._translate(filter.field, v);
+                values.push({val: v, display: d});
+            }
+            this.mustFilters[filter.field] = {
+                filter: filter.type_name,
                 display: display,
-                values: [{val: term.value, display: this._translate(term.field, term.value)}]
+                values: values,
+                rel: "OR"
             }
         };
 
@@ -1133,7 +1212,7 @@ var edges = {
         this.draw = function() {
             this.dataSeries = this.dataFunction(this);
             if ("draw" in this.renderer) {
-                this.renderer.draw(this);
+                this.renderer.draw(this);   // FIXME: no longer needs to pass in
             } else {
                 this.renderer(this);
             }
@@ -1275,6 +1354,44 @@ var edges = {
             event.preventDefault();
             obj[fn](this);
         }
+    },
+
+    //////////////////////////////////////////////////////////////////
+    // CSS normalising/canonicalisation tools
+
+    css_classes : function(namespace, field, renderer) {
+        var cl = namespace + "-" + field;
+        if (renderer) {
+            cl += " " + cl + "-" + renderer.component.id;
+        }
+        return cl;
+    },
+
+    css_class_selector : function(namespace, field, renderer) {
+        var sel = "." + namespace + "-" + field;
+        if (renderer) {
+            sel += sel + "-" + renderer.component.id;
+        }
+        return sel;
+    },
+
+    css_id : function(namespace, field, renderer) {
+        var id = namespace + "-" + field;
+        if (renderer) {
+            id += "-" + renderer.component.id;
+        }
+        return id;
+    },
+
+    css_id_selector : function(namespace, field, renderer) {
+        return "#" + edges.css_id(namespace, field, renderer);
+    },
+
+    //////////////////////////////////////////////////////////////////
+    // Event binding utilities
+
+    on : function(selector, event, renderer, targetFunction) {
+        renderer.component.jq(selector).on(event + "." + renderer.component.id, edges.eventClosure(renderer, targetFunction))
     },
 
     //////////////////////////////////////////////////////////////////

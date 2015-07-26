@@ -147,12 +147,19 @@ jQuery(document).ready(function($) {
     e2 = edges.newEdge({
         selector: "#facetview",
         template: edges.bs3.newFacetview(),
-        search_url: "http://localhost:9200/allapc/institutional/_search",
+        search_url: "http://localhost:9200/doaj/article/_search",
         components : [
             edges.newBasicTermSelector({
-                id: "institution",
-                field: "monitor.jm:apc.name.exact",
-                display: "Institution",
+                id: "publisher",
+                field: "index.publisher.exact",
+                display: "Publisher",
+                size: 10,
+                category: "facet"
+            }),
+            edges.newBasicTermSelector({
+                id: "subject",
+                field: "index.classification.exact",
+                display: "Subject",
                 size: 10,
                 category: "facet"
             }),
@@ -164,7 +171,8 @@ jQuery(document).ready(function($) {
                 id: "selected-filters",
                 category: "selected-filters",
                 fieldDisplays : {
-                    "monitor.jm:apc.name.exact" : "Institution"
+                    "index.publisher.exact" : "Publisher",
+                    "index.classification.exact" : "Classification"
                 }
             }),
             edges.newPager({

@@ -160,6 +160,17 @@ var es = {
         this.addMust = function(filter) {
             this.must.push(filter);
         };
+        this.listMust = function(template) {
+            var l = [];
+            for (var i = 0; i < this.must.length; i++) {
+                var m = this.must[i];
+                if (m.matches(template)) {
+                    l.push(m);
+                }
+            }
+            return l;
+        };
+        /*
         this.removeMust = function(params) {
             var filterType = params.type || "term";
             var field = params.field || false;
@@ -169,7 +180,7 @@ var es = {
             for (var i = 0; i < this.must.length; i++) {
                 var m = this.must[i];
                 if (m.field === field && m.type_name === filterType) {
-                    if (value === undefined || (value !== undefined && m.value === value)) {
+                    if (value === undefined || (value !== undefined && m.value === value)) {    // FIXME: won't work on Terms filters, or anything where the value is not primitive
                         remove = i;
                         break;
                     }
@@ -177,6 +188,20 @@ var es = {
             }
             if (remove > -1) {
                 this.must.splice(remove, 1);
+            }
+        };
+        */
+        this.removeMust = function(template) {
+            var removes = [];
+            for (var i = 0; i < this.must.length; i++) {
+                var m = this.must[i];
+                if (m.matches(template)) {
+                    removes.push(i);
+                }
+            }
+            removes = removes.sort().reverse();
+            for (var i = 0; i < removes.length; i++) {
+                this.must.splice(removes[i], 1);
             }
         };
 
@@ -825,6 +850,11 @@ var es = {
     Filter : function(params) {
         this.field = params.field;
         this.type_name = params.type_name;
+        this.matches = function(other) {
+            return false;
+        };
+        this.objectify = function() {};
+        this.parse = function() {};
     },
 
     newTermFilter : function(params) {
@@ -836,6 +866,25 @@ var es = {
     TermFilter : function(params) {
         // this.filter handled by superclass
         this.value = params.value || false;
+
+        this.matches = function(other) {
+            // type must match
+            if (other.type_name !== this.type_name) {
+                return false;
+            }
+
+            // field (if set) must match
+            if (other.field && other.field !== this.field) {
+                return false;
+            }
+
+            // value (if set) must match
+            if (other.value && other.value !== this.value) {
+                return false;
+            }
+
+            return true;
+        };
 
         this.objectify = function() {
             var obj = {term : {}};
@@ -864,12 +913,39 @@ var es = {
     },
     TermsFilter : function(params) {
         // this.field handled by superclass
-        this.values = params.values || [];
+        this.values = params.values || false;
         this.execution = params.execution || false;
 
+        this.matches = function(other) {
+            // type must match
+            if (other.type_name !== this.type_name) {
+                return false;
+            }
+
+            // field (if set) must match
+            if (other.field && other.field !== this.field) {
+                return false;
+            }
+
+            // values (if set) must be the same list
+            if (other.values) {
+                if (other.values.length !== this.values.length) {
+                    return false;
+                }
+                for (var i = 0; i < other.values.length; i++) {
+                    if ($.inArray(other.values[i], this.values) === -1) {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        };
+
         this.objectify = function() {
+            var val = this.values || [];
             var obj = {terms : {}};
-            obj.terms[this.field] = this.values;
+            obj.terms[this.field] = val;
             if (this.execution) {
                 obj.terms["execution"] = this.execution;
             }
@@ -885,6 +961,36 @@ var es = {
             if (obj.execution) {
                 this.execution = obj.execution;
             }
+        };
+
+        this.add_term = function(term) {
+            if (!this.values) {
+                this.values = [];
+            }
+            if ($.inArray(term, this.values) === -1) {
+                this.values.push(term);
+            }
+        };
+
+        this.has_term = function(term) {
+            if (!this.values) {
+                return false;
+            }
+            return $.inArray(term, this.values) >= 0;
+        };
+
+        this.remove_term = function(term) {
+            if (!this.values) {
+                return;
+            }
+            var idx = $.inArray(term, this.values);
+            if (idx >= 0) {
+                this.values.splice(idx, 1);
+            }
+        };
+
+        this.has_terms = function() {
+            return (this.values !== false && this.values.length > 0)
         };
 
         if (params.raw) {
