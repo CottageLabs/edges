@@ -179,10 +179,10 @@ $.extend(edges, {
                     thefacetview += '<div class="edges-facetview-pager" style="margin-top:20px;"><div id="' + topPagers[0].id + '"></div></div>';
                 }
 
-                // loading notification
+                // loading notification (note that the notification implementation is responsible for its own visibility)
                 var loading = edge.category("searching-notification");
                 if (loading.length > 0) {
-                    thefacetview += '<div class="edges-facetview-searching" style="display:none"><div id="' + loading[0].id + '"></div></div>'
+                    thefacetview += '<div class="edges-facetview-searching"><div id="' + loading[0].id + '"></div></div>'
                 }
 
                 // insert the frame within which the results actually will go
@@ -208,8 +208,8 @@ $.extend(edges, {
                 // now set up the various event bindings
 
                 // before executing a query, show the loading function
-                edge.context.bind("edges:pre-query", edges.eventClosure(this, "showSearching"));
-                edge.context.bind("edges:pre-render", edges.eventClosure(this, "hideSearching"));
+                //edge.context.bind("edges:pre-query", edges.eventClosure(this, "showSearching"));
+                //edge.context.bind("edges:pre-render", edges.eventClosure(this, "hideSearching"));
             };
 
             this.showSearching = function() {
@@ -683,6 +683,31 @@ $.extend(edges, {
                 var ft = el.attr("data-filter");
                 this.component.removeFilter(bool, ft, field, value);
             };
+        },
+
+        newSearchingNotificationRenderer : function(params) {
+            if (!params) { params = {} }
+            edges.bs3.SearchingNotificationRenderer.prototype = edges.newRenderer(params);
+            return new edges.bs3.SearchingNotificationRenderer(params);
+        },
+        SearchingNotificationRenderer : function(params) {
+
+            this.searchingMessage = params.searchingMessage || "Loading, please wait...";
+
+            // namespace to use in the page
+            this.namespace = "edges-bs3-searching-notification";
+
+            this.draw = function() {
+                var frag = "";
+                if (this.component.searching) {
+                    // classes that we need
+                    var barClasses = edges.css_classes(this.namespace, "bar", this);
+                    frag = '<div class="progress progress-bar-info progress-bar-striped active ' + barClasses + '"> \
+                            ' + this.searchingMessage + ' \
+                        </div>'
+                }
+                this.component.jq("#" + this.component.id).html(frag);
+            }
         }
     }
 });

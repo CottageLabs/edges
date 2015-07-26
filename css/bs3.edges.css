@@ -125,3 +125,12 @@
     padding-left: 5px;
     padding-right: 5px;
 }
+
+/********************************************************
+ *  Loading bar
+ */
+.edges-bs3-searching-notification-bar {
+    width: 100%;
+    text-align: center;
+    color: #ffffff;
+}

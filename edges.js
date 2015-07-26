@@ -1111,7 +1111,29 @@ var edges = {
         return new edges.SearchingNotification(params);
     },
     SearchingNotification : function(params) {
+        this.defaultRenderer = params.defaultRenderer || "newSearchingNotificationRenderer";
 
+        this.searching = false;
+
+        this.init = function(edge) {
+            this.__proto__.init.call(this, edge);
+            edge.context.on("edges:pre-query", edges.eventClosure(this, "searchingBegan"));
+            edge.context.on("edges:query-fail", edges.eventClosure(this, "searchingFinished"));
+            edge.context.on("edges:query-success", edges.eventClosure(this, "searchingFinished"));
+        };
+
+        // specifically disable this function
+        this.draw = function() {};
+
+        this.searchingBegan = function() {
+            this.searching = true;
+            this.renderer.draw();
+        };
+
+        this.searchingFinished = function() {
+            this.searching = false;
+            this.renderer.draw();
+        };
     },
 
     ////////////////////////////////////////////////
