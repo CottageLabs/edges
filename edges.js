@@ -566,34 +566,26 @@ var edges = {
 
             // extract all the filter values that pertain to this selector
 
-            var filters = this.edge.currentQuery.listMust(es.newTermsFilter({field: this.field}));
+            var filters = this.edge.currentQuery.listMust(es.newTermFilter({field: this.field}));
             this.filters = [];
             for (var i = 0; i < filters.length; i++) {
-                for (var j = 0; j < filters[i].values.length; j++) {
-                    var val = filters[i].values[j];
-                    val = this._translate(val);
-                    this.filters.push({display: val, term: filters[i].values[j]});
-                }
+                var val = filters[i].value;
+                val = this._translate(val);
+                this.filters.push({display: val, term: filters[i].value});
             }
         };
 
         this.selectTerm = function(term) {
             var nq = this.edge.cloneQuery();
 
-            // we're going to use a terms filter, so we can select multiple terms from the same field
-            var filters = nq.listMust(es.newTermsFilter({field: this.field}));
-            if (filters.length == 0) {
-                // create a new terms filter
-                nq.addMust(es.newTermsFilter({
-                    field: this.field,
-                    values: [term]
-                }));
-            } else {
-                filters[0].add_term(term);
-            }
+            // just add a new term filter (the query builder will ensure there are no duplicates)
+            // this means that the behaviour here is that terms are ANDed together
+            nq.addMust(es.newTermFilter({
+                field: this.field,
+                value: term
+            }));
 
             // reset the search page to the start and then trigger the next query
-            nq.from = 0;
             nq.from = 0;
             this.edge.pushQuery(nq);
             this.edge.doQuery();
@@ -602,18 +594,10 @@ var edges = {
         this.removeFilter = function(term) {
             var nq = this.edge.cloneQuery();
 
-            // first find the term filter and remove the value
-            var filters = nq.listMust(es.newTermsFilter({field: this.field}));
-            for (var i = 0; i < filters.length; i++) {
-                if (filters[i].has_term(term)) {
-                    filters[i].remove_term(term);
-                }
-
-                // if this means the filter no longer has values, remove the filter
-                if (!filters[i].has_terms()) {
-                    nq.removeMust(filters[i]);
-                }
-            }
+            nq.removeMust(es.newTermFilter({
+                field: this.field,
+                value: term
+            }));
 
             // reset the search page to the start and then trigger the next query
             nq.from = 0;

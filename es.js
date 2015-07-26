@@ -158,7 +158,10 @@ var es = {
         this.clearAggregations = function() {};
 
         this.addMust = function(filter) {
-            this.must.push(filter);
+            var existing = this.listMust(filter);
+            if (existing.length === 0) {
+                this.must.push(filter);
+            }
         };
         this.listMust = function(template) {
             var l = [];
@@ -170,27 +173,6 @@ var es = {
             }
             return l;
         };
-        /*
-        this.removeMust = function(params) {
-            var filterType = params.type || "term";
-            var field = params.field || false;
-            var value = params.value || undefined;
-
-            var remove = -1;
-            for (var i = 0; i < this.must.length; i++) {
-                var m = this.must[i];
-                if (m.field === field && m.type_name === filterType) {
-                    if (value === undefined || (value !== undefined && m.value === value)) {    // FIXME: won't work on Terms filters, or anything where the value is not primitive
-                        remove = i;
-                        break;
-                    }
-                }
-            }
-            if (remove > -1) {
-                this.must.splice(remove, 1);
-            }
-        };
-        */
         this.removeMust = function(template) {
             var removes = [];
             for (var i = 0; i < this.must.length; i++) {
