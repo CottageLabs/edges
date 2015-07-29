@@ -362,11 +362,7 @@ var edges = {
 
         this.draw = function() {
             if (this.renderer) {
-                if ("draw" in this.renderer) {
-                    this.renderer.draw();
-                } else {
-                    this.renderer(this);
-                }
+                this.renderer.draw();
             }
         };
 
@@ -460,17 +456,8 @@ var edges = {
         // { display: <display>, term: <term>, count: <count> }
         this.values = [];
 
-        /*
-        this.init = function(edge) {
-            // record a reference to the parent object
-            this.edge = edge;
-
-            // set the renderer from default if necessary
-            if (!this.renderer) {
-                this.renderer = this.edge.getRenderPackObject(this.defaultRenderer);
-            }
-        };
-        */
+        //////////////////////////////////////////
+        // overrides on the parent object's standard functions
 
         this.contrib = function(query) {
             var params = {
@@ -485,17 +472,6 @@ var edges = {
             query.addAggregation(
                 es.newTermsAggregation(params)
             );
-        };
-
-        this._translate = function(term) {
-            if (this.valueMap) {
-                if (term in this.valueMap) {
-                    return this.valueMap[term];
-                }
-            } else if (this.valueFunction) {
-                return this.valueFunction(term);
-            }
-            return term;
         };
 
         this.synchronise = function() {
@@ -514,11 +490,7 @@ var edges = {
                 // list all of the pre-defined filters for this field from the baseQuery
                 var predefined = [];
                 if (this.excludePreDefinedFilters) {
-                    predefined = this.edge.baseQuery.listFilters({
-                            boolType : "must",
-                            field: this.field,
-                            filterType: "term"
-                        });
+                    predefined = this.edge.baseQuery.listMust(es.TermFilter({field: this.field}));
                 }
 
                 var realCount = 0;
@@ -575,6 +547,9 @@ var edges = {
             }
         };
 
+        //////////////////////////////////////////
+        // functions that can be called on this component to change its state
+
         this.selectTerm = function(term) {
             var nq = this.edge.cloneQuery();
 
@@ -628,7 +603,21 @@ var edges = {
             agg.setOrdering(this.orderBy, this.orderDir);
             this.edge.pushQuery(nq);
             this.edge.doQuery();
-        }
+        };
+
+        //////////////////////////////////////////
+        // "private" functions for internal use
+
+        this._translate = function(term) {
+            if (this.valueMap) {
+                if (term in this.valueMap) {
+                    return this.valueMap[term];
+                }
+            } else if (this.valueFunction) {
+                return this.valueFunction(term);
+            }
+            return term;
+        };
     },
 
     newBasicRangeSelector : function(params) {
@@ -723,12 +712,37 @@ var edges = {
         return new edges.MultiDateRangeEntry(params);
     },
     MultiDateRangeEntry : function(params) {
+        ///////////////////////////////////////////////
+        // fields that can be passed in, and their defaults
+
+        // list of field objects, which provide the field itself, and the display name.  e.g.
+        // [{field : "monitor.rioxxterms:publication_date", display: "Publication Date"}]
         this.fields = params.fields || [];
+
+        // map from field name (as in this.field[n].field) to a function which will provide
+        // the earliest allowed date for that field.  e.g.
+        // {"monitor.rioxxterms:publication_date" : earliestDate}
         this.earliest = params.earliest || {};
+
+        // map from field name (as in this.field[n].field) to a function which will provide
+        // the latest allowed date for that field.  e.g.
+        // {"monitor.rioxxterms:publication_date" : latestDate}
         this.latest = params.latest || {};
+
+        // category for this component, defaults to "selector"
         this.category = params.category || "selector";
+
+        // default earliest date to use in all cases (defaults to start of the unix epoch)
         this.defaultEarliest = params.defaultEarliest || new Date(0);
+
+        // default latest date to use in all cases (defaults to now)
         this.defaultLatest = params.defaultLatest || new Date();
+
+        // default renderer from render pack to use
+        this.defaultRenderer = params.defaultRenderer || "newMultiDateRangeRenderer";
+
+        ///////////////////////////////////////////////
+        // fields used to track internal state
 
         this.currentField = false;
         this.fromDate = false;
@@ -738,13 +752,7 @@ var edges = {
         this.dateOptions = {};
 
         this.init = function(edge) {
-            // record a reference to the parent object
-            this.edge = edge;
-
-            // set the renderer from default if necessary
-            if (!this.renderer) {
-                this.renderer = this.edge.getRenderPackObject("newMultiDateRangeRenderer");
-            }
+            this.__proto__.init.call(this, edge);
 
             // set the initial field
             this.currentField = this.fields[0].field;
@@ -758,24 +766,8 @@ var edges = {
             this.loadDates();
         };
 
-        /*
-        // new approach means contrib is no longer needed for this component
-        this.contrib = function(query) {
-            // only contrib if there's anything to actually do
-            if (!this.currentField || (!this.toDate && !this.fromDate)) {
-                return;
-            }
-
-            var range = {field : this.currentField};
-            if (this.toDate) {
-                range["lt"] = this.toDate;
-            }
-            if (this.fromDate) {
-                range["gte"] = this.fromDate;
-            }
-            query.addMust(es.newRangeFilter(range));
-        };
-        */
+        //////////////////////////////////////////////
+        // functions that can be used to trigger state change
 
         this.changeField = function(newField) {
             this.lastField = this.currentField;
@@ -799,22 +791,13 @@ var edges = {
             }
         };
 
-        /*
-        // see new version below for new approach to contrib
-        this.triggerSearch = function() {
-            if (this.touched) {
-                this.touched = false;
-                this.edge.doQuery();
-            }
-        };
-        */
         this.triggerSearch = function() {
             if (this.touched) {
                 this.touched = false;
                 var nq = this.edge.cloneQuery();
 
                 // remove the old filter
-                nq.removeMust({filterType: "range", field: this.lastField});
+                nq.removeMust(es.newRangeFilter({field: this.lastField}));
 
                 // only contrib if there's anything to actually do
                 if (!this.currentField || (!this.toDate && !this.fromDate)) {
@@ -884,15 +867,7 @@ var edges = {
         return new edges.AutocompleteTermSelector(params);
     },
     AutocompleteTermSelector : function(params) {
-        this.init = function(edge) {
-            // record a reference to the parent object
-            this.edge = edge;
-
-            // set the renderer from default if necessary
-            if (!this.renderer) {
-                this.renderer = this.edge.getRenderPackFunction("renderAutocompleteTermSelector");
-            }
-        };
+        this.defaultRenderer = params.defaultRenderer || "newAutocompleteTermSelectorRenderer";
     },
 
     //////////////////////////////////////////////////
@@ -927,6 +902,8 @@ var edges = {
         // on free-text search, default operator for the elasticsearch query system to use
         this.defaultOperator = params.defaultOperator || "OR";
 
+        this.defaultRenderer = params.defaultRenderer || "newSearchControllerRenderer";
+
         ///////////////////////////////////////////////
         // properties which are set by the widget but
         // can also be passed in
@@ -939,16 +916,6 @@ var edges = {
 
         // the short url for the current search, if it has been generated
         this.shortUrl = false;
-
-        this.init = function(edge) {
-            // record a reference to the parent object
-            this.edge = edge;
-
-            // set the renderer from default if necessary
-            if (!this.renderer) {
-                this.renderer = this.edge.getRenderPackObject("newSearchControllerRenderer");
-            }
-        };
     },
 
     newSelectedFilters : function(params) {
@@ -995,7 +962,7 @@ var edges = {
         this.synchronise = function() {
             this.mustFilters = {};
 
-            var musts = this.edge.currentQuery.listFilters({boolType: "must"});
+            var musts = this.edge.currentQuery.listMust();
             for (var i = 0; i < musts.length; i++) {
                 var f = musts[i];
                 if (f.type_name === "term") {
@@ -1145,17 +1112,11 @@ var edges = {
         return new edges.ResultsDisplay(params);
     },
     ResultsDisplay : function(params) {
+        // the category of the component
         this.category = params.category || "results";
 
-        this.init = function(edge) {
-            // record a reference to the parent object
-            this.edge = edge;
-
-            // set the renderer from default if necessary
-            if (!this.renderer) {
-                this.renderer = this.edge.getRenderPackFunction("renderResultsDisplay");
-            }
-        };
+        // the default renderer for the component to use
+        this.defaultRenderer = params.defaultRenderer || "newResultsDisplayRenderer";
     },
 
     ////////////////////////////////////////////////
@@ -1193,13 +1154,15 @@ var edges = {
             seriesKeys : {}
         };
 
-        this.init = function(edge) {
-            this.edge = edge;
+        // pick a default renderer that actually exists, so this is the default chart, essentially
+        this.defaultRenderer = params.defaultRenderer || "newMultibarRenderer";
 
-            // get the default chart renderer
-            if (!this.renderer) {
-                this.renderer = this.edge.getRenderPackObject("newMultibarRenderer");
-            }
+        this.init = function(edge) {
+            // since this class is designed to be sub-classed, we can't rely on "this" to be a chart
+            // instance, so if we're kicking the call upstairs, we need to pass it explicitly to the
+            // right object
+            edges.newComponent().init.call(this, edge);
+            // this.__proto__.init.call(this, edge);
 
             // copy over the names of the aggregations that we're going to read from
             for (var i = 0; i < this.aggregations.length; i++) {
@@ -1215,19 +1178,14 @@ var edges = {
             }
         };
 
-        this.draw = function() {
-            this.dataSeries = this.dataFunction(this);
-            if ("draw" in this.renderer) {
-                this.renderer.draw(this);   // FIXME: no longer needs to pass in
-            } else {
-                this.renderer(this);
-            }
-        };
-
         this.contrib = function(query) {
             for (var i = 0; i < this.aggregations.length; i++) {
                 query.addAggregation(this.aggregations[i]);
             }
+        };
+
+        this.synchronise = function() {
+            this.dataSeries = this.dataFunction(this);
         };
     },
     ChartDataFunctions : {
@@ -1312,12 +1270,7 @@ var edges = {
         return new edges.PieChart(params);
     },
     PieChart : function(params) {
-        this.init = function(edge) {
-            if (!this.renderer) {
-                this.renderer = edge.getRenderPackObject("newPieChartRenderer");
-            }
-            this.__proto__.init(edge);
-        };
+        this.defaultRenderer = params.defaultRenderer || "newPieChartRenderer";
     },
 
     newHorizontalMultibar : function(params) {
@@ -1326,12 +1279,7 @@ var edges = {
         return new edges.HorizontalMultibar(params);
     },
     HorizontalMultibar : function(params) {
-        this.init = function(edge) {
-            if (!this.renderer) {
-                this.renderer = edge.getRenderPackObject("newHorizontalMultibarRenderer");
-            }
-            this.__proto__.init(edge);
-        };
+        this.defaultRenderer = params.defaultRenderer || "newHorizontalMultibarRenderer";
     },
 
     //////////////////////////////////////////////////////////////////
@@ -1414,5 +1362,4 @@ var edges = {
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
     }
-
 };

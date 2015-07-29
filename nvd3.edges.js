@@ -12,7 +12,7 @@ $.extend(edges, {
             this.labelThreshold = params.labelThreshold || 0.05;
             this.transitionDuration = params.transitionDuration || 500;
 
-            this.draw = function(ch) {
+            this.draw = function() {
 
             }
         },
@@ -34,7 +34,9 @@ $.extend(edges, {
             this.marginBottom = params.marginBottom || 30;
             this.marginLeft = params.marginLeft || 200;
 
-            this.draw = function(ch) {
+            this.draw = function() {
+                var ch = this.component;
+
                 function render(params) {
                     var data_series = params.data_series;
                     var selector = params.svg_selector;
@@ -99,7 +101,8 @@ $.extend(edges, {
             this.transitionDuration = params.transitionDuration || 500;
             this.controls = params.controls || false;
 
-            this.draw = function (ch) {
+            this.draw = function () {
+                var ch = this.component;
 
                 function convert(params) {
                     var series = params.data_series;

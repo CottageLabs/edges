@@ -13,7 +13,7 @@ $.extend(edges, {
             this.donut = params.donut || false;
             this.toolTipNumberFormat = params.toolTipNumberFormat || ",.0f";
 
-            this.draw = function(ch) {
+            this.draw = function() {
 
             }
         },
@@ -27,7 +27,7 @@ $.extend(edges, {
             this.title = params.title || false;
             this.subtitle = params.subtitle || false;
 
-            this.draw = function(ch) {
+            this.draw = function() {
 
             }
         },
@@ -44,7 +44,7 @@ $.extend(edges, {
             this.xAxisLabel = params.xAxisLabel || false;
             this.toolTipNumberFormat = params.toolTipNumberFormat || ",.0f";
 
-            this.draw = function (ch) {
+            this.draw = function () {
 
             }
         },
@@ -58,7 +58,7 @@ $.extend(edges, {
             this.title = params.title || false;
             this.subtitle = params.subtitle || false;
 
-            this.draw = function (ch) {
+            this.draw = function () {
 
             }
         }

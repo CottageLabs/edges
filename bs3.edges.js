@@ -221,18 +221,26 @@ $.extend(edges, {
             }
         },
 
-        renderResultsDisplay : function(rd) {
-            var edge = rd.edge;
+        newResultsDisplayRenderer : function(params) {
+            if (!params) { params = {} }
+            edges.bs3.ResultsDisplayRenderer.prototype = edges.newRenderer(params);
+            return new edges.bs3.ResultsDisplayRenderer(params);
+        },
+        ResultsDisplayRenderer : function(params) {
+            this.draw = function() {
+                // FIXME: this is overstepping its mark - the parent results display needs to do all this
+                var edge = this.component.edge;
 
-            var results = "";
-            if (edge.hasHits()) {
-                for (var i = 0; i < edge.result.data.hits.hits.length; i++) {
-                    var hit = edge.result.data.hits.hits[i];
-                    results += '<div class="row"><div class="col-md-12">' + hit._id + '</div></div>';
+                var results = "";
+                if (edge.hasHits()) {
+                    for (var i = 0; i < edge.result.data.hits.hits.length; i++) {
+                        var hit = edge.result.data.hits.hits[i];
+                        results += '<div class="row"><div class="col-md-12">' + hit._id + '</div></div>';
+                    }
                 }
-            }
 
-            $("#" + rd.id, edge.context).html(results);
+                $("#" + this.component.id, edge.context).html(results);
+            }
         },
 
         newBasicTermSelectorRenderer : function(params) {
@@ -496,8 +504,8 @@ $.extend(edges, {
             this.fromJq = false;
             this.toJq = false;
 
-            this.draw = function(dre) {
-                this.dre = dre;
+            this.draw = function() {
+                var dre = this.component;
 
                 this.selectId = dre.id + "_date-type";
                 this.fromId = dre.id + "_date-from";
@@ -517,11 +525,11 @@ $.extend(edges, {
                     <label for="' + this.toId + '">To</label>\
                     <input class="multi-date-range-input" type="text" name="' + this.toId + '" id="' + this.toId + '" placeholder="latest date">';
 
-                this.dre.jq("#" + dre.id).html(frag);
+                dre.jq("#" + dre.id).html(frag);
 
-                this.selectJq = this.dre.jq("#" + this.selectId);
-                this.fromJq = this.dre.jq("#" + this.fromId);
-                this.toJq = this.dre.jq("#" + this.toId);
+                this.selectJq = dre.jq("#" + this.selectId);
+                this.fromJq = dre.jq("#" + this.fromId);
+                this.toJq = dre.jq("#" + this.toId);
 
                 // populate and set the bindings on the date selectors
                 this.fromJq.datepicker({
@@ -549,36 +557,36 @@ $.extend(edges, {
 
                 // ensure that the correct field is set (it may initially be not set)
                 var date_type = this.selectJq.select2("val");
-                this.dre.changeField(date_type);
+                this.component.changeField(date_type);
 
                 var fr = this.fromJq.val();
                 if (fr) {
                     fr = $.datepicker.parseDate("dd-mm-yy", fr);
                     fr = $.datepicker.formatDate("yy-mm-dd", fr);
-                    this.dre.setFrom(fr);
+                    this.component.setFrom(fr);
                 } else {
-                    this.dre.setFrom(false);
+                    this.component.setFrom(false);
                 }
 
                 var to = this.toJq.val();
                 if (to) {
                     to = $.datepicker.parseDate("dd-mm-yy", to);
                     to = $.datepicker.formatDate("yy-mm-dd", to);
-                    this.dre.setTo(to);
+                    this.component.setTo(to);
                 } else {
-                    this.dre.setTo(false);
+                    this.component.setTo(false);
                 }
 
                 // this action should trigger a search (the parent object will
                 // decide if that's required)
-                this.dre.triggerSearch();
+                this.component.triggerSearch();
             };
 
             this.prepDates = function() {
-                var min = this.dre.currentEarliest();
-                var max = this.dre.currentLatest();
-                var fr = this.dre.fromDate;
-                var to = this.dre.toDate;
+                var min = this.component.currentEarliest();
+                var max = this.component.currentLatest();
+                var fr = this.component.fromDate;
+                var to = this.component.toDate;
 
                 if (min) {
                     this.fromJq.datepicker("option", "minDate", min);

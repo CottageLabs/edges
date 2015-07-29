@@ -164,14 +164,7 @@ var es = {
             }
         };
         this.listMust = function(template) {
-            var l = [];
-            for (var i = 0; i < this.must.length; i++) {
-                var m = this.must[i];
-                if (m.matches(template)) {
-                    l.push(m);
-                }
-            }
-            return l;
+            return this.listFilters({boolType: "must", template: template});
         };
         this.removeMust = function(template) {
             var removes = [];
@@ -186,14 +179,15 @@ var es = {
                 this.must.splice(removes[i], 1);
             }
         };
-
         this.clearMust = function() {};
 
         this.addShould = function() {};
+        this.listShould = function() {};
         this.removeShould = function() {};
         this.clearShould = function() {};
 
         this.addMustNot = function() {};
+        this.listMustNot = function() {};
         this.removeMustNot = function() {};
         this.removeMustNot = function() {};
 
@@ -204,38 +198,36 @@ var es = {
             return this.must.length > 0 || this.should.length > 0 || this.mustNot.length > 0
         };
 
+        // in general better to use the listMust, listShould, listMustNot, directly.
+        // those methods each use this method internally anyway
         this.listFilters = function(params) {
             var boolType = params.boolType || "must";
-            var field = params.field || false;
-            var filterType = params.filterType || false;
+            var template = params.template || false;
 
-            var filterList = [];
+            //var field = params.field || false;
+            //var filterType = params.filterType || false;
 
             // first get the boolean filter field that we're going to look in
             var bool = [];
             if (boolType === "must") {
                 bool = this.must;
+            } else if (boolType === "should") {
+                bool = this.should;
+            } else if (boolType === "must_not") {
+                bool = this.mustNot;
             }
 
-            // go through each one looking for a matching type and field
+            if (!template) {
+                return bool;
+            }
+            var l = [];
             for (var i = 0; i < bool.length; i++) {
-                var f = bool[i];
-
-                // if we are filtering by filter type, and the types do not match, ignore this one
-                if (filterType && f.type_name !== filterType) {
-                    continue;
+                var m = bool[i];
+                if (m.matches(template)) {
+                    l.push(m);
                 }
-
-                // if we are filtering by field name, and the names do not match, ignore this one
-                if (field && f.field !== field) {
-                    continue;
-                }
-
-                // otherwise, this filter matches the criteria
-                filterList.push(f);
             }
-
-            return filterList;
+            return l;
         };
 
         ////////////////////////////////////////////////
@@ -833,7 +825,16 @@ var es = {
         this.field = params.field;
         this.type_name = params.type_name;
         this.matches = function(other) {
-            return false;
+            // type must match
+            if (other.type_name !== this.type_name) {
+                return false;
+            }
+            // field (if set) must match
+            if (other.field && other.field !== this.field) {
+                return false;
+            }
+            // otherwise this matches
+            return true;
         };
         this.objectify = function() {};
         this.parse = function() {};
@@ -850,16 +851,11 @@ var es = {
         this.value = params.value || false;
 
         this.matches = function(other) {
-            // type must match
-            if (other.type_name !== this.type_name) {
+            // ask the parent object first
+            var pm = this.__proto__.matches.call(this, other);
+            if (!pm) {
                 return false;
             }
-
-            // field (if set) must match
-            if (other.field && other.field !== this.field) {
-                return false;
-            }
-
             // value (if set) must match
             if (other.value && other.value !== this.value) {
                 return false;
@@ -899,13 +895,9 @@ var es = {
         this.execution = params.execution || false;
 
         this.matches = function(other) {
-            // type must match
-            if (other.type_name !== this.type_name) {
-                return false;
-            }
-
-            // field (if set) must match
-            if (other.field && other.field !== this.field) {
+            // ask the parent object first
+            var pm = this.__proto__.matches.call(this, other);
+            if (!pm) {
                 return false;
             }
 
@@ -988,8 +980,30 @@ var es = {
     },
     RangeFilter : function(params) {
         // this.field handled by superclass
-        this.lt = params.lt;
-        this.gte = params.gte;
+        this.lt = params.lt || false;
+        this.gte = params.gte || false;
+
+        this.matches = function(other) {
+            // ask the parent object first
+            var pm = this.__proto__.matches.call(this, other);
+            if (!pm) {
+                return false;
+            }
+
+            // ranges (if set) must match
+            if (other.lt) {
+                if (other.lt !== this.lt) {
+                    return false;
+                }
+            }
+            if (other.gte) {
+                if (other.gte !== this.gte) {
+                    return false;
+                }
+            }
+
+            return true;
+        };
 
         this.objectify = function() {
             var obj = {range: {}};
