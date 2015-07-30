@@ -189,7 +189,13 @@ jQuery(document).ready(function($) {
             }),
             edges.newResultsDisplay({
                 id: "results",
-                category: "results"
+                category: "results",
+                renderer : edges.bs3.newResultsDisplayRenderer({
+                    fieldDisplayMap: [
+                        {field: "id", display: "ID"},
+                        {field: "bibjson.title", display: "Title"}
+                    ]
+                })
             })
         ]
     });

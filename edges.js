@@ -233,16 +233,6 @@ var edges = {
             return comps;
         };
 
-        this.getRenderPackFunction = function(fname) {
-            for (var i = 0; i < this.renderPacks.length; i++) {
-                var rp = this.renderPacks[i];
-                if (rp && rp.hasOwnProperty(fname)) {
-                    return rp[fname];
-                }
-            }
-            return function() {}
-        };
-
         this.getRenderPackObject = function(oname, params) {
             for (var i = 0; i < this.renderPacks.length; i++) {
                 var rp = this.renderPacks[i];
@@ -251,10 +241,6 @@ var edges = {
                 }
             }
 
-        };
-
-        this.hasHits = function() {
-            return this.result && this.result.data.hits && this.result.data.hits.hits.length > 0;
         };
 
         // get the jquery object for the desired element, in the correct context
@@ -1112,11 +1098,26 @@ var edges = {
         return new edges.ResultsDisplay(params);
     },
     ResultsDisplay : function(params) {
+        ////////////////////////////////////////////
+        // arguments that can be passed in
+
         // the category of the component
         this.category = params.category || "results";
 
         // the default renderer for the component to use
         this.defaultRenderer = params.defaultRenderer || "newResultsDisplayRenderer";
+
+        //////////////////////////////////////
+        // variables for tracking internal state
+
+        this.results = [];
+
+        this.synchronise = function() {
+            this.results = [];
+            if (this.edge.result) {
+                this.results = this.edge.result.results();
+            }
+        }
     },
 
     ////////////////////////////////////////////////

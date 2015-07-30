@@ -1121,6 +1121,21 @@ var es = {
 
         this.buckets = function(agg_name) {
             return this.data.aggregations[agg_name].buckets;
+        };
+
+        this.results = function() {
+            var res = [];
+            if (this.data.hits && this.data.hits.hits) {
+                for (var i = 0; i < this.data.hits.hits.length; i++) {
+                    var source = this.data.hits.hits[i];
+                    if ("_source" in source) {
+                        res.push(source._source);
+                    } else if ("fields" in source) {
+                        res.push(source.fields);
+                    }
+                }
+            }
+            return res;
         }
     },
 
