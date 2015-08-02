@@ -25,6 +25,10 @@
     border-bottom: 1px dashed #cccccc;
 }
 
+.edges-bs-results-display-record:hover {
+    background-color: #eeeeee;
+}
+
 .edges-bs-results-display-row {
 
 }

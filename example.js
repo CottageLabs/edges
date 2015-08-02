@@ -148,6 +148,11 @@ jQuery(document).ready(function($) {
         selector: "#facetview",
         template: edges.bs3.newFacetview(),
         search_url: "http://localhost:9200/doaj/article/_search",
+        baseQuery : es.newQuery({
+            size : 12,
+            queryString: {queryString: "obese", defaultOperator: "OR", defaultField: "index.unpunctitle"},
+            sort : {field: "index.publisher.exact", order: "asc"}
+        }),
         components : [
             edges.newBasicTermSelector({
                 id: "publisher",
@@ -163,9 +168,17 @@ jQuery(document).ready(function($) {
                 size: 10,
                 category: "facet"
             }),
-            edges.newSearchController({
+            edges.newFullSearchController({
                 id: "search-controller",
-                category: "controller"
+                category: "controller",
+                sortOptions : [
+                    {field: "index.asciiunpunctitle.exact", display: "Title"},
+                    {field: "index.publisher.exact", display: "Publisher"}
+                ],
+                fieldOptions : [
+                    {field: "index.unpunctitle", display: "Title"},
+                    {field: "index.publisher", display: "Publisher"}
+                ]
             }),
             edges.newSelectedFilters({
                 id: "selected-filters",

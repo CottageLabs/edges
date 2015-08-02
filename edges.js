@@ -1,3 +1,32 @@
+// first define the bind with delay function from (saves loading it separately)
+// https://github.com/bgrins/bindWithDelay/blob/master/bindWithDelay.js
+(function($) {
+    $.fn.bindWithDelay = function( type, data, fn, timeout, throttle ) {
+        var wait = null;
+        var that = this;
+
+        if ( $.isFunction( data ) ) {
+            throttle = timeout;
+            timeout = fn;
+            fn = data;
+            data = undefined;
+        }
+
+        function cb() {
+            var e = $.extend(true, { }, arguments[0]);
+            var throttler = function() {
+                wait = null;
+                fn.apply(that, [e]);
+            };
+
+            if (!throttle) { clearTimeout(wait); }
+            if (!throttle || !wait) { wait = setTimeout(throttler, timeout); }
+        }
+
+        return this.bind(type, data, cb);
+    };
+})(jQuery);
+
 var edges = {
 
     //////////////////////////////////////////////////////
@@ -135,6 +164,20 @@ var edges = {
                 var component = this.components[i];
                 component.synchronise()
             }
+        };
+
+        // reset the query to the start and re-issue the query
+        this.reset = function() {
+            // start a new query from the base query
+            this.currentQuery = $.extend(true, {}, this.baseQuery);
+
+            // request the components to contribute to the query
+            for (var i = 0; i < this.components.length; i++) {
+                var component = this.components[i];
+                component.contrib(this.currentQuery);
+            }
+
+            this.doQuery();
         };
 
         ////////////////////////////////////////////////////
@@ -336,6 +379,7 @@ var edges = {
         this.init = function(edge) {
             // record a reference to the parent object
             this.edge = edge;
+            this.context = this.edge.jq("#" + this.id);
 
             // set the renderer from default if necessary
             if (!this.renderer) {
@@ -859,12 +903,12 @@ var edges = {
     //////////////////////////////////////////////////
     // Search controller implementation and supporting search navigation/management
 
-    newSearchController : function(params) {
+    newFullSearchController : function(params) {
         if (!params) { params = {} }
-        edges.SearchController.prototype = edges.newComponent(params);
-        return new edges.SearchController(params);
+        edges.FullSearchController.prototype = edges.newComponent(params);
+        return new edges.FullSearchController(params);
     },
-    SearchController : function(params) {
+    FullSearchController : function(params) {
         // if set, should be either * or ~
         // if *, * will be prepended and appended to each string in the freetext search term
         // if ~, ~ then ~ will be appended to each string in the freetext search term.
@@ -872,15 +916,12 @@ var edges = {
         this.fuzzify = params.fuzzify || false;
 
         // list of options by which the search results can be sorted
-        // of the form of a list of: { '<field to sort by>' : '<display name>'},
+        // of the form of a list, thus: [{ field: '<field to sort by>', display: '<display name>'}],
         this.sortOptions = params.sortOptions || false;
 
         // list of options for fields to which free text search can be constrained
-        // of the form of a list of: { '<field to search on>' : '<display name>' },
+        // of the form of a list thus: [{ field: '<field to search on>', display: '<display name>'}],
         this.fieldOptions = params.fieldOptions || false;
-
-        // enable the share/save link feature
-        this.shareLink = params.shareLink || false;
 
         // provide a function which will do url shortening for the share/save link
         this.urlShortener = params.urlShortener || false;
@@ -888,20 +929,123 @@ var edges = {
         // on free-text search, default operator for the elasticsearch query system to use
         this.defaultOperator = params.defaultOperator || "OR";
 
-        this.defaultRenderer = params.defaultRenderer || "newSearchControllerRenderer";
+        this.defaultRenderer = params.defaultRenderer || "newFullSearchControllerRenderer";
 
         ///////////////////////////////////////////////
-        // properties which are set by the widget but
-        // can also be passed in
+        // properties for tracking internal state
 
         // field on which to focus the freetext search (initially)
-        this.searchField = params.searchField || false;
+        this.searchField = false;
 
         // freetext search string
-        this.searchString = params.searchString || false;
+        this.searchString = false;
+
+        this.sortBy = false;
+
+        this.sortDir = "desc";
+
+        this.resultsSize = false;
 
         // the short url for the current search, if it has been generated
         this.shortUrl = false;
+
+        this.synchronise = function() {
+            if (this.edge.currentQuery) {
+                var qs = this.edge.currentQuery.getQueryString();
+                if (qs) {
+                    this.searchString = qs.queryString;
+                    this.searchField = qs.defaultField;
+                }
+                this.resultsSize = this.edge.currentQuery.size;
+                var sorts = this.edge.currentQuery.getSortBy();
+                if (sorts.length > 0) {
+                    this.sortBy = sorts[0].field;
+                    this.sortDir = sorts[0].order;
+                }
+            }
+        };
+
+        this.changeSortDir = function() {
+            var dir = this.sortDir === "asc" ? "desc" : "asc";
+            var sort = this.sortBy ? this.sortBy : "_score";
+            var nq = this.edge.cloneQuery();
+
+            // replace the existing sort criteria
+            nq.setSortBy(es.newSort({
+                field: sort,
+                order: dir
+            }));
+
+            // reset the search page to the start and then trigger the next query
+            nq.from = 0;
+            this.edge.pushQuery(nq);
+            this.edge.doQuery();
+        };
+
+        this.setSortBy = function(field) {
+            var nq = this.edge.cloneQuery();
+
+            // replace the existing sort criteria
+            if (!field || field === "") {
+                field = "_score";
+            }
+            nq.setSortBy(es.newSort({
+                field: field,
+                order: this.sortDir
+            }));
+
+            // reset the search page to the start and then trigger the next query
+            nq.from = 0;
+            this.edge.pushQuery(nq);
+            this.edge.doQuery();
+        };
+
+        this.setSearchField = function(field) {
+            // track the search field, as this may not trigger a search
+            this.searchField = field;
+            if (!this.searchString || this.searchString === "") {
+                return;
+            }
+
+            var nq = this.edge.cloneQuery();
+
+            // set the query with the new search field
+            nq.setQueryString(es.newQueryString({
+                queryString: this.searchString,
+                defaultField: field,
+                defaultOperator: this.defaultOperator,
+                fuzzify : this.fuzzify
+            }));
+
+            // reset the search page to the start and then trigger the next query
+            nq.from = 0;
+            this.edge.pushQuery(nq);
+            this.edge.doQuery();
+        };
+
+        this.setSearchText = function(text) {
+            var nq = this.edge.cloneQuery();
+
+            var params = {
+                queryString: text,
+                defaultOperator: this.defaultOperator,
+                fuzzify : this.fuzzify
+            };
+            if (this.searchField && this.searchField !== "") {
+                params["defaultField"] = this.searchField;
+            }
+            // set the query with the new search field
+            nq.setQueryString(es.newQueryString(params));
+
+            // reset the search page to the start and then trigger the next query
+            nq.from = 0;
+            this.edge.pushQuery(nq);
+            this.edge.doQuery();
+        };
+
+        this.clearSearch = function() {
+            this.edge.reset();
+        };
     },
 
     newSelectedFilters : function(params) {
@@ -1345,8 +1489,14 @@ var edges = {
     //////////////////////////////////////////////////////////////////
     // Event binding utilities
 
-    on : function(selector, event, renderer, targetFunction) {
-        renderer.component.jq(selector).on(event + "." + renderer.component.id, edges.eventClosure(renderer, targetFunction))
+    on : function(selector, event, renderer, targetFunction, delay) {
+        event = event + "." + renderer.component.id;
+        var clos = edges.eventClosure(renderer, targetFunction);
+        if (delay) {
+            renderer.component.jq(selector).bindWithDelay(event, clos, delay);
+        } else {
+            renderer.component.jq(selector).on(event, clos)
+        }
     },
 
     //////////////////////////////////////////////////////////////////

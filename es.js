@@ -101,8 +101,13 @@ var es = {
             }
             this.queryString = qs;
         };
+        this.getQueryString = function() {
+            return this.queryString;
+        };
 
         this.setSortBy = function(params) {
+            // overwrite anything that was there before
+            this.sort = [];
             // ensure we have a list of sort options
             var sorts = params;
             if (!$.isArray(params)) {
@@ -130,6 +135,9 @@ var es = {
             this.sort.push(sort);
         };
         this.removeSortBy = function(params) {};
+        this.getSortBy = function() {
+            return this.sort;
+        };
 
         this.setSource = function(include, exclude) {};
 
@@ -411,8 +419,8 @@ var es = {
             this.setQueryString(params.queryString);
         }
 
-        if (params.sortBy) {
-            this.setSortBy(params.sortBy);
+        if (params.sort) {
+            this.setSortBy(params.sort);
         }
 
         // finally, if we're given a raw query, parse it
@@ -544,8 +552,8 @@ var es = {
         return new es.Sort(params);
     },
     Sort : function(params) {
-        this.field = params.field;
-        this.order = params.order || "asc";
+        this.field = params.field || "_score";
+        this.order = params.order || "desc";
 
         this.objectify = function() {
             var obj = {};
