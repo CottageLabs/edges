@@ -129,14 +129,23 @@ $.extend(edges, {
             return new edges.bs3.Facetview(params);
         },
         Facetview : function(params) {
-            // after search, the results will fade in over this number of milliseconds
-            this.fadeIn = params.fadeIn || 800;
+            this.namespace = "edges-bs3-facetview";
 
             this.draw = function(edge) {
                 this.edge = edge;
 
+                // the classes we're going to need
+                var containerClass = edges.css_classes(this.namespace, "container");
+                var facetsClass = edges.css_classes(this.namespace, "facets");
+                var panelClass = edges.css_classes(this.namespace, "panel");
+                var controllerClass = edges.css_classes(this.namespace, "search-controller");
+                var selectedFiltersClass = edges.css_classes(this.namespace, "selected-filters");
+                var pagerClass = edges.css_classes(this.namespace, "pager");
+                var searchingClass = edges.css_classes(this.namespace, "searching");
+                var resultsClass = edges.css_classes(this.namespace, "results");
+
                 // the facet view object to be appended to the page
-                var thefacetview = '<div id="edges-facetview"><div class="row">';
+                var thefacetview = '<div class="' + containerClass + '"><div class="row">';
 
                 // if there are facets, give them span3 to exist, otherwise, take up all the space
                 var facets = edge.category("facet");
@@ -144,21 +153,21 @@ $.extend(edges, {
 
                 if (facets.length > 0) {
                     thefacetview += '<div class="col-md-3">\
-                        <div id="edges-facetivew-filters" style="padding-top:45px;">{{FACETS}}</div>\
+                        <div class="' + facetsClass + '">{{FACETS}}</div>\
                     </div>';
-                    thefacetview += '<div class="col-md-9" id="edges-facetview-panel">';
+                    thefacetview += '<div class="col-md-9" class="' + panelClass + '">';
 
                     for (var i = 0; i < facets.length; i++) {
                         facetContainers += '<div id="' + facets[i].id + '"></div>';
                     }
                 } else {
-                    thefacetview += '<div class="col-md-12" id="edges-facetview-panel">';
+                    thefacetview += '<div class="col-md-12" class="' + panelClass + '">';
                 }
 
                 // make space for the search options container at the top
                 var controller = edge.category("controller");
                 if (controller.length > 0) {
-                    thefacetview += '<div id="edges-faceview-search-controller"><div id="' + controller[0].id + '"></div></div>';
+                    thefacetview += '<div class="' + controllerClass + '"><div id="' + controller[0].id + '"></div></div>';
                 }
 
                 // make space for the selected filters
@@ -167,7 +176,7 @@ $.extend(edges, {
                     thefacetview += '<div style="margin-top: 20px"> \
                                         <div class="row">\
                                             <div class="col-md-12">\
-                                                <div class="btn-toolbar" id="edges-facetview-selected-filters"><div id="' + selectedFilters[0].id + '"></div></div>\
+                                                <div class="btn-toolbar" class="' + selectedFiltersClass + '"><div id="' + selectedFilters[0].id + '"></div></div>\
                                             </div>\
                                         </div>\
                                     </div>';
@@ -176,25 +185,25 @@ $.extend(edges, {
                 // make space at the top for the page
                 var topPagers = edge.category("top-pager");
                 if (topPagers.length > 0) {
-                    thefacetview += '<div class="edges-facetview-pager" style="margin-top:20px;"><div id="' + topPagers[0].id + '"></div></div>';
+                    thefacetview += '<div class="' + pagerClass + '"><div id="' + topPagers[0].id + '"></div></div>';
                 }
 
                 // loading notification (note that the notification implementation is responsible for its own visibility)
                 var loading = edge.category("searching-notification");
                 if (loading.length > 0) {
-                    thefacetview += '<div class="edges-facetview-searching"><div id="' + loading[0].id + '"></div></div>'
+                    thefacetview += '<div class="' + searchingClass + '"><div id="' + loading[0].id + '"></div></div>'
                 }
 
                 // insert the frame within which the results actually will go
                 var results = edge.category("results");
                 if (results.length > 0) {
-                    thefacetview += '<div id="edges-facetivew-results" dir="auto"><div id="' + results[0].id + '"></div></div>';
+                    thefacetview += '<div class="' + resultsClass + '" dir="auto"><div id="' + results[0].id + '"></div></div>';
                 }
 
                 // make space at the bottom for the pager
                 var bottomPagers = edge.category("bottom-pager");
                 if (bottomPagers.length > 0) {
-                    thefacetview += '<div class="edges-facetview-pager" style="margin-top:20px;"><div id="' + bottomPagers[0].id + '"></div></div>';
+                    thefacetview += '<div class="' + pagerClass + '"><div id="' + bottomPagers[0].id + '"></div></div>';
                 }
 
                 // close off all the big containers and return
@@ -203,22 +212,7 @@ $.extend(edges, {
                 thefacetview = thefacetview.replace(/{{FACETS}}/g, facetContainers);
 
                 edge.context.html(thefacetview);
-
-                //////////////////////////////////////////////
-                // now set up the various event bindings
-
-                // before executing a query, show the loading function
-                //edge.context.bind("edges:pre-query", edges.eventClosure(this, "showSearching"));
-                //edge.context.bind("edges:pre-render", edges.eventClosure(this, "hideSearching"));
             };
-
-            this.showSearching = function() {
-                this.edge.jq(".edges-facetview-searching").show();
-            };
-
-            this.hideSearching = function() {
-                this.edge.jq(".edges-facetview-searching").hide();
-            }
         },
 
         newResultsDisplayRenderer : function(params) {
@@ -282,7 +276,7 @@ $.extend(edges, {
                 // finally stick it all together into the container
                 var containerClasses = edges.css_classes(this.namespace, "container", this);
                 var container = '<div class="' + containerClasses + '">' + frag + '</div>';
-                this.component.jq("#" + this.component.id).html(container);
+                this.component.context.html(container);
             };
 
             this._renderResult = function(res) {
@@ -454,7 +448,7 @@ $.extend(edges, {
                         .replace(/{{SELECTED}}/g, filterFrag);
 
                 // now render it into the page
-                ts.jq("#" + ts.id).html(frag);
+                ts.context.html(frag);
 
                 // trigger all the post-render set-up functions
                 this.setUISize();
@@ -574,6 +568,9 @@ $.extend(edges, {
 
             // amount of time between finishing typing and when a query is executed from the search box
             this.freetextSubmitDelay = params.freetextSubmitDelay || 500;
+
+            // after search, the results will fade in over this number of milliseconds
+            this.fadeIn = params.fadeIn || 800;
 
             // enable the share/save link feature
             this.shareLink = params.shareLink || false;
@@ -816,7 +813,7 @@ $.extend(edges, {
                     <label for="' + this.toId + '">To</label>\
                     <input class="multi-date-range-input" type="text" name="' + this.toId + '" id="' + this.toId + '" placeholder="latest date">';
 
-                dre.jq("#" + dre.id).html(frag);
+                dre.context.html(frag);
 
                 this.selectJq = dre.jq("#" + this.selectId);
                 this.fromJq = dre.jq("#" + this.fromId);
@@ -961,13 +958,13 @@ $.extend(edges, {
                 if (filters !== "") {
                     var frag = '<div class="' + containerClass + '">{{FILTERS}}</div>';
                     frag = frag.replace(/{{FILTERS}}/g, filters);
-                    sf.jq("#" + sf.id).html(frag);
+                    sf.context.html(frag);
 
                     // click handler for when a filter remove button is clicked
                     var removeSelector = edges.css_class_selector(ns, "remove", this);
                     edges.on(removeSelector, "click", this, "removeFilter");
                 } else {
-                    sf.jq("#" + sf.id).html("");
+                    sf.context.html("");
                 }
             };
 
@@ -1005,7 +1002,7 @@ $.extend(edges, {
                             ' + this.searchingMessage + ' \
                         </div>'
                 }
-                this.component.jq("#" + this.component.id).html(frag);
+                this.component.context.html(frag);
             }
         }
     }
