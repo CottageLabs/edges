@@ -137,6 +137,7 @@ $.extend(edges, {
                 // the classes we're going to need
                 var containerClass = edges.css_classes(this.namespace, "container");
                 var facetsClass = edges.css_classes(this.namespace, "facets");
+                var facetClass = edges.css_classes(this.namespace, "facet");
                 var panelClass = edges.css_classes(this.namespace, "panel");
                 var controllerClass = edges.css_classes(this.namespace, "search-controller");
                 var selectedFiltersClass = edges.css_classes(this.namespace, "selected-filters");
@@ -158,7 +159,7 @@ $.extend(edges, {
                     thefacetview += '<div class="col-md-9" class="' + panelClass + '">';
 
                     for (var i = 0; i < facets.length; i++) {
-                        facetContainers += '<div id="' + facets[i].id + '"></div>';
+                        facetContainers += '<div class="' + facetClass + '"><div id="' + facets[i].id + '"></div></div>';
                     }
                 } else {
                     thefacetview += '<div class="col-md-12" class="' + panelClass + '">';
@@ -167,43 +168,41 @@ $.extend(edges, {
                 // make space for the search options container at the top
                 var controller = edge.category("controller");
                 if (controller.length > 0) {
-                    thefacetview += '<div class="' + controllerClass + '"><div id="' + controller[0].id + '"></div></div>';
+                    thefacetview += '<div class="row"><div class="col-md-12"><div class="' + controllerClass + '"><div id="' + controller[0].id + '"></div></div></div></div>';
                 }
 
                 // make space for the selected filters
                 var selectedFilters = edge.category("selected-filters");
                 if (selectedFilters.length > 0) {
-                    thefacetview += '<div style="margin-top: 20px"> \
-                                        <div class="row">\
+                    thefacetview += '<div class="row">\
                                             <div class="col-md-12">\
-                                                <div class="btn-toolbar" class="' + selectedFiltersClass + '"><div id="' + selectedFilters[0].id + '"></div></div>\
+                                                <div class="' + selectedFiltersClass + '"><div id="' + selectedFilters[0].id + '"></div></div>\
                                             </div>\
-                                        </div>\
-                                    </div>';
+                                        </div>';
                 }
 
                 // make space at the top for the page
                 var topPagers = edge.category("top-pager");
                 if (topPagers.length > 0) {
-                    thefacetview += '<div class="' + pagerClass + '"><div id="' + topPagers[0].id + '"></div></div>';
+                    thefacetview += '<div class="row"><div class="col-md-12"><div class="' + pagerClass + '"><div id="' + topPagers[0].id + '"></div></div></div></div>';
                 }
 
                 // loading notification (note that the notification implementation is responsible for its own visibility)
                 var loading = edge.category("searching-notification");
                 if (loading.length > 0) {
-                    thefacetview += '<div class="' + searchingClass + '"><div id="' + loading[0].id + '"></div></div>'
+                    thefacetview += '<div class="row"><div class="col-md-12"><div class="' + searchingClass + '"><div id="' + loading[0].id + '"></div></div></div></div>'
                 }
 
                 // insert the frame within which the results actually will go
                 var results = edge.category("results");
                 if (results.length > 0) {
-                    thefacetview += '<div class="' + resultsClass + '" dir="auto"><div id="' + results[0].id + '"></div></div>';
+                    thefacetview += '<div class="row"><div class="col-md-12"><div class="' + resultsClass + '" dir="auto"><div id="' + results[0].id + '"></div></div></div></div>';
                 }
 
                 // make space at the bottom for the pager
                 var bottomPagers = edge.category("bottom-pager");
                 if (bottomPagers.length > 0) {
-                    thefacetview += '<div class="' + pagerClass + '"><div id="' + bottomPagers[0].id + '"></div></div>';
+                    thefacetview += '<div class="row"><div class="col-md-12"><div class="' + pagerClass + '"><div id="' + bottomPagers[0].id + '"></div></div></div></div>';
                 }
 
                 // close off all the big containers and return
@@ -269,7 +268,7 @@ $.extend(edges, {
                     frag = "";
                     for (var i = 0; i < results.length; i++) {
                         var rec = this._renderResult(results[i]);
-                        frag += '<div class="row ' + recordClasses + '"><div class="col-md-12">' + rec + '</div></div>';
+                        frag += '<div class="row"><div class="col-md-12"><div class="' + recordClasses + '">' + rec + '</div></div></div>';
                     }
                 }
 
@@ -1004,6 +1003,129 @@ $.extend(edges, {
                 }
                 this.component.context.html(frag);
             }
+        },
+
+        newPagerRenderer : function(params) {
+            if (!params) { params = {} }
+            edges.bs3.PagerRenderer.prototype = edges.newRenderer(params);
+            return new edges.bs3.PagerRenderer(params);
+        },
+        PagerRenderer : function(params) {
+
+            this.scroll = params.scroll || true;
+
+            this.scrollSelector = params.scrollSelector || "body";
+
+            this.sizeOptions = params.sizeOptions || [10, 25, 50, 100];
+
+            this.namespace = "edges-bs3-pager";
+
+            this.draw = function() {
+                if (this.component.total === false || this.component.total === 0) {
+                    this.component.context.html("");
+                    return;
+                }
+
+                // classes we'll need
+                var containerClass = edges.css_classes(this.namespace, "container", this);
+                var totalClass = edges.css_classes(this.namespace, "total", this);
+                var navClass = edges.css_classes(this.namespace, "nav", this);
+                var firstClass = edges.css_classes(this.namespace, "first", this);
+                var prevClass = edges.css_classes(this.namespace, "prev", this);
+                var pageClass = edges.css_classes(this.namespace, "page", this);
+                var nextClass = edges.css_classes(this.namespace, "next", this);
+                var sizeSelectClass = edges.css_classes(this.namespace, "size", this);
+
+                // the total number of records found
+                var recordCount = '<span class="' + totalClass + '">' + this.component.total + '</span> results found';
+
+                // the number of records per page
+                var sizer = '<form class="form-inline">' + recordCount + '<select class="form-control input-sm ' + sizeSelectClass + '" name="' + this.component.id + '-page-size">{{SIZES}}</select> per page</form>';
+                var sizeopts = "";
+                var optarr = this.sizeOptions.slice(0);
+                if ($.inArray(this.component.pageSize, optarr) === -1) {
+                    optarr.push(this.component.pageSize)
+                }
+                optarr.sort(function(a,b) { return a - b});  // sort numerically
+                for (var i = 0; i < optarr.length; i++) {
+                    var so = optarr[i];
+                    var selected = "";
+                    if (so === this.component.pageSize) {
+                        selected = "selected='selected'";
+                    }
+                    sizeopts += '<option name="' + so + '" ' + selected + '>' + so + '</option>';
+                }
+                sizer = sizer.replace(/{{SIZES}}/g, sizeopts);
+
+                var first = '<a href="#" class="' + firstClass + '">First</a>';
+                var prev = '<a href="#" class="' + prevClass + '">Prev</a>';
+                if (this.component.page === 1) {
+                    first = '<span class="' + firstClass + ' disabled">First</span>';
+                    prev = '<span class="' + prevClass + ' disabled">Prev</span>';
+                }
+
+                var next = '<a href="#" class="' + nextClass + '">Next</a>';
+                if (this.component.page === this.component.totalPages) {
+                    next = '<span class="' + nextClass + ' disabled">Next</a>';
+                }
+
+                var nav = '<div class="' + navClass + '">' + first + prev +
+                    '<span class="' + pageClass + '">Page ' + this.component.page + ' of ' + this.component.totalPages + '</span>' +
+                    next + "</div>";
+
+                var frag = '<div class="' + containerClass + '"><div class="row"><div class="col-md-4">{{COUNT}}</div><div class="col-md-8">{{NAV}}</div></div></div>';
+                frag = frag.replace(/{{COUNT}}/g, sizer).replace(/{{NAV}}/g, nav);
+
+                this.component.context.html(frag);
+
+                // now create the selectors for the functions
+                var firstSelector = edges.css_class_selector(this.namespace, "first", this);
+                var prevSelector = edges.css_class_selector(this.namespace, "prev", this);
+                var nextSelector = edges.css_class_selector(this.namespace, "next", this);
+                var sizeSelector = edges.css_class_selector(this.namespace, "size", this);
+
+                // bind the event handlers
+                if (this.component.page !== 1) {
+                    edges.on(firstSelector, "click", this, "goToFirst");
+                    edges.on(prevSelector, "click", this, "goToPrev");
+                }
+                if (this.component.page !== this.component.totalPages) {
+                    edges.on(nextSelector, "click", this, "goToNext");
+                }
+                edges.on(sizeSelector, "change", this, "changeSize");
+            };
+
+            this.doScroll = function() {
+                $(this.scrollSelector).animate({    // note we do not use component.jq, because the scroll target could be outside it
+                    scrollTop: $(this.scrollSelector).offset().top
+                }, 1);
+            };
+
+            this.goToFirst = function(element) {
+                if (this.scroll) {
+                    this.doScroll();
+                }
+                this.component.setFrom(1);
+            };
+
+            this.goToPrev = function(element) {
+                if (this.scroll) {
+                    this.doScroll();
+                }
+                this.component.decrementPage();
+            };
+
+            this.goToNext = function(element) {
+                if (this.scroll) {
+                    this.doScroll();
+                }
+                this.component.incrementPage();
+            };
+
+            this.changeSize = function(element) {
+                var size = $(element).val();
+                this.component.setSize(size);
+            };
         }
     }
 });

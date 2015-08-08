@@ -1144,6 +1144,13 @@ var es = {
                 }
             }
             return res;
+        };
+
+        this.total = function() {
+            if (this.data.hits && this.data.hits.total) {
+                return parseInt(this.data.hits.total);
+            }
+            return false;
         }
     },
 

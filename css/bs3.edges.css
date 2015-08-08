@@ -10,6 +10,10 @@
 
 }
 
+.edges-bs3-facetview-facet {
+    margin-bottom: 15px;
+}
+
 .edges-bs3-facetview-panel {
 
 }
@@ -58,6 +62,8 @@
 .edges-bs-results-display-record {
     padding-bottom: 15px;
     padding-top: 15px;
+    padding-left: 10px;
+    padding-right: 10px;
     border-bottom: 1px dashed #cccccc;
 }
 
@@ -85,7 +91,6 @@
 .edges-bs3-basic-term-selector-facet {
     border-top: 1px solid #cccccc;
     border-bottom: 1px solid #cccccc;
-    margin-bottom: 15px;
 }
 
 .edges-bs3-basic-term-selector-header {
@@ -162,7 +167,9 @@
     -moz-border-radius: 5px;
     -webkit-border-radius: 5px;
     border-radius: 5px;
-    background-color: #f4f4f4;;
+    background-color: #f4f4f4;
+    margin-top: 10px;
+    margin-bottom: 10px;
 }
 
 .edges-bs3-selected-filters-field {
@@ -200,4 +207,66 @@
     width: 100%;
     text-align: center;
     color: #ffffff;
+}
+
+
+/********************************************************
+ *  Pager
+ */
+
+.edges-bs3-pager-container {
+    padding: 5px;
+    background: #eeeeee;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+.edges-bs3-pager-total {
+    font-weight: bold;
+}
+
+.edges-bs3-pager-size {
+    margin-left: 10px;
+}
+
+.edges-bs3-pager-nav {
+    float: right;
+}
+
+.edges-bs3-pager-first {
+    margin-right: 5px;
+    font-weight: bold;
+}
+
+.edges-bs3-pager-first.disabled {
+    margin-right: 5px;
+    font-weight: bold;
+    color: #cccccc;
+}
+
+.edges-bs3-pager-prev {
+    margin-right: 5px;
+    font-weight: bold;
+}
+
+.edges-bs3-pager-prev.disabled {
+    margin-right: 5px;
+    font-weight: bold;
+    color: #cccccc;
+}
+
+.edges-bs3-pager-page {
+    margin-right: 5px;
+    font-weight: bold;
+}
+
+.edges-bs3-pager-next {
+    margin-right: 5px;
+    font-weight: bold;
+}
+
+.edges-bs3-pager-next.disabled {
+    margin-right: 5px;
+    font-weight: bold;
+    color: #cccccc;
 }

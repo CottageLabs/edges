@@ -91,7 +91,7 @@ var edges = {
         this.currentQuery = false;
 
         // the last result object from the ES layer
-        this.results = false;
+        this.result = false;
 
         // if the search is currently executing
         this.searching = false;
@@ -1200,6 +1200,71 @@ var edges = {
     },
     Pager : function(params) {
 
+        this.defaultRenderer = params.defaultRenderer || "newPagerRenderer";
+
+        ///////////////////////////////////////
+        // internal state
+
+        this.from = false;
+        this.to = false;
+        this.total = false;
+        this.page = false;
+        this.pageSize = false;
+        this.totalPages = false;
+
+        this.synchronise = function() {
+            // reset the properties
+            this.from = false;
+            this.to = false;
+            this.total = false;
+            this.page = false;
+            this.pageSize = false;
+            this.totalPages = false;
+
+            // calculate the properties based on the latest query/results
+            if (this.edge.currentQuery) {
+                this.from = parseInt(this.edge.currentQuery.from) + 1;
+                this.pageSize = parseInt(this.edge.currentQuery.size);
+            }
+            if (this.edge.result) {
+                this.total = this.edge.result.total()
+            }
+            if (this.from !== false && this.total !== false) {
+                this.to = this.from + this.pageSize - 1;
+                this.page = Math.ceil((this.from - 1) / this.pageSize) + 1;
+                this.totalPages = Math.ceil(this.total / this.pageSize)
+            }
+        };
+
+        this.setFrom = function(from) {
+            var nq = this.edge.cloneQuery();
+
+            from = from - 1; // account for the human readability of the value, ES is 0 indexed here
+            if (from < 0) {
+                from = 0;
+            }
+            nq.from = from;
+
+            this.edge.pushQuery(nq);
+            this.edge.doQuery();
+        };
+
+        this.setSize = function(size) {
+            var nq = this.edge.cloneQuery();
+            nq.size = size;
+            this.edge.pushQuery(nq);
+            this.edge.doQuery();
+        };
+
+        this.decrementPage = function() {
+            var from = this.from - this.pageSize;
+            this.setFrom(from);
+        };
+
+        this.incrementPage = function() {
+            var from = this.from + this.pageSize;
+            this.setFrom(from);
+        };
     },
 
     newSearchingNotification : function(params) {
