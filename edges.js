@@ -553,8 +553,11 @@ var edges = {
         };
 
         this.synchronise = function() {
-            // if there is a result object, pull and prepare the values
+            // reset the state of the internal variables
             this.values = [];
+            this.filters = [];
+
+            // if there is a result object, pull and prepare the values
             if (this.edge.result) {
                 // assign the terms and counts from the aggregation
                 var buckets = this.edge.result.buckets(this.id);
@@ -617,7 +620,6 @@ var edges = {
             // extract all the filter values that pertain to this selector
 
             var filters = this.edge.currentQuery.listMust(es.newTermFilter({field: this.field}));
-            this.filters = [];
             for (var i = 0; i < filters.length; i++) {
                 var val = filters[i].value;
                 val = this._translate(val);
@@ -717,7 +719,8 @@ var edges = {
         this.values = [];
 
         this.synchronise = function() {
-            // set the values
+            // reset the state of the internal variables
+            this.values = [];
         };
     },
 
@@ -747,7 +750,8 @@ var edges = {
         this.values = [];
 
         this.synchronise = function() {
-            // set the values
+            // reset the state of the internal variables
+            this.values = [];
         };
     },
 
@@ -777,7 +781,8 @@ var edges = {
         this.values = [];
 
         this.synchronise = function() {
-            // set the values
+            // reset the state of the internal variables
+            this.values = [];
         };
     },
 
@@ -996,10 +1001,12 @@ var edges = {
         this.shortUrl = false;
 
         this.synchronise = function() {
+            // reset the state of the internal variables
             this.searchString = false;
             this.searchField = false;
             this.sortBy = false;
             this.sortDir = "desc";
+            // this.shortUrl - not sure what to do with this one yet
 
             if (this.edge.currentQuery) {
                 var qs = this.edge.currentQuery.getQueryString();
@@ -1144,6 +1151,7 @@ var edges = {
         this.mustFilters = {};
 
         this.synchronise = function() {
+            // reset the state of the internal variables
             this.mustFilters = {};
 
             var musts = this.edge.currentQuery.listMust();
@@ -1267,7 +1275,7 @@ var edges = {
         this.totalPages = false;
 
         this.synchronise = function() {
-            // reset the properties
+            // reset the state of the internal variables
             this.from = false;
             this.to = false;
             this.total = false;
@@ -1376,7 +1384,9 @@ var edges = {
         this.results = [];
 
         this.synchronise = function() {
+            // reset the state of the internal variables
             this.results = [];
+
             if (this.edge.result) {
                 this.results = this.edge.result.results();
             }
@@ -1392,6 +1402,9 @@ var edges = {
         return new edges.Chart(params);
     },
     Chart : function(params) {
+        ////////////////////////////////////////////
+        // arguments that can be passed in
+
         this.category = params.category || "chart";
         this.display = params.display || "";
 
@@ -1426,7 +1439,6 @@ var edges = {
             // instance, so if we're kicking the call upstairs, we need to pass it explicitly to the
             // right object
             edges.newComponent().init.call(this, edge);
-            // this.__proto__.init.call(this, edge);
 
             // copy over the names of the aggregations that we're going to read from
             for (var i = 0; i < this.aggregations.length; i++) {
@@ -1449,7 +1461,9 @@ var edges = {
         };
 
         this.synchronise = function() {
-            this.dataSeries = this.dataFunction(this);
+            if (this.dataFunction) {
+                this.dataSeries = this.dataFunction(this);
+            }
         };
     },
     ChartDataFunctions : {
