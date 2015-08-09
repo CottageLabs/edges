@@ -148,7 +148,11 @@ jQuery(document).ready(function($) {
         selector: "#facetview",
         template: edges.bs3.newFacetview(),
         search_url: "http://localhost:9200/doaj/article/_search",
+        manageUrl : true,
         baseQuery : es.newQuery({
+            must: [es.newTermFilter({field: "index.classification.exact", value: "Medicine"})]
+        }),
+        openingQuery : es.newQuery({
             size : 12,
             queryString: {queryString: "obese", defaultOperator: "OR", defaultField: "index.unpunctitle"},
             sort : {field: "index.publisher.exact", order: "asc"}
@@ -211,6 +215,13 @@ jQuery(document).ready(function($) {
                 })
             })
         ]
+    });
+
+    $("#facetview").on("edges:pre-query", function(event) {
+        var obj = e2.urlQueryArg();
+        var key = Object.keys(obj);
+        var url = "example.html?" + key + "=" + obj[key];
+        $("#managed-url").attr("href", url).html(url);
     });
 
     ///////////////////////////////////////////////////

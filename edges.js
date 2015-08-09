@@ -51,8 +51,12 @@ var edges = {
         this.datatype = params.datatype || "jsonp";
 
         // query that forms the basis of all queries that are assembled and run
-        // all query defaults like page size and sort options
-        this.baseQuery = params.baseQuery || es.newQuery();
+        // Note that baseQuery is inviolable - it's requirements will always be enforced
+        this.baseQuery = params.baseQuery || false;
+
+        // query to use to initialise the search.  Use this to set your opening
+        // values for things like page size, initial search terms, etc.
+        this.openingQuery = params.openingQuery || es.newQuery();
 
         // should the init process do a search
         this.initialSearch = params.initialSearch || true;
@@ -81,8 +85,8 @@ var edges = {
         // the query most recently read from the url
         this.urlQuery = false;
 
-        // fragment identifier to be appended to any url generated
-        this.urlFragmentIdentifier = false;
+        // original url parameters
+        this.urlParams = {};
 
         // the short url for this page
         this.shortUrl = false;
@@ -109,13 +113,12 @@ var edges = {
 
             // if we are to manage the URL, attempt to pull a query from it
             if (this.manageUrl) {
-                var urlParams = this.getUrlVars();
+                var urlParams = this.getUrlParams();
                 if (this.urlQuerySource in urlParams) {
                     this.urlQuery = es.newQuery({raw : urlParams[this.urlQuerySource]});
+                    delete urlParams[this.urlQuerySource];
                 }
-                if (urlParams.url_fragment_identifier) {
-                    this.urlFragmentIdentifier = urlParams.url_fragment_identifier;
-                }
+                this.urlParams = urlParams;
             }
 
             // render the template if necessary
@@ -135,24 +138,25 @@ var edges = {
                 component.draw(this);
             }
 
-            // trigger the edges:started event
-            this.context.trigger("edges:post-init");
-
-            // start a new query from the base query
-            this.currentQuery = $.extend(true, {}, this.baseQuery);
-
-            // if a url query is specified, then extend the base query with it, and then
-            // unset the url query, so it isn't used again
+            // determine whether to initialise with either the openingQuery or the urlQuery
+            var requestedQuery = this.openingQuery;
             if (this.urlQuery) {
-                this.currentQuery.extend(this.urlQuery);
-                this.urlQuery = false;      // FIXME: may no longer need to do this
+                // if there is a URL query, then we open with that, and then forget it
+                requestedQuery = this.urlQuery;
+                this.urlQuery = false
             }
 
             // request the components to contribute to the query
             for (var i = 0; i < this.components.length; i++) {
                 var component = this.components[i];
-                component.contrib(this.currentQuery);
+                component.contrib(requestedQuery);
             }
+
+            // finally push the query, which will reconcile it with the baseQuery
+            this.pushQuery(requestedQuery);
+
+            // trigger the edges:started event
+            this.context.trigger("edges:post-init");
 
             // now issue a query
             this.doQuery();
@@ -168,15 +172,19 @@ var edges = {
 
         // reset the query to the start and re-issue the query
         this.reset = function() {
-            // start a new query from the base query
-            this.currentQuery = $.extend(true, {}, this.baseQuery);
+            // start a totally blank query
+            var requestedQuery = es.newQuery();
 
             // request the components to contribute to the query
             for (var i = 0; i < this.components.length; i++) {
                 var component = this.components[i];
-                component.contrib(this.currentQuery);
+                component.contrib(requestedQuery);
             }
 
+            // push the query, which will reconcile it with the baseQuery
+            this.pushQuery(requestedQuery);
+
+            // now execute the query
             this.doQuery();
         };
 
@@ -188,7 +196,9 @@ var edges = {
         };
 
         this.pushQuery = function(query) {
-            // accept the new query as-is
+            if (this.baseQuery) {
+                query.merge(this.baseQuery);
+            }
             this.currentQuery = query;
         };
 
@@ -207,16 +217,9 @@ var edges = {
             // pre query event
             this.context.trigger("edges:pre-query");
 
-            // at this point we need to ensure that the baseQuery is always represented
-            this.currentQuery.extend(this.baseQuery);
-
             // if we are managing the url space, use pushState to set it
             if (this.manageUrl) {
-                if ('pushState' in window.history) {
-                    var q = JSON.stringify(this.currentQuery.objectify());
-                    var querypart = "?" + this.urlQuerySource + "=" + encodeURIComponent(q);
-                    window.history.pushState("", "", querypart);
-                }
+                this.updateUrl();
             }
 
             // issue the query to elasticsearch
@@ -295,14 +298,14 @@ var edges = {
         /////////////////////////////////////////////////////
         // URL management functions
 
-        this.getUrlVars = function() {
+        this.getUrlParams = function() {
             var params = {};
             var url = window.location.href;
-            var anchor = false;
+            var fragment = false;
 
             // break the anchor off the url
             if (url.indexOf("#") > -1) {
-                anchor = url.slice(url.indexOf('#'));
+                fragment = url.slice(url.indexOf('#'));
                 url = url.substring(0, url.indexOf('#'));
             }
 
@@ -325,25 +328,70 @@ var edges = {
             }
 
             // record the fragment identifier if required
-            if (anchor) {
-                params['url_fragment_identifier'] = anchor;
+            if (fragment) {
+                params['#'] = fragment;
             }
 
             return params;
         };
 
-        this.sharableUrl = function() {
-            var source = elasticSearchQuery({"options" : options, "include_facets" : options.include_facets_in_url, "include_fields" : options.include_fields_in_url})
-            var querypart = "?source=" + encodeURIComponent(serialiseQueryObject(source))
-            include_fragment = include_fragment === undefined ? true : include_fragment
-            if (include_fragment) {
-                var fragment_identifier = options.url_fragment_identifier ? options.url_fragment_identifier : "";
-                querypart += fragment_identifier
+        this.urlQueryArg = function(objectify_options) {
+            if (!objectify_options) {
+                objectify_options = {
+                    include_query_string : true,
+                    include_filters : true,
+                    include_paging : true,
+                    include_sort : true,
+                    include_fields : false,
+                    include_aggregations : false,
+                    include_facets : false
+                }
             }
-            if (query_part_only) {
-                return querypart
+            var q = JSON.stringify(this.currentQuery.objectify(objectify_options));
+            var obj = {};
+            obj[this.urlQuerySource] = encodeURIComponent(q);
+            return obj;
+        };
+
+        this.fullQueryArgs = function() {
+            var args = $.extend(true, {}, this.urlParams);
+            $.extend(args, this.urlQueryArg());
+            return args;
+        };
+
+        this.fullUrlQueryString = function() {
+            return this._makeUrlQuery(this.fullQueryArgs())
+        };
+
+        this._makeUrlQuery = function(args) {
+            var keys = Object.keys(args);
+            var entries = [];
+            for (var i = 0; i < keys.length; i++) {
+                var key = keys[i];
+                var val = args[key];
+                entries.push(key + "=" + val);  // NOTE we do not escape - this should already be done
             }
-            return 'http://' + window.location.host + window.location.pathname + querypart
+            return entries.join("&");
+        };
+
+        this.fullUrl = function() {
+            var args = this.fullQueryArgs();
+            var fragment = "";
+            if (args["#"]) {
+                fragment = "#" + args["#"];
+                delete args["#"];
+            }
+            var wloc = window.location.toString();
+            var bits = wloc.split("?");
+            var url = bits[0] + "?" + this._makeUrlQuery(args) + fragment
+            return url;
+        };
+
+        this.updateUrl = function() {
+            if ('pushState' in window.history) {
+                var qs = "?" + this.fullUrlQueryString();
+                window.history.pushState("", "", qs);
+            }
         };
 
         /////////////////////////////////////////////
@@ -944,19 +992,21 @@ var edges = {
 
         this.sortDir = "desc";
 
-        this.resultsSize = false;
-
         // the short url for the current search, if it has been generated
         this.shortUrl = false;
 
         this.synchronise = function() {
+            this.searchString = false;
+            this.searchField = false;
+            this.sortBy = false;
+            this.sortDir = "desc";
+
             if (this.edge.currentQuery) {
                 var qs = this.edge.currentQuery.getQueryString();
                 if (qs) {
                     this.searchString = qs.queryString;
                     this.searchField = qs.defaultField;
                 }
-                this.resultsSize = this.edge.currentQuery.size;
                 var sorts = this.edge.currentQuery.getSortBy();
                 if (sorts.length > 0) {
                     this.sortBy = sorts[0].field;
@@ -1026,16 +1076,20 @@ var edges = {
         this.setSearchText = function(text) {
             var nq = this.edge.cloneQuery();
 
-            var params = {
-                queryString: text,
-                defaultOperator: this.defaultOperator,
-                fuzzify : this.fuzzify
-            };
-            if (this.searchField && this.searchField !== "") {
-                params["defaultField"] = this.searchField;
+            if (text !== "") {
+                var params = {
+                    queryString: text,
+                    defaultOperator: this.defaultOperator,
+                    fuzzify : this.fuzzify
+                };
+                if (this.searchField && this.searchField !== "") {
+                    params["defaultField"] = this.searchField;
+                }
+                // set the query with the new search field
+                nq.setQueryString(es.newQueryString(params));
+            } else {
+                nq.removeQueryString();
             }
-            // set the query with the new search field
-            nq.setQueryString(es.newQueryString(params));
 
             // reset the search page to the start and then trigger the next query
             nq.from = 0;
@@ -1223,8 +1277,8 @@ var edges = {
 
             // calculate the properties based on the latest query/results
             if (this.edge.currentQuery) {
-                this.from = parseInt(this.edge.currentQuery.from) + 1;
-                this.pageSize = parseInt(this.edge.currentQuery.size);
+                this.from = parseInt(this.edge.currentQuery.getFrom()) + 1;
+                this.pageSize = parseInt(this.edge.currentQuery.getSize());
             }
             if (this.edge.result) {
                 this.total = this.edge.result.total()

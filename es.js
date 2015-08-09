@@ -64,10 +64,10 @@ var es = {
         return new es.Query(params);
     },
     Query : function(params) {
-        // properties that can be set directly
+        // properties that can be set directly (thought note that they may need to be read via their getters)
         this.filtered = params.filtered || true;
-        this.size = params.size || 10;
-        this.from = params.from || 0;
+        this.size = params.size || false;
+        this.from = params.from || false;
         this.fields = params.fields || [];
         this.aggs = params.aggs || [];
         this.must = params.must || [];
@@ -78,17 +78,36 @@ var es = {
         this.sort = [];
 
         // ones that we haven't used yet, so are awaiting implementation
+        // NOTE: once we implement these, they also need to be considered in merge()
         this.source = params.source || false;
         this.should = params.should || [];
         this.mustNot = params.mustNot || [];
         this.partialFields = params.partialFields || false;
         this.scriptFields = params.scriptFields || false;
-        this.minimumShouldMatch = params.minimumShouldMatch || 1;
+        this.minimumShouldMatch = params.minimumShouldMatch || false;
         this.partialFields = params.partialFields || false;
         this.scriptFields = params.scriptFields || false;
 
         // for old versions of ES, so are not necessarily going to be implemented
         this.facets = params.facets || [];
+
+        this.getSize = function() {
+            if (this.size) {
+                return this.size;
+            }
+            return 10;
+        };
+        this.getFrom = function() {
+            if (this.from) {
+                return this.from
+            }
+            return 0;
+        };
+        this.addField = function(field) {
+            if ($.inArray(field, this.fields) === -1) {
+                this.fields.push(field);
+            }
+        };
 
         this.setQueryString = function(params) {
             var qs = params;
@@ -103,6 +122,9 @@ var es = {
         };
         this.getQueryString = function() {
             return this.queryString;
+        };
+        this.removeQueryString = function() {
+            this.queryString = false;
         };
 
         this.setSortBy = function(params) {
@@ -124,7 +146,7 @@ var es = {
             if (!(params instanceof es.Sort)) {
                 sort = es.newSort(params);
             }
-            // prevent default sort options being added
+            // prevent repeated sort options being added
             for (var i = 0; i < this.sort.length; i++) {
                 var so = this.sort[i];
                 if (so.field === sort.field) {
@@ -134,7 +156,33 @@ var es = {
             // add the sort option
             this.sort.push(sort);
         };
-        this.removeSortBy = function(params) {};
+        this.prependSortBy = function(params) {
+            // ensure we have an instance of es.Sort
+            var sort = params;
+            if (!(params instanceof es.Sort)) {
+                sort = es.newSort(params);
+            }
+            this.removeSortBy(sort);
+            this.sort.unshift(sort);
+        };
+        this.removeSortBy = function(params) {
+            // ensure we have an instance of es.Sort
+            var sort = params;
+            if (!(params instanceof es.Sort)) {
+                sort = es.newSort(params);
+            }
+            var removes = [];
+            for (var i = 0; i < this.sort.length; i++) {
+                var so = this.sort[i];
+                if (so.field === sort.field) {
+                    removes.push(i);
+                }
+            }
+            removes = removes.sort().reverse();
+            for (var i = 0; i < removes.length; i++) {
+                this.sort.splice(removes[i], 1);
+            }
+        };
         this.getSortBy = function() {
             return this.sort;
         };
@@ -154,16 +202,34 @@ var es = {
                 }
             }
         };
-        this.addAggregation = function(agg) {
-            for (var i = 0; i < this.aggs.length; i++) {
-                if (this.aggs[i].name === agg.name) {
-                    return;
+        this.addAggregation = function(agg, overwrite) {
+            if (overwrite) {
+                this.removeAggregation(agg.name);
+            } else {
+                for (var i = 0; i < this.aggs.length; i++) {
+                    if (this.aggs[i].name === agg.name) {
+                        return;
+                    }
                 }
             }
             this.aggs.push(agg);
         };
-        this.removeAggregation = function() {};
+        this.removeAggregation = function(name) {
+            var removes = [];
+            for (var i = 0; i < this.aggs.length; i++) {
+                if (this.aggs[i].name === name) {
+                    removes.push(i);
+                }
+            }
+            removes = removes.sort().reverse();
+            for (var i = 0; i < removes.length; i++) {
+                this.aggs.splice(removes[i], 1);
+            }
+        };
         this.clearAggregations = function() {};
+        this.listAggregations = function() {
+            return this.aggs;
+        };
 
         this.addMust = function(filter) {
             var existing = this.listMust(filter);
@@ -241,9 +307,50 @@ var es = {
         ////////////////////////////////////////////////
         // create, parse, serialise functions
 
-        this.extend = function(source) {
-            // extend this query with the data from the passed query.
-            // existing values in this query always take precedence
+        this.merge = function(source) {
+            // merge this query (in place) with the provded query, where the provided
+            // query is dominant (i.e. any properties it has override this object)
+            //
+            // These are the merge rules:
+            // this.filtered - take from source
+            // this.size - take from source if set
+            // this.from - take from source if set
+            // this.fields - append any new ones from source
+            // this.aggs - append any new ones from source, overwriting any with the same name
+            // this must - append any new ones from source
+            // this.queryString - take from source if set
+            // this.sort - prepend any from source
+
+            this.filtered = source.filtered;
+            if (source.size) {
+                this.size = source.size;
+            }
+            if (source.from) {
+                this.from = source.from;
+            }
+            if (source.fields && source.fields.length > 0) {
+                for (var i = 0; i < source.fields.length; i++) {
+                    this.addField(source.fields[i]);
+                }
+            }
+            var aggs = source.listAggregations();
+            for (var i = 0; i < aggs.length; i++) {
+                this.addAggregation(aggs[i], true);
+            }
+            var must = source.listMust();
+            for (var i = 0; i < must.length; i++) {
+                this.addMust(must[i]);
+            }
+            if (source.getQueryString()) {
+                this.setQueryString(source.getQueryString())
+            }
+            var sorts = source.getSortBy();
+            if (sorts && sorts.length > 0) {
+                sorts.reverse();
+                for (var i = 0; i < sorts.length; i++) {
+                    this.prependSortBy(sorts[i])
+                }
+            }
         };
 
         this.objectify = function(params) {
@@ -251,13 +358,13 @@ var es = {
                 params = {};
             }
             // this allows you to specify which bits of the query get objectified
-            var include_query_string = params.include_query_string || true;
-            var include_filters = params.include_filters || true;
-            var include_paging = params.include_paging || true;
-            var include_sort = params.include_sort || true;
-            var include_fields = params.include_fields || true;
-            var include_aggregations = params.include_aggregations || true;
-            var include_facets = params.include_facets || true;
+            var include_query_string = params.include_query_string === undefined ? true : params.include_query_string;
+            var include_filters = params.include_filters === undefined ? true : params.include_filters;
+            var include_paging = params.include_paging === undefined ? true : params.include_paging;
+            var include_sort = params.include_sort === undefined ? true : params.include_sort;
+            var include_fields = params.include_fields === undefined ? true : params.include_fields;
+            var include_aggregations = params.include_aggregations === undefined ? true : params.include_aggregations;
+            var include_facets = params.include_facets === undefined ? true : params.include_facets;
 
             // queries will be separated in queries and bool filters, which may then be
             // combined later
@@ -300,10 +407,14 @@ var es = {
 
             if (include_paging) {
                 // page size
-                q["size"] = this.size;
+                if (this.size) {
+                    q["size"] = this.size;
+                }
 
                 // page number (from)
-                q["from"] = this.from;
+                if (this.from) {
+                    q["from"] = this.from;
+                }
             }
 
             // sort option

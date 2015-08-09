@@ -997,7 +997,7 @@ $.extend(edges, {
                 if (this.component.searching) {
                     // classes that we need
                     var barClasses = edges.css_classes(this.namespace, "bar", this);
-                    frag = '<div class="progress progress-bar-info progress-bar-striped active ' + barClasses + '"> \
+                    frag = '<div class="progress-bar progress-bar-info progress-bar-striped active ' + barClasses + '"> \
                             ' + this.searchingMessage + ' \
                         </div>'
                 }
@@ -1073,7 +1073,7 @@ $.extend(edges, {
                     '<span class="' + pageClass + '">Page ' + this.component.page + ' of ' + this.component.totalPages + '</span>' +
                     next + "</div>";
 
-                var frag = '<div class="' + containerClass + '"><div class="row"><div class="col-md-4">{{COUNT}}</div><div class="col-md-8">{{NAV}}</div></div></div>';
+                var frag = '<div class="' + containerClass + '"><div class="row"><div class="col-md-6">{{COUNT}}</div><div class="col-md-6">{{NAV}}</div></div></div>';
                 frag = frag.replace(/{{COUNT}}/g, sizer).replace(/{{NAV}}/g, nav);
 
                 this.component.context.html(frag);
