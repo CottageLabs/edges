@@ -256,6 +256,22 @@ jQuery(document).ready(function($) {
         search_url: "http://localhost:9200/allapc/institutional/_search",
         baseQuery : base_query,
         components: [
+            edges.newSelectedFilters({
+                id: "selected-filters",
+                fieldDisplays : {
+                    "monitor.jm:apc.name.exact" : "Institution",
+                    "monitor.jm:apc.amount_gbp" : "APC"
+                },
+                rangeMaps : {
+                    "monitor.jm:apc.amount_gbp": [
+                        {to: 500, display: "< 500"},
+                        {from: 500, to: 1000, display: "500 -> 1000"},
+                        {from: 1000, to: 2500, display: "1000 -> 2500"},
+                        {from: 2500, display: "2500+"}
+                    ]
+                },
+                category: "top"
+            }),
             edges.newMultiDateRangeEntry({
                 id : "date_range",
                 fields : [
@@ -286,6 +302,18 @@ jQuery(document).ready(function($) {
                 field: "monitor.jm:apc.name.exact",
                 display: "Limit by Institution",
                 size: 15,
+                category: "lhs"
+            }),
+            edges.newBasicRangeSelector({
+                id : "gbp",
+                field: "monitor.jm:apc.amount_gbp",
+                display: "APC Amount",
+                ranges: [
+                    {to: 500, display: "< 500"},
+                    {from: 500, to: 1000, display: "500 -> 1000"},
+                    {from: 1000, to: 2500, display: "1000 -> 2500"},
+                    {from: 2500, display: "2500+"}
+                ],
                 category: "lhs"
             }),
             edges.newHorizontalMultibar({

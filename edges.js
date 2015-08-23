@@ -521,7 +521,7 @@ var edges = {
         this.inflation = params.inflation || 100;
 
         // override the parent's defaultRenderer
-        this.defaultRenderer = "newBasicTermSelectorRenderer";
+        this.defaultRenderer = params.defaultRenderer || "newBasicTermSelectorRenderer";
 
         //////////////////////////////////////////
         // properties used to store internal state
@@ -706,21 +706,210 @@ var edges = {
         return new edges.BasicRangeSelector(params);
     },
     BasicRangeSelector : function(params) {
+        //////////////////////////////////////////////
+        // values that can be passed in
+
         // list of ranges (in order) which define the filters
         // {"from" : <num>, "to" : <num>, "display" : "<display name>"}
         this.ranges = params.ranges || [];
 
-        // if there are no results for a given range, should it be hidden
-        this.hideEmptyRange = params.hideEmptyRange || true;
+        // function to use to format any unknown ranges (there is a sensible default
+        // so you can mostly leave this alone)
+        this.formatUnknown = params.formatUnknown || false;
+
+        // override the parent's defaultRenderer
+        this.defaultRenderer = params.defaultRenderer || "newBasicRangeSelectorRenderer";
 
         //////////////////////////////////////////////
-        // values to be rendered
+        // values to track internal state
 
+        // values that the renderer should render
+        // wraps an object (so the list is ordered) which in turn is the
+        // { display: <display>, from: <from>, to: <to>, count: <count> }
         this.values = [];
+
+        // a list of already-selected ranges for this field
+        // wraps an object which in turn is
+        // {display: <display>, from: <from>, to: <to> }
+        this.filters = [];
+
+        this.contrib = function(query) {
+            var ranges = [];
+            for (var i = 0; i < this.ranges.length; i++) {
+                var r = this.ranges[i];
+                var obj = {};
+                if (r.from) {
+                    obj.from = r.from;
+                }
+                if (r.to) {
+                    obj.to = r.to;
+                }
+                ranges.push(obj);
+            }
+            query.addAggregation(
+                es.newRangeAggregation({
+                    name: this.id,
+                    field: this.field,
+                    ranges: ranges
+                })
+            );
+        };
 
         this.synchronise = function() {
             // reset the state of the internal variables
             this.values = [];
+            this.filters = [];
+
+            // first copy over the results from the aggregation buckets
+            if (this.edge.result) {
+
+                var buckets = this.edge.result.buckets(this.id);
+                for (var i = 0; i < this.ranges.length; i++) {
+                    var r = this.ranges[i];
+                    var bucket = this._getRangeBucket(buckets, r.from, r.to);
+                    var obj = $.extend(true, {}, r);
+                    obj["count"] = bucket.doc_count;
+                    this.values.push(obj);
+                }
+            }
+
+            // now check to see if there are any range filters set on this field
+            if (this.edge.currentQuery) {
+                var filters = this.edge.currentQuery.listMust(es.newRangeFilter({field: this.field}));
+                for (var i = 0; i < filters.length; i++) {
+                    var to = filters[i].lt;
+                    var from = filters[i].gte;
+                    var r = this._getRangeDef(from, to);
+                    if (r) {
+                        // one of our ranges has been set
+                        this.filters.push(r);
+                    } else {
+                        // this is a previously unknown range definition, so we need to be able to understand it
+                        this.filters.push({display: this._formatUnknown(from, to), from: from, to: to})
+                    }
+                }
+            }
+        };
+
+        this.selectRange = function(from, to) {
+            var nq = this.edge.cloneQuery();
+
+            // just add a new range filter (the query builder will ensure there are no duplicates)
+            var params = {field: this.field};
+            if (from) {
+                params["gte"] = from;
+            }
+            if (to) {
+                params["lt"] = to;
+            }
+            nq.addMust(es.newRangeFilter(params));
+
+            // reset the search page to the start and then trigger the next query
+            nq.from = 0;
+            this.edge.pushQuery(nq);
+            this.edge.doQuery();
+        };
+
+        this.removeFilter = function(from, to) {
+            var nq = this.edge.cloneQuery();
+
+            // just add a new range filter (the query builder will ensure there are no duplicates)
+            var params = {field: this.field};
+            if (from) {
+                params["gte"] = from;
+            }
+            if (to) {
+                params["lt"] = to;
+            }
+            nq.removeMust(es.newRangeFilter(params));
+
+            // reset the search page to the start and then trigger the next query
+            nq.from = 0;
+            this.edge.pushQuery(nq);
+            this.edge.doQuery();
+        };
+
+        this._getRangeDef = function(from, to) {
+            for (var i = 0; i < this.ranges.length; i++) {
+                var r = this.ranges[i];
+                var frMatch = true;
+                var toMatch = true;
+                // if one is set and the other not, no match
+                if ((from && !r.from) || (!from && r.from)) {
+                    frMatch = false;
+                }
+                if ((to && !r.to) || (!to && r.to)) {
+                    toMatch = false;
+                }
+
+                // if both set, and they don't match, no match
+                if (from && r.from && from !== r.from) {
+                    frMatch = false;
+                }
+                if (to && r.to && to !== r.to) {
+                    toMatch = false;
+                }
+
+                // both have to match for a match
+                if (frMatch && toMatch) {
+                    return r
+                }
+            }
+            return false;
+        };
+
+        this._getRangeBucket = function(buckets, from, to) {
+            for (var i = 0; i < buckets.length; i++) {
+                var r = buckets[i];
+                var frMatch = true;
+                var toMatch = true;
+                // if one is set and the other not, no match
+                if ((from && !r.from) || (!from && r.from)) {
+                    frMatch = false;
+                }
+                if ((to && !r.to) || (!to && r.to)) {
+                    toMatch = false;
+                }
+
+                // if both set, and they don't match, no match
+                if (from && r.from && from !== r.from) {
+                    frMatch = false;
+                }
+                if (to && r.to && to !== r.to) {
+                    toMatch = false;
+                }
+                if (frMatch && toMatch) {
+                    return r
+                }
+            }
+            return false;
+        };
+
+        this._formatUnknown = function(from, to) {
+            if (this.formatUnknown) {
+                return this.formatUnknown(from, to)
+            } else {
+                var frag = "";
+                if (from) {
+                    frag += from;
+                } else {
+                    frag += "< ";
+                }
+                if (to) {
+                    if (from) {
+                        frag += " - " + to;
+                    } else {
+                        frag += to;
+                    }
+                } else {
+                    if (from) {
+                        frag += "+";
+                    } else {
+                        frag = "unknown";
+                    }
+                }
+                return frag;
+            }
         };
     },
 
@@ -1122,13 +1311,23 @@ var edges = {
         // if these come from a facet/selector, they should probably line up
         this.fieldDisplays = params.fieldDisplays || {};
 
-        // value maps on a per-field basis, to apply to values before display.
+        // value maps on a per-field basis for Term(s) filters, to apply to values before display.
         // if these come from a facet/selector, they should probably be the same maps
+        // {"<field>" : {"<value>" : "<display>"}}
         this.valueMaps = params.valueMaps || {};
 
-        // value functions on a per-field basis, to apply to values before display.
+        // value functions on a per-field basis for Term(s) filters, to apply to values before display.
         // if these come from a facet/selector, they should probably be the same functions
+        // {"<field>" : <function>}
         this.valueFunctions = params.valueFunctions || {};
+
+        // range display maps on a per-field basis for Range filters
+        // if these come from a facet/selector, they should probably be the same maps
+        // {"<field>" : {"from" : "<from>", "to" : "<to>", "display" : "<display>"}}
+        this.rangeMaps = params.rangeMaps || {};
+
+        // function to use to format any range that does not appear in the range maps
+        this.formatUnknownRange = params.formatUnknownRange || false;
 
         // override the parent's default renderer
         this.defaultRenderer = params.defaultRenderer || "newSelectedFiltersRenderer";
@@ -1162,7 +1361,7 @@ var edges = {
                 } else if (f.type_name === "terms") {
                     this._synchronise_terms(f);
                 } else if (f.type_name === "range") {
-
+                    this._synchronise_range(f);
                 } else if (f.type_name === "geo_distance_range") {
 
                 }
@@ -1197,6 +1396,18 @@ var edges = {
                 }
 
             } else if (filterType == "range") {
+                var params = {field: field};
+                if (value.to) {
+                    params["lt"] = value.to;
+                }
+                if (value.from) {
+                    params["gte"] = value.from;
+                }
+                var template = es.newRangeFilter(params)
+
+                if (boolType === "must") {
+                    nq.removeMust(template);
+                }
 
             } else if (filterType == "geo_distance_range") {
 
@@ -1243,6 +1454,25 @@ var edges = {
             }
         };
 
+        this._synchronise_range = function(filter) {
+            var display = this.fieldDisplays[filter.field] || filter.field;
+            var to = filter.lt;
+            var from = filter.gte;
+            var r = this._getRangeDef(filter.field, from, to);
+            var values = [];
+            if (!r) {
+                values.push({to: to, from: from, display: this._formatUnknown(from, to)});
+            } else {
+                values.push(r);
+            }
+
+            this.mustFilters[filter.field] = {
+                filter: filter.type_name,
+                display: display,
+                values: values
+            }
+        };
+
         this._translate = function(field, value) {
             if (field in this.valueMaps) {
                 if (value in this.valueMaps[field]) {
@@ -1252,6 +1482,62 @@ var edges = {
                 return this.valueFunctions[field](value);
             }
             return value;
+        };
+
+        this._getRangeDef = function(field, from, to) {
+            for (var i = 0; i < this.rangeMaps[field].length; i++) {
+                var r = this.rangeMaps[field][i];
+                var frMatch = true;
+                var toMatch = true;
+                // if one is set and the other not, no match
+                if ((from && !r.from) || (!from && r.from)) {
+                    frMatch = false;
+                }
+                if ((to && !r.to) || (!to && r.to)) {
+                    toMatch = false;
+                }
+
+                // if both set, and they don't match, no match
+                if (from && r.from && from !== r.from) {
+                    frMatch = false;
+                }
+                if (to && r.to && to !== r.to) {
+                    toMatch = false;
+                }
+
+                // both have to match for a match
+                if (frMatch && toMatch) {
+                    return r
+                }
+            }
+            return false;
+        };
+
+        this._formatUnknown = function(from, to) {
+            if (this.formatUnknownRange) {
+                return this.formatUnknownRange(from, to)
+            } else {
+                var frag = "";
+                if (from) {
+                    frag += from;
+                } else {
+                    frag += "< ";
+                }
+                if (to) {
+                    if (from) {
+                        frag += " - " + to;
+                    } else {
+                        frag += to;
+                    }
+                } else {
+                    if (from) {
+                        frag += "+";
+                    } else {
+                        frag = "unknown";
+                    }
+                }
+                return frag;
+            }
         };
     },
 

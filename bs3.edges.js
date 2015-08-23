@@ -13,44 +13,22 @@ $.extend(edges, {
             // bits that are hidden off-screen
             this.hidden = {};
 
-            this.hideOffScreen = function(selector) {
-                var el = $(selector, this.edge.context);
-                if (selector in this.hidden) { return }
-                this.hidden[selector] = {"position" : el.css("position"), "margin" : el.css("margin-left")};
-                $(selector, this.edge.context).css("position", "absolute").css("margin-left", -9999);
-            };
-
-            this.bringIn = function(selector) {
-                var pos = this.hidden[selector].position;
-                var mar = this.hidden[selector].margin;
-                $(selector, this.edge.context).css("position", pos).css("margin-left", mar);
-                delete this.hidden[selector];
-            };
-
-            this.activateTab = function(activate) {
-                var tabs = this.edge.category("tab");
-                for (var i = 0; i < tabs.length; i++) {
-                    var tab = tabs[i];
-                    if (tab.id === activate) {
-                        this.bringIn("#edges-tabbed-container-" + tab.id);
-                        $("#edges-tabbed-tab-" + tab.id, this.edge.context).parent().addClass("active");
-                    } else {
-                        this.hideOffScreen("#edges-tabbed-container-" + tab.id);
-                        $("#edges-tabbed-tab-" + tab.id, this.edge.context).parent().removeClass("active");
-                    }
-                }
-            };
-
-            this.tabClicked = function(element) {
-                var id = $(element).attr("data-id");
-                this.activateTab(id);
-            };
+            this.namespace = "edges-bs3-tabbed";
 
             this.draw = function(edge) {
                 this.edge = edge;
 
                 // a simple nav-down-the-left, with arbitrary tabs in the main panel
-                var view = '<div id="edges-tabbed-view"><div class="row">';
+                var view = '<div id="edges-tabbed-view">{{TOPSTRAP}}<div class="row">';
+
+                // the top strap controls
+                var topstrap = edge.category("top");
+                var topContainers = "";
+                if (topstrap.length > 0) {
+                    for (var i = 0; i < topstrap.length; i++) {
+                        topContainers += '<div class="row"><div class="col-md-12"><div id="' + topstrap[i].id + '"></div></div></div>';
+                    }
+                }
 
                 // the left-hand-side controls
                 var lhs = edge.category("lhs");
@@ -100,6 +78,7 @@ $.extend(edges, {
                 view = view.replace(/{{CONTROLS}}/g, controlContainers);
                 view = view.replace(/{{TABS}}/g, tabLabels);
                 view = view.replace(/{{TAB_CONTENTS}}/g, tabContents);
+                view = view.replace(/{{TOPSTRAP}}/g, topContainers);
 
                 edge.context.html(view);
 
@@ -118,7 +97,40 @@ $.extend(edges, {
                 for (var i = 0; i < tabIds.length; i++) {
                     $("#edges-tabbed-tab-" + tabIds[i], this.edge.context).click(edges.eventClosure(this, "tabClicked"));
                 }
-            }
+            };
+
+            this.hideOffScreen = function(selector) {
+                var el = $(selector, this.edge.context);
+                if (selector in this.hidden) { return }
+                this.hidden[selector] = {"position" : el.css("position"), "margin" : el.css("margin-left")};
+                $(selector, this.edge.context).css("position", "absolute").css("margin-left", -9999);
+            };
+
+            this.bringIn = function(selector) {
+                var pos = this.hidden[selector].position;
+                var mar = this.hidden[selector].margin;
+                $(selector, this.edge.context).css("position", pos).css("margin-left", mar);
+                delete this.hidden[selector];
+            };
+
+            this.activateTab = function(activate) {
+                var tabs = this.edge.category("tab");
+                for (var i = 0; i < tabs.length; i++) {
+                    var tab = tabs[i];
+                    if (tab.id === activate) {
+                        this.bringIn("#edges-tabbed-container-" + tab.id);
+                        $("#edges-tabbed-tab-" + tab.id, this.edge.context).parent().addClass("active");
+                    } else {
+                        this.hideOffScreen("#edges-tabbed-container-" + tab.id);
+                        $("#edges-tabbed-tab-" + tab.id, this.edge.context).parent().removeClass("active");
+                    }
+                }
+            };
+
+            this.tabClicked = function(element) {
+                var id = $(element).attr("data-id");
+                this.activateTab(id);
+            };
         },
 
         // main template function, producing something that looks like the
@@ -556,6 +568,144 @@ $.extend(edges, {
             };
         },
 
+        newBasicRangeSelectorRenderer : function(params) {
+            if (!params) { params = {} }
+            edges.bs3.BasicRangeSelectorRenderer.prototype = edges.newRenderer(params);
+            return new edges.bs3.BasicRangeSelectorRenderer(params);
+        },
+        BasicRangeSelectorRenderer : function(params) {
+            // if there are no results for a given range, should it be hidden
+            this.hideEmptyRange = params.hideEmptyRange === undefined ?  true : params.hideEmptyRange;
+
+            // whether the facet should be open or closed
+            // can be initialised and is then used to track internal state
+            this.open = params.open || false;
+
+            // whether to display selected filters
+            this.showSelected = params.showSelected || true;
+
+            // namespace to use in the page
+            this.namespace = "edges-bs3-basic-range-selector";
+
+            this.draw = function() {
+                var results = "Loading...";
+
+                // sort out all the classes that we're going to be using
+                var resultClass = edges.css_classes(this.namespace, "result", this);
+                var valClass = edges.css_classes(this.namespace, "value", this);
+                var filterRemoveClass = edges.css_classes(this.namespace, "filter-remove", this);
+                var facetClass = edges.css_classes(this.namespace, "facet", this);
+                var headerClass = edges.css_classes(this.namespace, "header", this);
+
+                var toggleId = edges.css_id(this.namespace, "toggle", this);
+                var resultsId = edges.css_id(this.namespace, "results", this);
+
+                // render a list of the values
+                if (this.component.values.length > 0) {
+                    results = "";
+
+                    // if no filters have been set, render the values
+                    if (this.component.filters.length === 0) {
+                        for (var i = 0; i < this.component.values.length; i++) {
+                            var val = this.component.values[i];
+                            if (val.count > 0 || !this.hideEmptyRange) {
+                                results += '<div class="' + resultClass + '"><a href="#" class="' + valClass + '" data-from="' + val.from + '" data-to="' + val.to + '">' +
+                                    edges.escapeHtml(val.display) + "</a> (" + val.count + ")</div>";
+                            }
+                        }
+                    }
+                }
+
+                // if we want the active filters, render them
+                var filterFrag = "";
+                if (this.component.filters.length > 0 && this.showSelected) {
+                    for (var i = 0; i < this.component.filters.length; i++) {
+                        var filt = this.component.filters[i];
+                        filterFrag += '<div class="' + resultClass + '"><strong>' + edges.escapeHtml(filt.display) + "&nbsp;";
+                        filterFrag += '<a href="#" class="' + filterRemoveClass + '" data-from="' + filt.from + '" data-to="' + filt.to + '">';
+                        filterFrag += '<i class="glyphicon glyphicon-black glyphicon-remove"></i></a>';
+                        filterFrag += "</strong></a></div>";
+                    }
+                }
+
+                // render the overall facet
+                var frag = '<div class="' + facetClass + '">\
+                        <div class="' + headerClass + '"><div class="row"> \
+                            <div class="col-md-12">\
+                                <a href="#" id="' + toggleId + '"><i class="glyphicon glyphicon-plus"></i>&nbsp;' + edges.escapeHtml(this.component.display) + '</a>\
+                            </div>\
+                        </div></div>\
+                        <div class="row" style="display:none" id="' + resultsId + '">\
+                            <div class="col-md-12">\
+                                {{SELECTED}}\
+                                {{RESULTS}}\
+                            </div>\
+                        </div></div>';
+
+                // substitute in the component parts
+                frag = frag.replace(/{{RESULTS}}/g, results)
+                        .replace(/{{SELECTED}}/g, filterFrag);
+
+                // now render it into the page
+                this.component.context.html(frag);
+
+                this.setUIOpen();
+
+                // sort out the selectors we're going to be needing
+                var toggleSelector = edges.css_id_selector(this.namespace, "toggle", this);
+                var valueSelector = edges.css_class_selector(this.namespace, "value", this);
+                var filterRemoveSelector = edges.css_class_selector(this.namespace, "filter-remove", this);
+
+                // for when the open button is clicked
+                edges.on(toggleSelector, "click", this, "toggleOpen");
+                // for when a value in the facet is selected
+                edges.on(valueSelector, "click", this, "rangeSelected");
+                // for when a filter remove button is clicked
+                edges.on(filterRemoveSelector, "click", this, "removeFilter");
+            };
+
+            /////////////////////////////////////////////////////
+            // UI behaviour functions
+
+            this.setUIOpen = function() {
+                // the selectors that we're going to use
+                var resultsSelector = edges.css_id_selector(this.namespace, "results", this);
+                var toggleSelector = edges.css_id_selector(this.namespace, "toggle", this);
+
+                var results = this.component.jq(resultsSelector);
+                var toggle = this.component.jq(toggleSelector);
+
+                if (this.open) {
+                    toggle.find("i").removeClass("glyphicon-plus").addClass("glyphicon-minus");
+                    results.show();
+                } else {
+                    toggle.find("i").removeClass("glyphicon-minus").addClass("glyphicon-plus");
+                    results.hide();
+                }
+            };
+
+            /////////////////////////////////////////////////////
+            // event handlers
+
+            this.toggleOpen = function(element) {
+                this.open = !this.open;
+                this.setUIOpen();
+            };
+
+            this.rangeSelected = function(element) {
+                var from = this.component.jq(element).attr("data-from");
+                var to = this.component.jq(element).attr("data-to");
+                this.component.selectRange(parseFloat(from), parseFloat(to));
+            };
+
+            this.removeFilter = function(element) {
+                var from = this.component.jq(element).attr("data-from");
+                var to = this.component.jq(element).attr("data-to");
+                this.component.removeFilter(parseFloat(from), parseFloat(to));
+            };
+
+        },
+
         newFullSearchControllerRenderer : function(params) {
             if (!params) { params = {} }
             edges.bs3.FullSearchControllerRenderer.prototype = edges.newRenderer(params);
@@ -941,9 +1091,18 @@ $.extend(edges, {
                         var val = def.values[j];
                         filters += '<span class="' + valClass + '">' + val.display + '</span>';
 
-                        filters += '<a class="' + removeClass + '" data-bool="must" data-filter="' + def.filter + '" data-field="' + field + '" data-value="' + val.val + '" alt="Remove" title="Remove" href="#">';
-                        filters += '<i class="glyphicon glyphicon-black glyphicon-remove"></i>';
-                        filters += "</a>";
+                        // the remove block looks different, depending on the kind of filter to remove
+                        if (def.filter == "term" || def.filter === "terms") {
+                            filters += '<a class="' + removeClass + '" data-bool="must" data-filter="' + def.filter + '" data-field="' + field + '" data-value="' + val.val + '" alt="Remove" title="Remove" href="#">';
+                            filters += '<i class="glyphicon glyphicon-black glyphicon-remove"></i>';
+                            filters += "</a>";
+                        } else if (def.filter === "range") {
+                            var from = val.from ? ' data-from="' + val.from + '" ' : "";
+                            var to = val.to ? ' data-to="' + val.to + '" ' : "";
+                            filters += '<a class="' + removeClass + '" data-bool="must" data-filter="' + def.filter + '" data-field="' + field + '" ' + from + to + ' alt="Remove" title="Remove" href="#">';
+                            filters += '<i class="glyphicon glyphicon-black glyphicon-remove"></i>';
+                            filters += "</a>";
+                        }
 
                         if (def.rel) {
                             if (j + 1 < def.values.length) {
@@ -973,9 +1132,24 @@ $.extend(edges, {
             this.removeFilter = function(element) {
                 var el = this.component.jq(element);
                 var field = el.attr("data-field");
-                var value = el.attr("data-value");
-                var bool = el.attr("data-bool");
                 var ft = el.attr("data-filter");
+                var bool = el.attr("data-bool");
+
+                var value = false;
+                if (ft === "terms" || ft === "term") {
+                    value = el.attr("data-value");
+                } else if (ft === "range") {
+                    value = {};
+                    var from = el.attr("data-from");
+                    var to = el.attr("data-to");
+                    if (from) {
+                        value["from"] = parseInt(from);
+                    }
+                    if (to) {
+                        value["to"] = parseInt(to);
+                    }
+                }
+
                 this.component.removeFilter(bool, ft, field, value);
             };
         },
