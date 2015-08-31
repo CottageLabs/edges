@@ -341,12 +341,12 @@ $.extend(edges, {
             };
         },
 
-        newBasicTermSelectorRenderer : function(params) {
+        newRefiningANDTermSelectorRenderer : function(params) {
             if (!params) { params = {} }
-            edges.bs3.BasicTermSelectorRenderer.prototype = edges.newRenderer(params);
-            return new edges.bs3.BasicTermSelectorRenderer(params);
+            edges.bs3.RefiningANDTermSelectorRenderer.prototype = edges.newRenderer(params);
+            return new edges.bs3.RefiningANDTermSelectorRenderer(params);
         },
-        BasicTermSelectorRenderer : function(params) {
+        RefiningANDTermSelectorRenderer : function(params) {
 
             ///////////////////////////////////////
             // parameters that can be passed in
@@ -368,7 +368,7 @@ $.extend(edges, {
             this.sortCycle = params.sortCycle || ["count desc", "count asc", "term desc", "term asc"];
 
             // namespace to use in the page
-            this.namespace = "edges-bs3-basic-term-selector";
+            this.namespace = "edges-bs3-refiningand-term-selector";
 
             this.draw = function() {
                 // for convenient short references ...

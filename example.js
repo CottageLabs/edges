@@ -158,14 +158,14 @@ jQuery(document).ready(function($) {
             sort : {field: "index.publisher.exact", order: "asc"}
         }),
         components : [
-            edges.newBasicTermSelector({
+            edges.newRefiningANDTermSelector({
                 id: "publisher",
                 field: "index.publisher.exact",
                 display: "Publisher",
                 size: 10,
                 category: "facet"
             }),
-            edges.newBasicTermSelector({
+            edges.newRefiningANDTermSelector({
                 id: "subject",
                 field: "index.classification.exact",
                 display: "Subject",
@@ -297,7 +297,7 @@ jQuery(document).ready(function($) {
                 display : "Choose publishers to display",
                 category: "lhs"
             }),
-            edges.newBasicTermSelector({
+            edges.newRefiningANDTermSelector({
                 id: "institution",
                 field: "monitor.jm:apc.name.exact",
                 display: "Limit by Institution",

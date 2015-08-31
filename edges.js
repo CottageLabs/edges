@@ -485,12 +485,12 @@ var edges = {
     ///////////////////////////////////////////////////
     // Selector implementations
 
-    newBasicTermSelector : function(params) {
+    newRefiningANDTermSelector : function(params) {
         if (!params) { params = {} }
-        edges.BasicTermSelector.prototype = edges.newSelector(params);
-        return new edges.BasicTermSelector(params);
+        edges.RefiningANDTermSelector.prototype = edges.newSelector(params);
+        return new edges.RefiningANDTermSelector(params);
     },
-    BasicTermSelector : function(params) {
+    RefiningANDTermSelector : function(params) {
         ////////////////////////////////////////////
         // configurations to be passed in
 
@@ -521,7 +521,7 @@ var edges = {
         this.inflation = params.inflation || 100;
 
         // override the parent's defaultRenderer
-        this.defaultRenderer = params.defaultRenderer || "newBasicTermSelectorRenderer";
+        this.defaultRenderer = params.defaultRenderer || "newRefiningANDTermSelectorRenderer";
 
         //////////////////////////////////////////
         // properties used to store internal state
