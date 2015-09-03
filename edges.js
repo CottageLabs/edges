@@ -202,6 +202,13 @@ var edges = {
             this.currentQuery = query;
         };
 
+        this.cloneBaseQuery = function() {
+            if (this.baseQuery) {
+                return $.extend(true, {}, this.baseQuery);
+            }
+            return es.newQuery();
+        };
+
         // execute the query and all the associated workflow
         this.doQuery = function() {
             // if a search is currently executing, don't do anything, else turn it on
@@ -684,6 +691,176 @@ var edges = {
             this.edge.pushQuery(nq);
             this.edge.doQuery();
         };
+
+        //////////////////////////////////////////
+        // "private" functions for internal use
+
+        this._translate = function(term) {
+            if (this.valueMap) {
+                if (term in this.valueMap) {
+                    return this.valueMap[term];
+                }
+            } else if (this.valueFunction) {
+                return this.valueFunction(term);
+            }
+            return term;
+        };
+    },
+
+    newORTermSelector : function(params) {
+        if (!params) { params = {} }
+        edges.ORTermSelector.prototype = edges.newSelector(params);
+        return new edges.ORTermSelector(params);
+    },
+    ORTermSelector : function(params) {
+
+        // which ordering to use term/count and asc/desc
+        this.orderBy = params.orderBy || "term";
+        this.orderDir = params.orderDir || "asc";
+
+        // number of results that we should display - remember that this will only
+        // be used once, so should be large enough to gather all the values that might
+        // be in the index
+        this.size = params.size || 10;
+
+        // provide a map of values for terms to displayable terms, or a function
+        // which can be used to translate terms to displyable values
+        this.valueMap = params.valueMap || false;
+        this.valueFunction = params.valueFunction || false;
+
+        // override the parent's defaultRenderer
+        this.defaultRenderer = params.defaultRenderer || "newORTermSelectorRenderer";
+
+        //////////////////////////////////////////
+        // properties used to store internal state
+
+        // an explicit list of terms to be displayed.  If this is not passed in, then a query
+        // will be issues which will populate this with the values
+        // of the form
+        // [{term: "<value>", display: "<display value>", count: <number of records>}]
+        this.terms = params.terms || false;
+
+        // values of terms that have been selected from this.terms
+        this.selected = [];
+
+        this.init = function(edge) {
+            // first kick the request up to the superclass
+            edges.newSelector().init.call(this, edge);
+
+            // now trigger a request for the terms to present, if not explicitly provided
+            if (!this.terms) {
+                // get the base query and remove any aggregations (for performance purposes)
+                var bq = this.edge.cloneBaseQuery();
+                bq.clearAggregations();
+
+                // now add the aggregation that we want
+                var params = {
+                    name: this.id,
+                    field: this.field,
+                    orderBy: this.orderBy,
+                    orderDir: this.orderDir,
+                    size: this.size
+                };
+                bq.addAggregation(
+                    es.newTermsAggregation(params)
+                );
+
+                // issue the query to elasticsearch
+                es.doQuery({
+                    search_url: this.edge.search_url,
+                    queryobj: bq.objectify(),
+                    datatype: this.edge.datatype,
+                    success: edges.objClosure(this, "querySuccess", ["result"]),
+                    error: edges.objClosure(this, "queryFail")
+                });
+            }
+        };
+
+        this.synchronise = function() {
+            // reset the internal properties
+            this.selected = [];
+
+            // extract all the filter values that pertain to this selector
+            var filters = this.edge.currentQuery.listMust(es.newTermsFilter({field: this.field}));
+            for (var i = 0; i < filters.length; i++) {
+                for (var j = 0; j < filters[i].values.length; j++) {
+                    var val = filters[i].values[j];
+                    this.selected.push(val);
+                }
+            }
+        };
+
+        /////////////////////////////////////////////////
+        // query handlers for getting the full list of terms to display
+
+        this.querySuccess = function(params) {
+            var result = params.result;
+
+            // get the terms out of the aggregation
+            this.terms = [];
+            var buckets = result.buckets(this.id);
+            for (var i = 0; i < buckets.length; i++) {
+                var bucket = buckets[i];
+                this.terms.push({term: bucket.key, display: this._translate(bucket.key), count: bucket.doc_count});
+            }
+
+            // since this happens asynchronously, we may want to draw
+            this.draw();
+        };
+
+        this.queryFail = function() {
+            this.terms = [];
+        };
+
+        ///////////////////////////////////////////
+        // state change functions
+
+        this.selectTerm = function(term) {
+            var nq = this.edge.cloneQuery();
+
+            // first find out if there was a terms filter already in place
+            var filters = nq.listMust(es.newTermsFilter({field: this.field}));
+
+            // if there is, just add the term to it
+            if (filters.length > 0) {
+                var filter = filters[0];
+                filter.add_term(term);
+            } else {
+                // otherwise, set the Terms Filter
+                nq.addMust(es.newTermsFilter({
+                    field: this.field,
+                    values: [term]
+                }));
+            }
+
+            // reset the search page to the start and then trigger the next query
+            nq.from = 0;
+            this.edge.pushQuery(nq);
+            this.edge.doQuery();
+        };
+
+        this.removeFilter = function(term) {
+            var nq = this.edge.cloneQuery();
+
+            // first find out if there was a terms filter already in place
+            var filters = nq.listMust(es.newTermsFilter({field: this.field}));
+
+            if (filters.length > 0) {
+                var filter = filters[0];
+                if (filter.has_term(term)) {
+                    filter.remove_term(term);
+                }
+                if (!filter.has_terms()) {
+                    nq.removeMust(es.newTermsFilter({field: this.field}));
+                }
+            }
+
+            // reset the search page to the start and then trigger the next query
+            nq.from = 0;
+            this.edge.pushQuery(nq);
+            this.edge.doQuery();
+        };
+
 
         //////////////////////////////////////////
         // "private" functions for internal use

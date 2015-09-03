@@ -172,6 +172,16 @@ jQuery(document).ready(function($) {
                 size: 10,
                 category: "facet"
             }),
+            edges.newORTermSelector({
+                id: "country",
+                field : "index.country.exact",
+                display: "Country",
+                size: 200,
+                category: "facet",
+                renderer : edges.bs3.newORTermSelectorRenderer({
+                    showCount: true
+                })
+            }),
             edges.newFullSearchController({
                 id: "search-controller",
                 category: "controller",
@@ -189,7 +199,8 @@ jQuery(document).ready(function($) {
                 category: "selected-filters",
                 fieldDisplays : {
                     "index.publisher.exact" : "Publisher",
-                    "index.classification.exact" : "Classification"
+                    "index.classification.exact" : "Classification",
+                    "index.country.exact" : "Country"
                 }
             }),
             edges.newPager({

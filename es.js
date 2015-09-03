@@ -226,7 +226,9 @@ var es = {
                 this.aggs.splice(removes[i], 1);
             }
         };
-        this.clearAggregations = function() {};
+        this.clearAggregations = function() {
+            this.aggs = [];
+        };
         this.listAggregations = function() {
             return this.aggs;
         };
