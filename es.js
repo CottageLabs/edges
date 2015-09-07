@@ -1244,6 +1244,10 @@ var es = {
             return this.data.aggregations[agg_name].buckets;
         };
 
+        this.aggregation = function(agg_name) {
+            return this.data.aggregations[agg_name];
+        }
+
         this.results = function() {
             var res = [];
             if (this.data.hits && this.data.hits.hits) {

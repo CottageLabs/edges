@@ -327,6 +327,13 @@ jQuery(document).ready(function($) {
                 ],
                 category: "lhs"
             }),
+            edges.newNumericRangeEntry({
+                id: "apc",
+                field: "monitor.jm:apc.amount_gbp",
+                display: "APC Range",
+                increment: 1000,
+                category: "lhs"
+            }),
             edges.newHorizontalMultibar({
                 id: "apc_count",
                 display: "APC Count",

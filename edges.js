@@ -752,6 +752,7 @@ var edges = {
                 // get the base query and remove any aggregations (for performance purposes)
                 var bq = this.edge.cloneBaseQuery();
                 bq.clearAggregations();
+                bq.size = 0;
 
                 // now add the aggregation that we want
                 var params = {
@@ -1154,6 +1155,119 @@ var edges = {
 
     ////////////////////////////////////////////////////
     // Specialised data entry components
+
+    newNumericRangeEntry : function(params) {
+        if (!params) { params = {} }
+        edges.NumericRangeEntry.prototype = edges.newSelector(params);
+        return new edges.NumericRangeEntry(params);
+    },
+    NumericRangeEntry : function(params) {
+        ///////////////////////////////////////
+        // parameters that can be passed in
+        this.lower = params.lower || false;
+        this.upper = params.upper || false;
+        this.increment = params.increment || 1;
+
+        this.defaultRenderer = params.defaultRenderer || "newNumericRangeEntryRenderer";
+
+        ///////////////////////////////////////
+        // state parameters
+        this.from = false;
+        this.to = false;
+
+        this.init = function(edge) {
+            // first kick the request up to the superclass
+            edges.newSelector().init.call(this, edge);
+
+            if (!this.lower || !this.upper) {
+                // get the base query and remove any aggregations (for performance purposes)
+                var bq = this.edge.cloneBaseQuery();
+                bq.clearAggregations();
+                bq.size = 0;
+
+                // now add the stats aggregation that we want
+                bq.addAggregation(
+                    es.newStatsAggregation({
+                        name: this.id,
+                        field: this.field
+                    })
+                );
+
+                // issue the query to elasticsearch
+                es.doQuery({
+                    search_url: this.edge.search_url,
+                    queryobj: bq.objectify(),
+                    datatype: this.edge.datatype,
+                    success: edges.objClosure(this, "querySuccess", ["result"]),
+                    error: edges.objClosure(this, "queryFail")
+                });
+            }
+        };
+
+        this.synchronise = function() {
+            this.from = this.lower;
+            this.to = this.upper;
+
+            // now check to see if there are any range filters set on this field
+            if (this.edge.currentQuery) {
+                var filters = this.edge.currentQuery.listMust(es.newRangeFilter({field: this.field}));
+                for (var i = 0; i < filters.length; i++) {
+                    this.to = filters[i].lt;
+                    this.from = filters[i].gte;
+                }
+            }
+        };
+
+        /////////////////////////////////////////////
+        // functions for handling initilisation from query parameters
+
+        this.querySuccess = function(params) {
+            var result = params.result;
+
+            // get the terms from and to out of the stats aggregation
+            var agg = result.aggregation(this.id);
+            this.lower = agg.min;
+            this.upper = agg.max;
+
+            // since this happens asynchronously, we may want to draw
+            this.draw();
+        };
+
+        this.queryFail = function(params) {
+            if (!this.lower) {
+                this.lower = 0;
+            }
+            if (!this.upper) {
+                this.upper = 0;
+            }
+        };
+
+        //////////////////////////////////////////////////
+        // state change functions
+
+        this.selectRange = function(from, to) {
+            var nq = this.edge.cloneQuery();
+
+            // remove any existing filter
+            nq.removeMust(es.newRangeFilter({field: this.field}));
+
+            // if the new from and the existing to are the upper and lower then don't add a filter,
+            // otherwise create the range
+            if (!(from === this.lower && to === this.upper)) {
+                // set the range filter
+                nq.addMust(es.newRangeFilter({
+                    field: this.field,
+                    gte : from,
+                    lt : to
+                }))
+            }
+
+            // reset the search page to the start and then trigger the next query
+            nq.from = 0;
+            this.edge.pushQuery(nq);
+            this.edge.doQuery();
+        };
+    },
 
     newMultiDateRangeEntry : function(params) {
         if (!params) { params = {} }
@@ -1694,6 +1808,14 @@ var edges = {
             if (this.formatUnknownRange) {
                 return this.formatUnknownRange(from, to)
             } else {
+                // if they're the same just return one of them
+                if (from || to) {
+                    if (from === to) {
+                        return from;
+                    }
+                }
+                
+                // otherwise calculate the display for the range
                 var frag = "";
                 if (from) {
                     frag += from;
