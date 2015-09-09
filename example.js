@@ -373,4 +373,20 @@ jQuery(document).ready(function($) {
             })
         ]
     });
+
+    e3 = edges.newEdge({
+        selector: "#wna",
+        search_url: "http://localhost:9200/wna/reactor/_search",
+        baseQuery: es.newQuery({
+            must: [es.newTermFilter({field: "id.exact", value: "03df21226fb943a495b793812f65e0c9"})]
+        }),
+        components: [
+            edges.newMapView({
+                id: "map-canvas",
+                renderer : edges.google.newMapViewRenderer({
+                    initialZoom: 15
+                })
+            })
+        ]
+    });
 });

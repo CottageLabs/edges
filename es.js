@@ -1246,7 +1246,7 @@ var es = {
 
         this.aggregation = function(agg_name) {
             return this.data.aggregations[agg_name];
-        }
+        };
 
         this.results = function() {
             var res = [];
