@@ -1164,8 +1164,8 @@ var edges = {
     NumericRangeEntry : function(params) {
         ///////////////////////////////////////
         // parameters that can be passed in
-        this.lower = params.lower || false;
-        this.upper = params.upper || false;
+        this.lower = params.lower === undefined ? false : params.lower;
+        this.upper = params.upper === undefined ? false : params.upper;
         this.increment = params.increment || 1;
 
         this.defaultRenderer = params.defaultRenderer || "newNumericRangeEntryRenderer";
@@ -1226,18 +1226,22 @@ var edges = {
 
             // get the terms from and to out of the stats aggregation
             var agg = result.aggregation(this.id);
-            this.lower = agg.min;
-            this.upper = agg.max;
+            if (this.lower === false) {
+                this.lower = agg.min;
+            }
+            if (this.upper === false) {
+                this.upper = agg.max;
+            }
 
             // since this happens asynchronously, we may want to draw
             this.draw();
         };
 
         this.queryFail = function(params) {
-            if (!this.lower) {
+            if (this.lower === false) {
                 this.lower = 0;
             }
-            if (!this.upper) {
+            if (this.upper === false) {
                 this.upper = 0;
             }
         };
@@ -1776,6 +1780,9 @@ var edges = {
         };
 
         this._getRangeDef = function(field, from, to) {
+            if (!this.rangeMaps[field]) {
+                return false;
+            }
             for (var i = 0; i < this.rangeMaps[field].length; i++) {
                 var r = this.rangeMaps[field][i];
                 var frMatch = true;
