@@ -1994,6 +1994,18 @@ var edges = {
         this.display = params.display || "";
 
         // actual data series that the renderer will render
+        // data series is of the form
+        // [
+        //      {
+        //          key: "<name of series>",
+        //          values: [
+        //              {label: "<name of this value>", value: "<the value itself>"}
+        //          ]
+        //      }
+        // ]
+        //
+        // For example
+        // [{ key: "power output", values: [{label: 1980, value: 100}, {label: 1981, value: 200}]
         this.dataSeries = params.dataSeries || false;
 
         // function which will generate the data series, which will be
@@ -2031,11 +2043,6 @@ var edges = {
                 if ($.inArray(agg.name, this.dfArgs.useAggregations) === -1) {
                     this.dfArgs.useAggregations.push(agg.name);
                 }
-            }
-
-            // bind the default data function generator
-            if (!this.dataFunction) {
-                this.dataFunction = edges.ChartDataFunctions.terms(this.dfArgs);
             }
         };
 
@@ -2144,6 +2151,29 @@ var edges = {
     HorizontalMultibar : function(params) {
         this.defaultRenderer = params.defaultRenderer || "newHorizontalMultibarRenderer";
     },
+
+    newMultibar : function(params) {
+        if (!params) { params = {} }
+        edges.Multibar.prototype = edges.newChart(params);
+        return new edges.Multibar(params);
+    },
+    Multibar : function(params) {
+        this.defaultRenderer = params.defaultRenderer || "newMultibarRenderer";
+    },
+
+    newSimpleLineChart : function(params) {
+        if (!params) { params = {} }
+        edges.SimpleLineChart.prototype = edges.newChart(params);
+        return new edges.SimpleLineChart(params);
+    },
+    SimpleLineChart : function(params) {
+
+        this.xAxisLabel = params.xAxisLabel || "";
+        this.yAxisLabel = params.yAxisLabel || "";
+
+        this.defaultRenderer = params.defaultRenderer || "newSimpleLineChartRenderer";
+    },
+
 
     ////////////////////////////////////////////////////
     // Map implementation

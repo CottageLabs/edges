@@ -148,7 +148,7 @@ jQuery(document).ready(function($) {
         selector: "#facetview",
         template: edges.bs3.newFacetview(),
         search_url: "http://localhost:9200/doaj/article/_search",
-        manageUrl : true,
+        manageUrl : false,  // FIXME: pushState being odd
         baseQuery : es.newQuery({
             must: [es.newTermFilter({field: "index.classification.exact", value: "Medicine"})]
         }),
@@ -334,7 +334,36 @@ jQuery(document).ready(function($) {
                 increment: 1000,
                 category: "lhs"
             }),
-            edges.newHorizontalMultibar({
+            edges.newSimpleLineChart({
+                id: "line_chart",
+                display: "Line Chart",
+                dataSeries: [
+                    {
+                        key: "Series 1",
+                        values: [
+                            {label: 1980, value: 100},
+                            {label: 1981, value: 120},
+                            {label: 1982, value: 122},
+                            {label: 1983, value: 130}
+                        ]
+                    },
+                    {
+                        key: "Series 2",
+                        values: [
+                            {label: 1980, value: 200},
+                            {label: 1981, value: 220},
+                            {label: 1982, value: 222},
+                            {label: 1983, value: 230}
+                        ]
+                    }
+                ],
+                category: "tab",
+                renderer : edges.nvd3.newSimpleLineChartRenderer({
+                    xTickFormat: '.0f',
+                    yTickFormat: ',.0f'
+                })
+            })/*,
+            edges.newMultibar({
                 id: "apc_count",
                 display: "APC Count",
                 dfArgs : {
@@ -370,7 +399,7 @@ jQuery(document).ready(function($) {
                     }
                 }),
                 category : "tab"
-            })
+            })*/
         ]
     });
 

@@ -1,5 +1,22 @@
 $.extend(edges, {
     nvd3: {
+        DataSeriesConversions : {
+            toXY : function(data_series) {
+                var new_series = [];
+                for (var i = 0; i < data_series.length; i++) {
+                    var os = data_series[i];
+                    var ns = {};
+                    ns["key"] = os["key"];
+                    ns["values"] = [];
+                    for (var j = 0; j < os.values.length; j++) {
+                        var vector = os.values[j];
+                        ns["values"].push({x: vector.label, y: vector.value})
+                    }
+                    new_series.push(ns)
+                }
+                return new_series;
+            }
+        },
 
         newPieChartRenderer : function(params) {
             if (!params) { params = {} }
@@ -34,59 +51,52 @@ $.extend(edges, {
             this.marginBottom = params.marginBottom || 30;
             this.marginLeft = params.marginLeft || 200;
 
+            this.namespace = "edges-nvd3-horizontal-multibar";
+
             this.draw = function() {
-                var ch = this.component;
+                // no need for data conversion on this graph type
 
-                function render(params) {
-                    var data_series = params.data_series;
-                    var selector = params.svg_selector;
+                var svgId = edges.css_id(this.namespace, "svg", this);
+                var svgSelector = edges.css_id_selector(this.namespace, "svg", this);
+                this.component.context.html('<svg id="' + svgId + '"></svg>');
 
-                    var show_values = params.show_values || true;
-                    var tool_tips = params.tool_tips || true;
-                    var controls = params.controls || true;
-                    var y_tick_format = params.y_tick_format || ',.0f';
-                    var transition_duration = params.transition_duration || 500;
+                var show_values = this.showValues;
+                var tool_tips = this.toolTips;
+                var controls = this.controls;
+                var y_tick_format = this.yTickFormat;
+                var transition_duration = this.transitionDuration;
 
-                    var margin_top = params.margin_top || 30;
-                    var margin_right = params.margin_right || 50;
-                    var margin_bottom = params.margin_bottom || 30;
-                    var margin_left = params.margin_left || 200;
+                var margin_top = this.marginTop;
+                var margin_right = this.marginRight;
+                var margin_bottom = this.marginBottom;
+                var margin_left = this.marginLeft;
 
-                    // set the space up for the new chart
-                    $(selector).empty();
+                var data_series = this.component.dataSeries;
 
-                    nv.addGraph(function () {
-                        var chart = nv.models.multiBarHorizontalChart()
-                            .x(function (d) {
-                                return d.label
-                            })
-                            .y(function (d) {
-                                return d.value
-                            })
-                            .margin({top: margin_top, right: margin_right, bottom: margin_bottom, left: margin_left})
-                            .showValues(show_values)
-                            .tooltips(tool_tips)
-                            .showControls(controls);
+                nv.addGraph(function () {
+                    var chart = nv.models.multiBarHorizontalChart()
+                        .x(function (d) {
+                            return d.label
+                        })
+                        .y(function (d) {
+                            return d.value
+                        })
+                        .margin({top: margin_top, right: margin_right, bottom: margin_bottom, left: margin_left})
+                        .showValues(show_values)
+                        .tooltips(tool_tips)
+                        .showControls(controls);
 
-                        chart.yAxis
-                            .tickFormat(d3.format(y_tick_format));
+                    chart.yAxis
+                        .tickFormat(d3.format(y_tick_format));
 
-                        d3.select(selector)
-                            .datum(data_series)
-                            .transition().duration(transition_duration)
-                            .call(chart);
+                    d3.select(svgSelector)
+                        .datum(data_series)
+                        .transition().duration(transition_duration)
+                        .call(chart);
 
-                        nv.utils.windowResize(chart.update);
+                    nv.utils.windowResize(chart.update);
 
-                        return chart;
-                    });
-                }
-
-                $("#" + ch.id).html("<svg></svg>");
-
-                render({
-                    data_series: ch.dataSeries,
-                    svg_selector: "#" + ch.id + " svg"
+                    return chart;
                 });
             }
         },
@@ -101,67 +111,88 @@ $.extend(edges, {
             this.transitionDuration = params.transitionDuration || 500;
             this.controls = params.controls || false;
 
+            this.namespace = "edges-nvd3-multibar";
+
             this.draw = function () {
-                var ch = this.component;
+                var svgId = edges.css_id(this.namespace, "svg", this);
+                var svgSelector = edges.css_id_selector(this.namespace, "svg", this);
+                this.component.context.html('<svg id="' + svgId + '"></svg>');
+                var data_series = edges.nvd3.DataSeriesConversions.toXY(this.component.dataSeries);
 
-                function convert(params) {
-                    var series = params.data_series;
-                    var new_series = [];
-                    for (var i = 0; i < series.length; i++) {
-                        var os = series[i];
-                        var ns = {};
-                        ns["key"] = os["key"];
-                        ns["values"] = [];
-                        for (var j = 0; j < os.values.length; j++) {
-                            var vector = os.values[j];
-                            ns["values"].push({x: vector.label, y: vector.value})
-                        }
-                        new_series.push(ns)
-                    }
-                    return new_series
-                }
+                var y_tick_format = this.yTickFormat;
+                var transition_duration = this.transitionDuration;
+                var controls = this.controls;
 
-                function render(params) {
-                    var data_series = params.data_series;
-                    var selector = params.svg_selector;
+                nv.addGraph(function () {
+                    var chart = nv.models.multiBarChart()
+                        .showControls(controls);
 
-                    //var y_tick_format = params.multibar_y_tick_format;
-                    //var transition_duration = params.multibar_transition_duration;
-                    //var controls = options.multibar_controls;
-                    var y_tick_format = ',.0f';
-                    var transition_duration = 500;
-                    var controls = true;
+                    chart.yAxis
+                        .tickFormat(d3.format(y_tick_format));
 
-                    // set the space up for the new chart
-                    $(selector).empty();
+                    d3.select(svgSelector)
+                        .datum(data_series)
+                        .transition().duration(transition_duration).call(chart);
 
-                    nv.addGraph(function () {
-                        var chart = nv.models.multiBarChart()
-                            .showControls(controls);
+                    nv.utils.windowResize(chart.update);
 
-                        chart.yAxis
-                            .tickFormat(d3.format(y_tick_format));
+                    return chart;
+                });
+            }
+        },
 
-                        d3.select(selector)
-                            .datum(data_series)
-                            .transition().duration(transition_duration).call(chart);
+        newSimpleLineChartRenderer : function(params) {
+            if (!params) { params = {} }
+            edges.nvd3.SimpleLineChartRenderer.prototype = edges.newRenderer(params);
+            return new edges.nvd3.SimpleLineChartRenderer(params);
+        },
+        SimpleLineChartRenderer : function(params) {
 
-                        nv.utils.windowResize(chart.update);
+            this.interactiveGuideline = params.interactiveGuideline || true;
+            this.xTickFormat = params.xTickFormat || ',.2f';
+            this.yTickFormat = params.yTickFormat || ',.2f';
+            this.transitionDuration = params.transitionDuration || 500;
 
-                        return chart;
-                    });
-                }
+            this.namespace = "edges-nvd3-simple-line-chart";
 
-                $("#" + ch.id).html("<svg></svg>");
+            this.draw = function() {
+                var svgId = edges.css_id(this.namespace, "svg", this);
+                var svgSelector = edges.css_id_selector(this.namespace, "svg", this);
 
-                var ds = convert({
-                    data_series: ch.dataSeries
+                var ds = edges.nvd3.DataSeriesConversions.toXY(this.component.dataSeries);
+                this.component.context.html('<svg id="' + svgId + '"></svg>');
+
+                // prep the properties to pass into the graph function
+                var interactiveGuideline = this.interactiveGuideline;
+                var xtick = this.xTickFormat;
+                var ytick = this.yTickFormat;
+                var transitionDuration = this.transitionDuration;
+                var xlabel = this.xAxisLabel;
+                var ylabel = this.yAxisLabel;
+
+                nv.addGraph(function() {
+                    var chart = nv.models.lineChart()
+                        .useInteractiveGuideline(interactiveGuideline);
+
+                    chart.xAxis
+                        .axisLabel(xlabel)
+                        .tickFormat(d3.format(xtick));
+
+                    chart.yAxis
+                        .axisLabel(ylabel)
+                        .tickFormat(d3.format(ytick));
+
+                    d3.select(svgSelector)
+                        .datum(ds)
+                        .transition().duration(transitionDuration)
+                        .call(chart);
+
+                    nv.utils.windowResize(chart.update);
+
+                    return chart;
                 });
 
-                render({
-                    data_series: ds,
-                    svg_selector: "#" + ch.id + " svg"
-                });
+
             }
         }
     }
