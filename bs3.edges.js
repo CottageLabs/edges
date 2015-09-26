@@ -1107,10 +1107,12 @@ $.extend(edges, {
 
                 // list the numbers to display
                 var numbers = [];
-                for (var i = 0; i < this.component.upper; i += this.component.increment) {
-                    numbers.push(this.component.lower + i);
+                var lower = this.component.lower === false ? 0 : this.component.lower;
+                var upper = this.component.upper === false ? 0 : this.component.upper;
+                for (var i = lower; i < upper; i += this.component.increment) {
+                    numbers.push(i);
                 }
-                numbers.push(this.component.upper);
+                numbers.push(upper);
 
                 // convert the numbers to a list of options
                 var options = "";
