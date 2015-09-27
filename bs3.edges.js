@@ -582,6 +582,9 @@ $.extend(edges, {
             // defaults to false because count may be confusing to the user in an OR selector
             this.showCount = params.showCount || false;
 
+            // whether counts of 0 should prevent the value being rendered
+            this.hideEmpty = params.hideEmpty || false;
+
             // namespace to use in the page
             this.namespace = "edges-bs3-or-term-selector";
 
@@ -611,6 +614,11 @@ $.extend(edges, {
                     // render each value, if it is not also a filter that has been set
                     for (var i = 0; i < ts.terms.length; i++) {
                         var val = ts.terms[i];
+                        // should we ignore the empty counts
+                        if (val.count === 0 && this.hideEmpty) {
+                            continue
+                        }
+                        // otherwise, render any that aren't selected already
                         if ($.inArray(val.term.toString(), ts.selected) === -1) {   // the toString() helps us normalise other values, such as integers
                             results += '<div class="' + resultClass + '"><a href="#" class="' + valClass + '" data-key="' + edges.escapeHtml(val.term) + '">' +
                                 edges.escapeHtml(val.display) + "</a>";

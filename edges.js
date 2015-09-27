@@ -713,6 +713,9 @@ var edges = {
         return new edges.ORTermSelector(params);
     },
     ORTermSelector : function(params) {
+        // whether this component updates itself on every request, or whether it is static
+        // throughout its lifecycle.  One of "update" or "static"
+        this.lifecycle = params.lifecycle || "static";
 
         // which ordering to use term/count and asc/desc
         this.orderBy = params.orderBy || "term";
@@ -743,37 +746,16 @@ var edges = {
         // values of terms that have been selected from this.terms
         this.selected = [];
 
+        // is the object currently updating itself
+        this.updating = false;
+
         this.init = function(edge) {
             // first kick the request up to the superclass
             edges.newSelector().init.call(this, edge);
 
             // now trigger a request for the terms to present, if not explicitly provided
             if (!this.terms) {
-                // get the base query and remove any aggregations (for performance purposes)
-                var bq = this.edge.cloneBaseQuery();
-                bq.clearAggregations();
-                bq.size = 0;
-
-                // now add the aggregation that we want
-                var params = {
-                    name: this.id,
-                    field: this.field,
-                    orderBy: this.orderBy,
-                    orderDir: this.orderDir,
-                    size: this.size
-                };
-                bq.addAggregation(
-                    es.newTermsAggregation(params)
-                );
-
-                // issue the query to elasticsearch
-                es.doQuery({
-                    search_url: this.edge.search_url,
-                    queryobj: bq.objectify(),
-                    datatype: this.edge.datatype,
-                    success: edges.objClosure(this, "querySuccess", ["result"]),
-                    error: edges.objClosure(this, "queryFail")
-                });
+                this.listAll();
             }
         };
 
@@ -794,7 +776,35 @@ var edges = {
         /////////////////////////////////////////////////
         // query handlers for getting the full list of terms to display
 
-        this.querySuccess = function(params) {
+        this.listAll = function() {
+            // to list all possible terms, build off the base query
+            var bq = this.edge.cloneBaseQuery();
+            bq.clearAggregations();
+            bq.size = 0;
+
+            // now add the aggregation that we want
+            var params = {
+                name: this.id,
+                field: this.field,
+                orderBy: this.orderBy,
+                orderDir: this.orderDir,
+                size: this.size
+            };
+            bq.addAggregation(
+                es.newTermsAggregation(params)
+            );
+
+            // issue the query to elasticsearch
+            es.doQuery({
+                search_url: this.edge.search_url,
+                queryobj: bq.objectify(),
+                datatype: this.edge.datatype,
+                success: edges.objClosure(this, "listAllQuerySuccess", ["result"]),
+                error: edges.objClosure(this, "listAllQueryFail")
+            });
+        };
+
+        this.listAllQuerySuccess = function(params) {
             var result = params.result;
 
             // get the terms out of the aggregation
@@ -805,12 +815,92 @@ var edges = {
                 this.terms.push({term: bucket.key, display: this._translate(bucket.key), count: bucket.doc_count});
             }
 
+            // allow the event handler to be set up
+            this.setupEvent();
+
             // since this happens asynchronously, we may want to draw
             this.draw();
         };
 
-        this.queryFail = function() {
+        this.listAllQueryFail = function() {
             this.terms = [];
+        };
+
+        this.setupEvent = function() {
+            if (this.lifecycle === "update") {
+                this.edge.context.on("edges:pre-query", edges.eventClosure(this, "doUpdate"));
+                this.doUpdate();
+            }
+        };
+
+        this.doUpdate = function() {
+            // is an update already happening?
+            if (this.updating) {
+                return
+            }
+            this.udpating = true;
+
+            // to list all current terms, build off the current query
+            var bq = this.edge.cloneQuery();
+
+            // remove any constraint on this field, and clear the aggregations and set size to 0 for performance
+            bq.removeMust(es.newTermsFilter({field: this.field}));
+            bq.clearAggregations();
+            bq.size = 0;
+
+            // now add the aggregation that we want
+            var params = {
+                name: this.id,
+                field: this.field,
+                orderBy: this.orderBy,
+                orderDir: this.orderDir,
+                size: this.size
+            };
+            bq.addAggregation(
+                es.newTermsAggregation(params)
+            );
+
+            // issue the query to elasticsearch
+            es.doQuery({
+                search_url: this.edge.search_url,
+                queryobj: bq.objectify(),
+                datatype: this.edge.datatype,
+                success: edges.objClosure(this, "doUpdateQuerySuccess", ["result"]),
+                error: edges.objClosure(this, "doUpdateQueryFail")
+            });
+        };
+
+        this.doUpdateQuerySuccess = function(params) {
+            var result = params.result;
+
+            // mesh the terms in the aggregation with the terms in the terms list
+            var buckets = result.buckets(this.id);
+
+            for (var i = 0; i < this.terms.length; i++) {
+                var t = this.terms[i];
+                var found = false;
+                for (var j = 0; j < buckets.length; j++) {
+                    var b = buckets[j];
+                    if (t.term === b.key) {
+                        t.count = b.doc_count;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    t.count = 0;
+                }
+            }
+
+            // turn off the update flag
+            this.updating = false;
+
+            // since this happens asynchronously, we may want to draw
+            this.draw();
+        };
+
+        this.doUpdateQueryFail = function() {
+            // just do nothing, hopefully the next request will be successful
         };
 
         ///////////////////////////////////////////
