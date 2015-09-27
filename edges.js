@@ -2063,7 +2063,11 @@ var edges = {
         //////////////////////////////////////
         // variables for tracking internal state
 
-        this.results = [];
+        // the results retrieved from ES.  If this is "false" this means that no synchronise
+        // has been called on this object, which in turn means that initial searching is still
+        // going on.  Once initialised this will be a list (which may in turn be empty, meaning
+        // that no results were found)
+        this.results = false;
 
         this.synchronise = function() {
             // reset the state of the internal variables

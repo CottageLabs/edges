@@ -270,9 +270,12 @@ $.extend(edges, {
 
             this.draw = function() {
                 var frag = this.noResultsText;
-                var results = this.component.results;
+                if (this.component.results === false) {
+                    frag = "";
+                }
 
-                if (results.length > 0) {
+                var results = this.component.results;
+                if (results && results.length > 0) {
                     // list the css classes we'll require
                     var recordClasses = edges.css_classes(this.namespace, "record", this);
 
