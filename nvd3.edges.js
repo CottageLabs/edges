@@ -117,6 +117,7 @@ $.extend(edges, {
                 var svgId = edges.css_id(this.namespace, "svg", this);
                 var svgSelector = edges.css_id_selector(this.namespace, "svg", this);
                 this.component.context.html('<svg id="' + svgId + '"></svg>');
+
                 var data_series = edges.nvd3.DataSeriesConversions.toXY(this.component.dataSeries);
 
                 var y_tick_format = this.yTickFormat;
@@ -124,8 +125,7 @@ $.extend(edges, {
                 var controls = this.controls;
 
                 nv.addGraph(function () {
-                    var chart = nv.models.multiBarChart()
-                        .showControls(controls);
+                    var chart = nv.models.multiBarChart().showControls(controls);
 
                     chart.yAxis
                         .tickFormat(d3.format(y_tick_format));
@@ -158,9 +158,9 @@ $.extend(edges, {
             this.draw = function() {
                 var svgId = edges.css_id(this.namespace, "svg", this);
                 var svgSelector = edges.css_id_selector(this.namespace, "svg", this);
+                this.component.context.html('<svg id="' + svgId + '"></svg>');
 
                 var ds = edges.nvd3.DataSeriesConversions.toXY(this.component.dataSeries);
-                this.component.context.html('<svg id="' + svgId + '"></svg>');
 
                 // prep the properties to pass into the graph function
                 var interactiveGuideline = this.interactiveGuideline;

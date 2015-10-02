@@ -2113,6 +2113,10 @@ var edges = {
         // written to this.dataSeries if that is not provided
         this.dataFunction = params.dataFunction || false;
 
+        // closure function which can be invoked with the dfArgs to give a
+        // function which will return the data series
+        this.dataFunctionClosure = params.dataFunctionClosure || false;
+
         // the list of aggregations upon which we'll base the data
         this.aggregations = params.aggregations || [];
 
@@ -2144,6 +2148,10 @@ var edges = {
                 if ($.inArray(agg.name, this.dfArgs.useAggregations) === -1) {
                     this.dfArgs.useAggregations.push(agg.name);
                 }
+            }
+
+            if (this.aggregations.length > 0 && this.dataFunctionClosure) {
+                this.dataFunction = this.dataFunctionClosure(this.dfArgs);
             }
         };
 

@@ -362,18 +362,18 @@ jQuery(document).ready(function($) {
                     xTickFormat: '.0f',
                     yTickFormat: ',.0f'
                 })
-            })/*,
+            }),
             edges.newMultibar({
                 id: "apc_count",
                 display: "APC Count",
-                dfArgs : {
+                dataFunction: edges.ChartDataFunctions.terms({
                     useAggregations : ["apc_count"],
                     seriesKeys : {
                         "apc_count" : "Number of APCs paid"
                     }
-                },
+                }),
                 category : "tab"
-            }),
+            })/*,
             edges.newHorizontalMultibar({
                 id: "total_expenditure",
                 display: "Total Expenditure",
