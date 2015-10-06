@@ -2237,6 +2237,74 @@ var edges = {
 
                 return data_series;
             }
+        },
+
+        recordsXY : function(params) {
+            var x = params.x;
+            var x_default = params.x_default === undefined ? 0 : params.x_default;
+            var y = params.y;
+            var y_default = params.y_default === undefined ? 0 : params.y_default;
+            var key = params.key;
+
+            return function(ch) {
+                var data_series = [];
+                if (!ch.edge.result) {
+                    return data_series;
+                }
+
+                var series = {};
+                series["key"] = key;
+                series["values"] = [];
+
+                var results = ch.edge.result.results();
+                for (var i = 0; i < results.length; i++) {
+                    var res = results[i];
+                    var xval = edges.objVal(x, res, x_default);
+                    var yval = edges.objVal(y, res, y_default);
+                    series.values.push({label: xval, value: yval});
+                }
+
+                data_series.push(series);
+                return data_series;
+            }
+        },
+
+        cumulativeXY : function(params) {
+            var x = params.x;
+            var x_default = params.x_default === undefined ? 0 : params.x_default;
+            var y = params.y;
+            var y_default = params.y_default === undefined ? 0 : params.y_default;
+            var key = params.key;
+            var accumulate = params.accumulate || "y";
+
+            return function(ch) {
+                var data_series = [];
+                if (!ch.edge.result) {
+                    return data_series;
+                }
+
+                var series = {};
+                series["key"] = key;
+                series["values"] = [];
+
+                var total = 0;
+                var results = ch.edge.result.results();
+                for (var i = 0; i < results.length; i++) {
+                    var res = results[i];
+                    var xval = edges.objVal(x, res, x_default);
+                    var yval = edges.objVal(y, res, y_default);
+                    if (accumulate === "x") {
+                        total += xval;
+                        series.values.push({label: total, value: yval});
+                    } else if (accumulate === "y") {
+                        total += yval;
+                        series.values.push({label: xval, value: total});
+                    }
+                }
+
+                data_series.push(series);
+                return data_series;
+            }
         }
     },
 
@@ -2459,5 +2527,22 @@ var edges = {
             .replace(/>/g, "&gt;")
             .replace(/"/g, "&quot;")
             .replace(/'/g, "&#039;");
+    },
+
+    objVal : function(path, rec, def) {
+        if (def === undefined) {
+            def = false;
+        }
+        var bits = path.split(".");
+        var val = rec;
+        for (var i = 0; i < bits.length; i++) {
+            var field = bits[i];
+            if (field in val) {
+                val = val[field];
+            } else {
+                return def;
+            }
+        }
+        return val;
     }
 };
