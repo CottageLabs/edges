@@ -1409,7 +1409,8 @@ var edges = {
         this.dateOptions = {};
 
         this.init = function(edge) {
-            this.__proto__.init.call(this, edge);
+            Object.getPrototypeOf(this).init.call(this, edge);
+            // this.__proto__.init.call(this, edge);
 
             // set the initial field
             this.currentField = this.fields[0].field;
@@ -2022,7 +2023,8 @@ var edges = {
         this.searching = false;
 
         this.init = function(edge) {
-            this.__proto__.init.call(this, edge);
+            Object.getPrototypeOf(this).init.call(this, edge);
+            // this.__proto__.init.call(this, edge);
             edge.context.on("edges:pre-query", edges.eventClosure(this, "searchingBegan"));
             edge.context.on("edges:query-fail", edges.eventClosure(this, "searchingFinished"));
             edge.context.on("edges:query-success", edges.eventClosure(this, "searchingFinished"));

@@ -973,7 +973,8 @@ var es = {
 
         this.matches = function(other) {
             // ask the parent object first
-            var pm = this.__proto__.matches.call(this, other);
+            // var pm = this.__proto__.matches.call(this, other);
+            var pm = Object.getPrototypeOf(this).matches.call(this, other);
             if (!pm) {
                 return false;
             }
@@ -1017,7 +1018,8 @@ var es = {
 
         this.matches = function(other) {
             // ask the parent object first
-            var pm = this.__proto__.matches.call(this, other);
+            // var pm = this.__proto__.matches.call(this, other);
+            var pm = Object.getPrototypeOf(this).matches.call(this, other);
             if (!pm) {
                 return false;
             }
@@ -1106,7 +1108,8 @@ var es = {
 
         this.matches = function(other) {
             // ask the parent object first
-            var pm = this.__proto__.matches.call(this, other);
+            // var pm = this.__proto__.matches.call(this, other);
+            var pm = Object.getPrototypeOf(this).matches.call(this, other);
             if (!pm) {
                 return false;
             }

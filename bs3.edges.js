@@ -330,7 +330,8 @@ $.extend(edges, {
             this.namespace = "edges-bs-results-display";
 
             this.init = function(component) {
-                this.__proto__.init.call(this, component);
+                Object.getPrototypeOf(this).init.call(this, component);
+                // this.__proto__.init.call(this, component);
 
                 // read the fieldDisplayMap out into more readily usable internal variables
                 if (this.fieldDisplayMap.length > 0) {
