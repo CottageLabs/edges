@@ -6,15 +6,43 @@ $.extend(edges, {
             return new edges.google.MapViewRenderer(params);
         },
         MapViewRenderer : function(params) {
+            /////////////////////////////////////////////
+            // parameters that can be passed in
 
+            // what should the renderer do if there are no geopoints
+            // can be one of:
+            // render - render the map anyway, with no geopoints on it
+            // hide - hide the map and display the mapHiddenText
+            this.onNoGeoPoints = params.onNoGeoPoints || "render";
+
+            // text to render if the map has no geo points and the behaviour is "hide"
+            this.mapHiddenText = params.mapHiddenText || "No map data available";
+
+            // initial zoom level
             this.initialZoom = params.initialZoom || 2;
+
+            // initial map type
             this.mapType = params.mapType || "hybrid";
+
+            /////////////////////////////////////////////
+            // internal state
 
             this.namespace = "edges-google-map-view";
             this.map = false;
             this.markers = [];
 
             this.draw = function() {
+                // just check that the maps library is loaded
+                try {google} catch(Exception) {return}
+
+                // now check if there are any geo points, and if there's anything we should do about it
+                if (this.component.locations.length == 0) {
+                    if (this.onNoGeoPoints === "hide") {
+                        this.component.context.html(this.mapHiddenText);
+                        return;
+                    }
+                }
+
                 var centre = new google.maps.LatLng(this.component.centre.lat, this.component.centre.lon);
 
                 if (!this.map) {

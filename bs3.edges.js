@@ -283,7 +283,8 @@ $.extend(edges, {
                             var f = this.fieldDisplay[j];
                             var def = f.default ? f.default : this.defaultCellContent;
                             var val = edges.objVal(f.field, res, def);
-                            frag += '<td class="">' + edges.escapeHtml(val) + '</td>';
+                            var fieldClasses = edges.css_classes(this.namespace, "cell-" + edges.escapeHtml(f.field), this);
+                            frag += '<td class="' + cellClasses + ' ' + fieldClasses + '">' + edges.escapeHtml(val) + '</td>';
                         }
                         frag += "</tr>";
                     }
