@@ -259,7 +259,7 @@ $.extend(edges, {
 
                 var results = this.component.results;
                 if (results && results.length > 0) {
-                    var frag = "";
+                    var frag = '<div class="table-responsive">';
 
                     // list the css classes we'll require
                     var tableClasses = edges.css_classes(this.namespace, "table", this);
@@ -291,7 +291,7 @@ $.extend(edges, {
 
 
                     // close off the table
-                    frag += "</tbody></table>";
+                    frag += "</tbody></table></div>";
                 }
 
                 // and render into the page

@@ -107,32 +107,51 @@ $.extend(edges, {
             return new edges.nvd3.MultibarRenderer(params);
         },
         MultibarRenderer : function(params) {
-            this.yTickFormat = params.yTickFormat || ",.0f";
+            this.xTickFormat = params.xTickFormat || ",.2f";
+            this.yTickFormat = params.yTickFormat || ",.2f";
             this.transitionDuration = params.transitionDuration || 500;
             this.controls = params.controls || false;
+            this.barColor = params.barColor || false;
+            this.showLegend = params.showLegend !== undefined ? params.showLegend : true;
+            this.xAxisLabel = params.xAxisLabel || "";
+            this.yAxisLabel = params.yAxisLabel || "";
 
             this.namespace = "edges-nvd3-multibar";
 
             this.draw = function () {
+                var displayClasses = edges.css_classes(this.namespace, "display", this);
+                var displayFrag = "";
+                if (this.component.display) {
+                    displayFrag = '<span class="' + displayClasses + '">' + this.component.display + '</span><br>';
+                }
+
                 var svgId = edges.css_id(this.namespace, "svg", this);
                 var svgSelector = edges.css_id_selector(this.namespace, "svg", this);
-                this.component.context.html('<svg id="' + svgId + '"></svg>');
+                this.component.context.html(displayFrag + '<svg id="' + svgId + '"></svg>');
 
                 var data_series = edges.nvd3.DataSeriesConversions.toXY(this.component.dataSeries);
-
-                var y_tick_format = this.yTickFormat;
-                var transition_duration = this.transitionDuration;
-                var controls = this.controls;
+                var outer = this;
 
                 nv.addGraph(function () {
-                    var chart = nv.models.multiBarChart().showControls(controls);
+                    var chart = nv.models.multiBarChart().showControls(outer.controls);
+
+                    chart.xAxis
+                        .axisLabel(outer.xAxisLabel)
+                        .tickFormat(d3.format(outer.xTickFormat));
 
                     chart.yAxis
-                        .tickFormat(d3.format(y_tick_format));
+                        .axisLabel(outer.yAxisLabel)
+                        .tickFormat(d3.format(outer.yTickFormat));
+
+                    if (outer.barColor) {
+                        chart.barColor(outer.barColor);
+                    }
+
+                    chart.showLegend(outer.showLegend);
 
                     d3.select(svgSelector)
                         .datum(data_series)
-                        .transition().duration(transition_duration).call(chart);
+                        .transition().duration(outer.transitionDuration).call(chart);
 
                     nv.utils.windowResize(chart.update);
 
@@ -152,39 +171,53 @@ $.extend(edges, {
             this.xTickFormat = params.xTickFormat || ',.2f';
             this.yTickFormat = params.yTickFormat || ',.2f';
             this.transitionDuration = params.transitionDuration || 500;
+            this.lineColor = params.lineColor || false;
+            this.includeOnY = params.includeOnY || false;
+            this.showLegend = params.showLegend !== undefined ? params.showLegend : true;
+            this.xAxisLabel = params.xAxisLabel || "";
+            this.yAxisLabel = params.yAxisLabel || "";
 
             this.namespace = "edges-nvd3-simple-line-chart";
 
             this.draw = function() {
+                var displayClasses = edges.css_classes(this.namespace, "display", this);
+                var displayFrag = "";
+                if (this.component.display) {
+                    displayFrag = '<span class="' + displayClasses + '">' + this.component.display + '</span><br>';
+                }
+
                 var svgId = edges.css_id(this.namespace, "svg", this);
                 var svgSelector = edges.css_id_selector(this.namespace, "svg", this);
-                this.component.context.html('<svg id="' + svgId + '"></svg>');
+                this.component.context.html(displayFrag + '<svg id="' + svgId + '"></svg>');
 
                 var ds = edges.nvd3.DataSeriesConversions.toXY(this.component.dataSeries);
-
-                // prep the properties to pass into the graph function
-                var interactiveGuideline = this.interactiveGuideline;
-                var xtick = this.xTickFormat;
-                var ytick = this.yTickFormat;
-                var transitionDuration = this.transitionDuration;
-                var xlabel = this.xAxisLabel;
-                var ylabel = this.yAxisLabel;
+                var outer = this;
 
                 nv.addGraph(function() {
                     var chart = nv.models.lineChart()
-                        .useInteractiveGuideline(interactiveGuideline);
+                        .useInteractiveGuideline(outer.interactiveGuideline);
 
                     chart.xAxis
-                        .axisLabel(xlabel)
-                        .tickFormat(d3.format(xtick));
+                        .axisLabel(outer.xAxisLabel)
+                        .tickFormat(d3.format(outer.xTickFormat));
+
+                    if (outer.lineColor) {
+                        chart.color(outer.lineColor);
+                    }
+
+                    if (outer.includeOnY) {
+                        chart.forceY(outer.includeOnY);
+                    }
 
                     chart.yAxis
-                        .axisLabel(ylabel)
-                        .tickFormat(d3.format(ytick));
+                        .axisLabel(outer.yAxisLabel)
+                        .tickFormat(d3.format(outer.yTickFormat));
+
+                    chart.showLegend(outer.showLegend);
 
                     d3.select(svgSelector)
                         .datum(ds)
-                        .transition().duration(transitionDuration)
+                        .transition().duration(outer.transitionDuration)
                         .call(chart);
 
                     nv.utils.windowResize(chart.update);
