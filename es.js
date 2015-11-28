@@ -66,7 +66,7 @@ var es = {
     Query : function(params) {
         // properties that can be set directly (thought note that they may need to be read via their getters)
         this.filtered = params.filtered || true;
-        this.size = params.size || false;
+        this.size = params.size !== undefined ? params.size : false;
         this.from = params.from || false;
         this.fields = params.fields || [];
         this.aggs = params.aggs || [];
@@ -92,7 +92,7 @@ var es = {
         this.facets = params.facets || [];
 
         this.getSize = function() {
-            if (this.size) {
+            if (this.size !== undefined) {
                 return this.size;
             }
             return 10;
@@ -409,7 +409,7 @@ var es = {
 
             if (include_paging) {
                 // page size
-                if (this.size) {
+                if (this.size !== undefined) {
                     q["size"] = this.size;
                 }
 
@@ -1089,6 +1089,10 @@ var es = {
         this.has_terms = function() {
             return (this.values !== false && this.values.length > 0)
         };
+
+        this.term_count = function() {
+            return this.values === false ? 0 : this.values.length;
+        }
 
         if (params.raw) {
             this.parse(params.raw);
