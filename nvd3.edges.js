@@ -28,9 +28,48 @@ $.extend(edges, {
             this.donut = params.donut || false;
             this.labelThreshold = params.labelThreshold || 0.05;
             this.transitionDuration = params.transitionDuration || 500;
+            this.noDataMessage = params.noDataMessage || false;
+
+            this.namespace = "edges-nvd3-pie";
 
             this.draw = function() {
 
+                var displayClasses = edges.css_classes(this.namespace, "display", this);
+                var displayFrag = "";
+                if (this.component.display) {
+                    displayFrag = '<span class="' + displayClasses + '">' + this.component.display + '</span><br>';
+                }
+
+                var svgId = edges.css_id(this.namespace, "svg", this);
+                var svgSelector = edges.css_id_selector(this.namespace, "svg", this);
+                this.component.context.html(displayFrag + '<svg id="' + svgId + '"></svg>');
+
+                // pie chart uses the native data series, so just make a ref to it
+                var data_series = this.component.dataSeries;
+                if (data_series.length > 0) {
+                    data_series = data_series[0].values;
+                } else {
+                    data_series = []
+                }
+                var outer = this;
+
+                nv.addGraph(function() {
+                    var chart = nv.models.pieChart()
+                        .x(function(d) { return d.label })
+                        .y(function(d) { return d.value })
+                        .showLabels(outer.showLabels);
+
+                    if (outer.noDataMessage) {
+                        chart.noData(outer.noDataMessage);
+                    }
+
+                    d3.select(svgSelector)
+                        .datum(data_series)
+                        .transition().duration(outer.transitionDuration)
+                        .call(chart);
+
+                    return chart;
+                });
             }
         },
 
