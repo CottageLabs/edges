@@ -653,7 +653,9 @@ $.extend(edges, {
         ORTermSelectorRenderer : function(params) {
             // whether the facet should be open or closed
             // can be initialised and is then used to track internal state
-            this.open = params.open || false;
+            this.open = params.open !== undefined ? params.open : false;
+
+            this.togglable = params.togglable !== undefined ? params.togglable : true;
 
             // whether the count should be displayed along with the term
             // defaults to false because count may be confusing to the user in an OR selector
@@ -725,11 +727,17 @@ $.extend(edges, {
                     }
                 }
 
+                // render the toggle capability
+                var tog = "";
+                if (this.togglable) {
+                    tog = '<a href="#" id="' + toggleId + '"><i class="glyphicon glyphicon-plus"></i>&nbsp;';
+                }
+
                 // render the overall facet
                 var frag = '<div class="' + facetClass + '">\
                         <div class="' + headerClass + '"><div class="row"> \
                             <div class="col-md-12">\
-                                <a href="#" id="' + toggleId + '"><i class="glyphicon glyphicon-plus"></i>&nbsp;' + ts.display + '</a>\
+                                ' + tog + ts.display + '</a>\
                             </div>\
                         </div></div>\
                         <div class="row" style="display:none" id="' + resultsId + '">\
