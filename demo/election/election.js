@@ -1,7 +1,18 @@
 var election = {
     electionEdge : false,
 
+    partyColours : {
+        "Conservative" : "#0087dc",
+        "Liberal Democrat" : "#FDBB30",
+        "Labour Party" : "#d50000",
+        "Scottish National Party" : "#0A2C50",
+        "Plaid Cymru" : "#e1cc00",
+        "Green Party" : "#8dc63f",
+        "UKIP" : "#B3009D"
+    },
+
     create : function() {
+
         var e = edges.newEdge({
             selector: "#election",
             template: election.newElectionTemplate(),
@@ -34,7 +45,13 @@ var election = {
                         valueField : "votes"
                     }),
                     renderer : edges.nvd3.newPieChartRenderer({
-                        noDataMessage : "Select one or more constituencies from the list to see the party vote share"
+                        noDataMessage : "Select one or more constituencies from the list to see the party vote share",
+                        color: edges.nvd3.tools.persistingPieColour(false, election.partyColours),
+                        transitionDuration : 1000,
+                        legendPosition: "right",
+                        labelsOutside: true,
+                        valueFormat : d3.format(',.0f'),
+                        marginLeft: 50
                     })
                 })
             ]
