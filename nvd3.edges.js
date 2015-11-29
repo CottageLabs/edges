@@ -18,6 +18,38 @@ $.extend(edges, {
             }
         },
 
+        tools : {
+            persistingPieColour : function(colours, persistence) {
+                if (!colours) {
+                    colours = [
+                        "#ea6ccb",
+                        "#8fc8b0",
+                        "#a9cf85",
+                        "#d90d4c",
+                        "#6c537e",
+                        "#64d54f",
+                        "#ecc7c4",
+                        "#f1712b"
+                    ]
+                }
+                if (!persistence) {
+                    persistence = {};
+                }
+
+                var i = 0;
+                return function(d, x) {
+                    if (d.label in persistence) {
+                        return persistence[d.label]
+                    } else {
+                        var c = colours[i % (colours.length - 1)];
+                        i++;
+                        persistence[d.label] = c;
+                        return c;
+                    }
+                }
+            }
+        },
+
         newPieChartRenderer : function(params) {
             if (!params) { params = {} }
             edges.nvd3.PieChartRenderer.prototype = edges.newRenderer(params);
@@ -29,6 +61,14 @@ $.extend(edges, {
             this.labelThreshold = params.labelThreshold || 0.05;
             this.transitionDuration = params.transitionDuration || 500;
             this.noDataMessage = params.noDataMessage || false;
+            this.color = params.color || false;
+            this.legendPosition = params.legendPosition || "top";
+            this.labelsOutside = params.labelsOutside !== undefined ? params.labelsOutside : false;
+            this.valueFormat = params.valueFormat || false;
+            this.marginTop = params.marginTop || 30;
+            this.marginRight = params.marginRight || 30;
+            this.marginBottom = params.marginBottom || 30;
+            this.marginLeft = params.marginLeft || 30;
 
             this.namespace = "edges-nvd3-pie";
 
@@ -57,10 +97,21 @@ $.extend(edges, {
                     var chart = nv.models.pieChart()
                         .x(function(d) { return d.label })
                         .y(function(d) { return d.value })
-                        .showLabels(outer.showLabels);
+                        .showLabels(outer.showLabels)
+                        .legendPosition(outer.legendPosition)
+                        .labelsOutside(outer.labelsOutside)
+                        .margin({"left":outer.marginLeft,"right":outer.marginRight,"top":outer.marginTop,"bottom":outer.marginBottom});
 
                     if (outer.noDataMessage) {
                         chart.noData(outer.noDataMessage);
+                    }
+
+                    if (outer.color) {
+                        chart.color(outer.color);
+                    }
+
+                    if (outer.valueFormat) {
+                        chart.valueFormat(outer.valueFormat)
                     }
 
                     d3.select(svgSelector)
