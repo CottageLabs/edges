@@ -2170,6 +2170,7 @@ var edges = {
         };
     },
     ChartDataFunctions : {
+        // dataFunctionClosure
         terms : function(params) {
 
             var useAggregations = params.useAggregations || [];
@@ -2201,6 +2202,16 @@ var edges = {
             }
         },
 
+        // dataFunctionClosure
+        // extract the stats from a nested stats aggregation inside a terms aggregation
+        // produces a set of series, one for each "seriesFor" (which should be one of the
+        // stats in the stats aggregation, such as "sum") in each of the aggregations
+        // listed in useAggregations (which should be a list of the terms aggregations to
+        // be interrogated for nested stats aggs).  If the terms stats themselves are nested
+        // aggregations, provide the full path to the term, separating each level with a space.
+        //
+        // seriesKeys map from the full name of the path to the statistic to a human readable
+        // representation of it
         termsStats : function(params) {
 
             var useAggregations = params.useAggregations || [];
@@ -2241,6 +2252,10 @@ var edges = {
             }
         },
 
+        // dataFunctionClosure
+        // from each record extract the values specified by the field pointers x and y
+        // and store them as the label and value respectively in the data series.  Only
+        // one data series is produced by this function
         recordsXY : function(params) {
             var x = params.x;
             var x_default = params.x_default === undefined ? 0 : params.x_default;
@@ -2271,6 +2286,15 @@ var edges = {
             }
         },
 
+        // dataFunctionClosure
+        // from each record extract the values specified by the field pointers x and y
+        // and add them to a cumulative total, and save them as the label and value respectively
+        //
+        // you can choose to accumulate only one of the fields, x or y, the other will be stored
+        // as it is represented in the record.
+        //
+        // This is good, for example, for producing a cumulative series of an annual statistic,
+        // on a by-year basis.
         cumulativeXY : function(params) {
             var x = params.x;
             var x_default = params.x_default === undefined ? 0 : params.x_default;
@@ -2302,6 +2326,51 @@ var edges = {
                         total += yval;
                         series.values.push({label: xval, value: total});
                     }
+                }
+
+                data_series.push(series);
+                return data_series;
+            }
+        },
+
+        totalledList : function(params) {
+            var listPath = params.listPath || "";
+            var seriesKey = params.seriesKey || "";
+            var keyField = params.keyField || false;
+            var valueField = params.valueField || false;
+
+            return function(ch) {
+                var data_series = [];
+                if (!ch.edge.result) {
+                    return data_series;
+                }
+
+                var series = {};
+                series["key"] = seriesKey;
+                series["values"] = [];
+
+                // go through all the records and count the values
+                var counter = {};
+                var results = ch.edge.result.results();
+                for (var i = 0; i < results.length; i++) {
+                    var res = results[i];
+                    var l = edges.objVal(listPath, res, []);
+                    for (var j = 0; j < l.length; j++) {
+                        var lo = l[j];
+                        var key = edges.objVal(keyField, lo, false);
+                        var value = edges.objVal(valueField, lo, 0);
+                        if (key in counter) {
+                            counter[key] += value;
+                        } else {
+                            counter[key] = value;
+                        }
+                    }
+                }
+
+                // now conver the values into the correct form for the series
+                for (key in counter) {
+                    var val = counter[key];
+                    series.values.push({label: key, value: val});
                 }
 
                 data_series.push(series);

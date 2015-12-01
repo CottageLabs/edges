@@ -18,6 +18,38 @@ $.extend(edges, {
             }
         },
 
+        tools : {
+            persistingPieColour : function(colours, persistence) {
+                if (!colours) {
+                    colours = [
+                        "#ea6ccb",
+                        "#8fc8b0",
+                        "#a9cf85",
+                        "#d90d4c",
+                        "#6c537e",
+                        "#64d54f",
+                        "#ecc7c4",
+                        "#f1712b"
+                    ]
+                }
+                if (!persistence) {
+                    persistence = {};
+                }
+
+                var i = 0;
+                return function(d, x) {
+                    if (d.label in persistence) {
+                        return persistence[d.label]
+                    } else {
+                        var c = colours[i % (colours.length - 1)];
+                        i++;
+                        persistence[d.label] = c;
+                        return c;
+                    }
+                }
+            }
+        },
+
         newPieChartRenderer : function(params) {
             if (!params) { params = {} }
             edges.nvd3.PieChartRenderer.prototype = edges.newRenderer(params);
@@ -28,9 +60,67 @@ $.extend(edges, {
             this.donut = params.donut || false;
             this.labelThreshold = params.labelThreshold || 0.05;
             this.transitionDuration = params.transitionDuration || 500;
+            this.noDataMessage = params.noDataMessage || false;
+            this.color = params.color || false;
+            this.legendPosition = params.legendPosition || "top";
+            this.labelsOutside = params.labelsOutside !== undefined ? params.labelsOutside : false;
+            this.valueFormat = params.valueFormat || false;
+            this.marginTop = params.marginTop || 30;
+            this.marginRight = params.marginRight || 30;
+            this.marginBottom = params.marginBottom || 30;
+            this.marginLeft = params.marginLeft || 30;
+
+            this.namespace = "edges-nvd3-pie";
 
             this.draw = function() {
 
+                var displayClasses = edges.css_classes(this.namespace, "display", this);
+                var displayFrag = "";
+                if (this.component.display) {
+                    displayFrag = '<span class="' + displayClasses + '">' + this.component.display + '</span><br>';
+                }
+
+                var svgId = edges.css_id(this.namespace, "svg", this);
+                var svgSelector = edges.css_id_selector(this.namespace, "svg", this);
+                this.component.context.html(displayFrag + '<svg id="' + svgId + '"></svg>');
+
+                // pie chart uses the native data series, so just make a ref to it
+                var data_series = this.component.dataSeries;
+                if (data_series.length > 0) {
+                    data_series = data_series[0].values;
+                } else {
+                    data_series = []
+                }
+                var outer = this;
+
+                nv.addGraph(function() {
+                    var chart = nv.models.pieChart()
+                        .x(function(d) { return d.label })
+                        .y(function(d) { return d.value })
+                        .showLabels(outer.showLabels)
+                        .legendPosition(outer.legendPosition)
+                        .labelsOutside(outer.labelsOutside)
+                        .margin({"left":outer.marginLeft,"right":outer.marginRight,"top":outer.marginTop,"bottom":outer.marginBottom});
+
+                    if (outer.noDataMessage) {
+                        chart.noData(outer.noDataMessage);
+                    }
+
+                    if (outer.color) {
+                        chart.color(outer.color);
+                    }
+
+                    if (outer.valueFormat) {
+                        chart.valueFormat(outer.valueFormat)
+                    }
+
+                    d3.select(svgSelector)
+                        .datum(data_series)
+                        .transition().duration(outer.transitionDuration)
+                        .call(chart);
+
+                    return chart;
+                });
             }
         },
 
