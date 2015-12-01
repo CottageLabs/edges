@@ -16,7 +16,7 @@ $.extend(edges, {
             this.onNoGeoPoints = params.onNoGeoPoints || "render";
 
             // text to render if the map has no geo points and the behaviour is "hide"
-            this.mapHiddenText = params.mapHiddenText || "No map data available";
+            this.mapHiddenText = params.mapHiddenText !== undefined ? params.mapHiddenText : "No map data available";
 
             // initial zoom level
             this.initialZoom = params.initialZoom || 2;
