@@ -46,7 +46,7 @@ var election = {
                     }),
                     renderer : edges.nvd3.newPieChartRenderer({
                         noDataMessage : "Select one or more constituencies from the list to see the party vote share",
-                        color: edges.nvd3.tools.persistingPieColour(false, election.partyColours),
+                        color: edges.nvd3.tools.persistingPartyColour(false, election.partyColours),
                         transitionDuration : 1000,
                         legendPosition: "right",
                         labelsOutside: true,

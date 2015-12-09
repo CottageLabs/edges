@@ -2285,7 +2285,40 @@ var edges = {
                 return data_series;
             }
         },
+        listXY : function(params) {
+            var x = params.x;
+            var x_default = params.x_default === undefined ? 0 : params.x_default;
+            var y = params.y;
+            var y_default = params.y_default === undefined ? 0 : params.y_default;
+            var key = params.key;
+            var listPath = params.listPath || "";
 
+            return function(ch) {
+                var data_series = [];
+                if (!ch.edge.result) {
+                    return data_series;
+                }
+
+                var series = {};
+                series["key"] = key;
+                series["values"] = [];
+
+                var results = ch.edge.result.results();
+                for (var i = 0; i < results.length; i++) {
+                    var res = results[i];
+                    var l = edges.objVal(listPath, res, []);
+                    for (var j = 0; j < l.length; j++) {
+                        var lo = l[j];
+                        var xval = edges.objVal(x, lo, x_default);
+                        var yval = edges.objVal(y, lo, y_default);
+                        series.values.push({label: xval, value: yval});
+                    }
+                }
+
+                data_series.push(series);
+                return data_series;
+            }
+        },
         // dataFunctionClosure
         // from each record extract the values specified by the field pointers x and y
         // and add them to a cumulative total, and save them as the label and value respectively
