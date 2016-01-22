@@ -55,7 +55,8 @@ var edges = {
         this.baseQuery = params.baseQuery || false;
 
         // query to use to initialise the search.  Use this to set your opening
-        // values for things like page size, initial search terms, etc.
+        // values for things like page size, initial search terms, etc.  Any request to
+        // reset the interface will return to this query
         this.openingQuery = params.openingQuery || es.newQuery();
 
         // should the init process do a search
@@ -172,8 +173,11 @@ var edges = {
 
         // reset the query to the start and re-issue the query
         this.reset = function() {
-            // start a totally blank query
-            var requestedQuery = es.newQuery();
+            // tell the world we're about to reset
+            this.context.trigger("edges:pre-reset");
+
+            // clone from the opening query
+            var requestedQuery = this.cloneOpeningQuery();
 
             // request the components to contribute to the query
             for (var i = 0; i < this.components.length; i++) {
@@ -183,6 +187,9 @@ var edges = {
 
             // push the query, which will reconcile it with the baseQuery
             this.pushQuery(requestedQuery);
+
+            // tell the world that we've done the reset
+            this.context.trigger("edges:post-reset");
 
             // now execute the query
             this.doQuery();
@@ -208,6 +215,13 @@ var edges = {
             }
             return es.newQuery();
         };
+
+        this.cloneOpeningQuery = function() {
+            if (this.openingQuery) {
+                return $.extend(true, {}, this.openingQuery);
+            }
+            return es.newQuery();
+        }
 
         // execute the query and all the associated workflow
         this.doQuery = function() {
@@ -2534,8 +2548,14 @@ var edges = {
         }
     },
 
-    eventClosure : function(obj, fn) {
+    eventClosure : function(obj, fn, conditional) {
         return function(event) {
+            if (conditional) {
+                if (!conditional(event)) {
+                    return;
+                }
+            }
+
             event.preventDefault();
             obj[fn](this);
         }
@@ -2575,9 +2595,9 @@ var edges = {
     //////////////////////////////////////////////////////////////////
     // Event binding utilities
 
-    on : function(selector, event, renderer, targetFunction, delay) {
+    on : function(selector, event, renderer, targetFunction, delay, conditional) {
         event = event + "." + renderer.component.id;
-        var clos = edges.eventClosure(renderer, targetFunction);
+        var clos = edges.eventClosure(renderer, targetFunction, conditional);
         if (delay) {
             renderer.component.jq(selector).bindWithDelay(event, clos, delay);
         } else {
@@ -2615,5 +2635,9 @@ var edges = {
             }
         }
         return val;
+    },
+
+    getParam : function(value, def) {
+        return value !== undefined ? value : def;
     }
 };

@@ -409,7 +409,7 @@ var es = {
 
             if (include_paging) {
                 // page size
-                if (this.size !== undefined) {
+                if (this.size !== undefined && this.size !== false) {
                     q["size"] = this.size;
                 }
 

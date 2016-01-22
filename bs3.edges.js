@@ -963,7 +963,7 @@ $.extend(edges, {
             this.searchButton = params.searchButton || false;
 
             // amount of time between finishing typing and when a query is executed from the search box
-            this.freetextSubmitDelay = params.freetextSubmitDelay || 500;
+            this.freetextSubmitDelay = edges.getParam(params.freetextSubmitDelay, 500);
 
             // after search, the results will fade in over this number of milliseconds
             this.fadeIn = params.fadeIn || 800;
@@ -1037,7 +1037,7 @@ $.extend(edges, {
                         <div class="form-group"> \
                             <div class="input-group"> \
                                 <span class="input-group-btn"> \
-                                    <button class="btn btn-danger btn-sm ' + resetClass + '" title="Clear all search parameters and start again"> \
+                                    <button type="button" class="btn btn-danger btn-sm ' + resetClass + '" title="Clear all search parameters and start again"> \
                                         <span class="glyphicon glyphicon-remove"></span> \
                                     </button> \
                                 </span> ' + field_select + '\
@@ -1080,10 +1080,14 @@ $.extend(edges, {
                     edges.on(fieldSelector, "change", this, "changeSearchField");
                 }
                 var textSelector = edges.css_class_selector(this.namespace, "text", this);
-                if (this.freetextSubmitDelay > 0) {
+                if (this.freetextSubmitDelay > -1) {
                     edges.on(textSelector, "keyup", this, "setSearchText", this.freetextSubmitDelay);
                 } else {
-                    edges.on(textSelector, "keyup", this, "setSearchText");
+                    function onlyEnter(event) {
+                        var code = (event.keyCode ? event.keyCode : event.which);
+                        return code === 13;
+                    }
+                    edges.on(textSelector, "keyup", this, "setSearchText", false, onlyEnter);
                 }
 
                 var resetSelector = edges.css_class_selector(this.namespace, "reset", this);
