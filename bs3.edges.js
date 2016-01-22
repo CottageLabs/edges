@@ -988,7 +988,7 @@ $.extend(edges, {
                     var directionClass = edges.css_classes(this.namespace, "direction", this);
                     var sortFieldClass = edges.css_classes(this.namespace, "sortby", this);
 
-                    sortOptions = '<form class="form-inline"> \
+                    sortOptions = '<div class="form-inline"> \
                             <div class="form-group"> \
                                 <div class="input-group"> \
                                     <span class="input-group-btn"> \
@@ -1006,7 +1006,7 @@ $.extend(edges, {
                     sortOptions += ' </select> \
                                 </div> \
                             </div> \
-                        </form>';
+                        </div>';
                 }
 
                 // select box for fields to search on
@@ -1033,7 +1033,7 @@ $.extend(edges, {
                 // text search box id
                 var textId = edges.css_id(this.namespace, "text", this);
 
-                var searchBox = '<form class="form-inline pull-right"> \
+                var searchBox = '<div class="form-inline pull-right"> \
                         <div class="form-group"> \
                             <div class="input-group"> \
                                 <span class="input-group-btn"> \
@@ -1049,7 +1049,7 @@ $.extend(edges, {
                                 </span> \
                             </div> \
                         </div> \
-                    </form>';
+                    </div>';
 
                 // assemble the final fragment and render it into the component's context
                 var frag = '<div class="row"><div class="col-md-5">{{SORT}}</div><div class="col-md-7">{{SEARCH}}</div></div>';
@@ -1633,7 +1633,7 @@ $.extend(edges, {
                 var recordCount = '<span class="' + totalClass + '">' + this.component.total + '</span> results found';
 
                 // the number of records per page
-                var sizer = '<form class="form-inline">' + recordCount + '<select class="form-control input-sm ' + sizeSelectClass + '" name="' + this.component.id + '-page-size">{{SIZES}}</select> per page</form>';
+                var sizer = '<div class="form-inline">' + recordCount + '<select class="form-control input-sm ' + sizeSelectClass + '" name="' + this.component.id + '-page-size">{{SIZES}}</select> per page</div>';
                 var sizeopts = "";
                 var optarr = this.sizeOptions.slice(0);
                 if ($.inArray(this.component.pageSize, optarr) === -1) {
