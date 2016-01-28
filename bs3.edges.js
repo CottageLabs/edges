@@ -496,8 +496,8 @@ $.extend(edges, {
                     controlFrag = '<div class="' + controlClass + '" style="display:none" id="' + controlId + '"><div class="row"> \
                         <div class="col-md-12">\
                             <div class="btn-group">\
-                                <button class="btn btn-default btn-sm" id="' + sizeId + '" title="List Size" href="#">0</button> \
-                                <button class="btn btn-default btn-sm" id="' + orderId + '" title="List Order" href="#"></button> \
+                                <button type="button" class="btn btn-default btn-sm" id="' + sizeId + '" title="List Size" href="#">0</button> \
+                                <button type="button" class="btn btn-default btn-sm" id="' + orderId + '" title="List Order" href="#"></button> \
                             </div>\
                         </div>\
                     </div></div>';
@@ -992,7 +992,7 @@ $.extend(edges, {
                             <div class="form-group"> \
                                 <div class="input-group"> \
                                     <span class="input-group-btn"> \
-                                        <button class="btn btn-default btn-sm ' + directionClass +'" title="" href="#"></button> \
+                                        <button type="button" class="btn btn-default btn-sm ' + directionClass +'" title="" href="#"></button> \
                                     </span> \
                                     <select class="form-control input-sm ' + sortFieldClass + '"> \
                                         <option value="_score">Relevance</option>';
@@ -1043,7 +1043,7 @@ $.extend(edges, {
                                 </span> ' + field_select + '\
                                 <input type="text" id="' + textId + '" class="form-control input-sm ' + textClass + '" name="q" value="" placeholder="Search" style="width: 200px" /> \
                                 <span class="input-group-btn"> \
-                                    <button class="btn btn-info btn-sm ' + searchClass + '"> \
+                                    <button type="button" class="btn btn-info btn-sm ' + searchClass + '"> \
                                         <span class="glyphicon glyphicon-white glyphicon-search"></span> \
                                     </button> \
                                 </span> \
@@ -1633,7 +1633,7 @@ $.extend(edges, {
                 var recordCount = '<span class="' + totalClass + '">' + this.component.total + '</span> results found';
 
                 // the number of records per page
-                var sizer = '<div class="form-inline">' + recordCount + '<select class="form-control input-sm ' + sizeSelectClass + '" name="' + this.component.id + '-page-size">{{SIZES}}</select> per page</div>';
+                var sizer = '<div class="form-inline">' + recordCount + '<div class="form-group"><select class="form-control input-sm ' + sizeSelectClass + '" name="' + this.component.id + '-page-size">{{SIZES}}</select></div> per page</div>';
                 var sizeopts = "";
                 var optarr = this.sizeOptions.slice(0);
                 if ($.inArray(this.component.pageSize, optarr) === -1) {
