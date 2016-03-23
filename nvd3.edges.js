@@ -19,7 +19,7 @@ $.extend(edges, {
         },
 
         tools : {
-            persistingPieColour : function(colours, persistence) {
+            persistingPartyColour : function(colours, persistence) {
                 if (!colours) {
                     colours = [
                         "#ea6ccb",
@@ -197,11 +197,11 @@ $.extend(edges, {
             return new edges.nvd3.MultibarRenderer(params);
         },
         MultibarRenderer : function(params) {
-            this.xTickFormat = params.xTickFormat || ",.2f";
-            this.yTickFormat = params.yTickFormat || ",.2f";
+            this.xTickFormat = params.xTickFormat !== undefined ? params.xTickFormat : ",.2f";
+            this.yTickFormat = params.yTickFormat !== undefined ? params.yTickFormat : ",.2f";
             this.transitionDuration = params.transitionDuration || 500;
-            this.controls = params.controls || false;
-            this.barColor = params.barColor || false;
+            this.controls = params.controls !== undefined ? params.controls : false;
+            this.barColor = params.barColor !== undefined ? params.barColor : false;
             this.showLegend = params.showLegend !== undefined ? params.showLegend : true;
             this.xAxisLabel = params.xAxisLabel || "";
             this.yAxisLabel = params.yAxisLabel || "";
@@ -226,12 +226,17 @@ $.extend(edges, {
                     var chart = nv.models.multiBarChart().showControls(outer.controls);
 
                     chart.xAxis
-                        .axisLabel(outer.xAxisLabel)
-                        .tickFormat(d3.format(outer.xTickFormat));
+                        .axisLabel(outer.xAxisLabel);
+
+                    if (outer.xTickFormat) {
+                        chart.tickFormat(d3.format(outer.xTickFormat));
+                    }
+
 
                     chart.yAxis
                         .axisLabel(outer.yAxisLabel)
                         .tickFormat(d3.format(outer.yTickFormat));
+
 
                     if (outer.barColor) {
                         chart.barColor(outer.barColor);
