@@ -78,7 +78,7 @@ var edges = {
         this.components = params.components || [];
 
         // render packs to use to source automatically assigned rendering objects
-        this.renderPacks = params.renderPacks || [edges.bs3, edges.nvd3, edges.highcharts, edges.google];
+        this.renderPacks = params.renderPacks || [edges.bs3, edges.nvd3, edges.highcharts, edges.google, edges.d3];
 
         /////////////////////////////////////////////
         // operational properties
@@ -221,7 +221,7 @@ var edges = {
                 return $.extend(true, {}, this.openingQuery);
             }
             return es.newQuery();
-        }
+        };
 
         // execute the query and all the associated workflow
         this.doQuery = function() {
@@ -404,7 +404,7 @@ var edges = {
             }
             var wloc = window.location.toString();
             var bits = wloc.split("?");
-            var url = bits[0] + "?" + this._makeUrlQuery(args) + fragment
+            var url = bits[0] + "?" + this._makeUrlQuery(args) + fragment;
             return url;
         };
 
