@@ -104,13 +104,18 @@ $.extend(edges, {
                             }
                         })
                         .on("mouseover", function(d) {
+                            var mouse = d3.mouse(svg.node()).map(function(d) {
+                                return parseInt(d);
+                            });
                             div.transition()
                                     .duration(200)
                                     .style("opacity", 1);
-                            div.text(d.properties.name)
-                                    .style("left", (d3.event.pageX) + "px")
-                                    .style("top", (d3.event.pageY) + "px")
-                                    .style("color", "black");
+                            div.html('<h4>'+ d.properties.name + '</h4>' +
+                                    '<p>Last month: 25000</p>' +
+                                    '<p>Prediction: 30000</p>')
+                                .attr('style', 'left:' + (mouse[0] + 15) +
+                                    'px; top:' + (mouse[1] - 35) + 'px')
+                                    .style("color", "white");
                         });
 
                     // Add example numbers for each PADD to the relative center of the center-most state

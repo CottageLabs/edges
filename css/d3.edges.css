@@ -4,17 +4,24 @@
 }
 
 /* Style for Custom Tooltip */
+
 .edges-d3-grouped-us-states-tooltip {
- 	position: absolute;
+	position: absolute;
 	text-align: center;
-	width: 60px;
-	height: 28px;
-	padding: 2px;
+	margin: 10px;
 	font: 12px sans-serif;
-	background: white;
-	border: 0px;
-	border-radius: 8px;
 	pointer-events: none;
+	background:rgba(0,0,0,0.9);
+	border:1px solid grey;
+	width:auto;
+	padding:4px;
+	color:white;
+	opacity:0;
+}
+
+.edges-d3-grouped-us-states-tooltip h4 {
+	font-size: 14px;
+	font-weight: 600;
 }
 
 /* Legend Position Style */
