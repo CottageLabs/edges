@@ -1,36 +1,31 @@
 requirejs.config({
-    baseUrl: '',
+    baseUrl: '../',
     paths: {
-        // the left side is the module ID,
-        // the right side is the path to
-        // the jQuery file, relative to baseUrl.
-        // Also, the path should NOT include
-        // the '.js' file extension. This example
-        // is using jQuery 1.9.0 located at
-        // js/lib/jquery-1.9.0.js, relative to
-        // the HTML page.
         jquery: 'vendor/jquery-1.11.1/jquery-1.11.1',
         "jquery-ui" : "vendor/jquery-ui-1.11.1/jquery-ui",
         select2 : "vendor/select2-3.5.1/select2.min",
         d3: "vendor/d3-v3/d3.min",
-        nvd3: "vendor/nvd3-1.8.1/nv.d3"
-
-        /*
-        shim : {
-            "es" : ["jquery"],
-            "edges" : ["jquery", "es"],
-            "bs3.edges" : ["edges", "jquery", "jquery-ui", "select2"],
-            "d3.edges" : ["edges", "jquery", "d3"],
-            "google.edges" : ["edges", "jquery"],
-            "nvd3.edges" : ["edges", "jquery", "nvd3"]
-        }*/
+        nvd3: "vendor/nvd3-1.8.1/nv.d3",
+        es : "src/es",
+        edges : "src/edges",
+        "edges-jquery" : "src/edges.jquery",
+        "edges.charts" : "src/components/charts",
+        "edges.maps" : "src/components/maps",
+        "edges.ranges" : "src/components/ranges",
+        "edges.search" : "src/components/search",
+        "edges.selectors" : "src/components/selectors",
+        "edges.bs3" : "src/renderers/bs3.edges",
+        "edges.d3" : "src/renderers/d3.edges",
+        "edges.google" : "src/renderers/google.edges",
+        "edges.highcharts" : "src/renderers/highcharts.edges",
+        "edges.nvd3" : "src/renderers/nvd3.edges"
     }
 });
 
 requirejs(["jquery"], function() {
-    requirejs(["jquery-ui", "select2", "d3", "nvd3"], function() {
-        requirejs(["es", "edges"], function() {
-            requirejs(["bs3.edges", "d3.edges", "google.edges", "nvd3.edges"], function() {
+    requirejs(["jquery-ui", "select2", "d3", "nvd3", "es", "edges-jquery"], function() {
+        requirejs(["edges"], function() {
+            requirejs(["edges.charts", "edges.maps", "edges.ranges", "edges.search", "edges.selectors", "edges.bs3", "edges.d3", "edges.google", "edges.highcharts", "edges.nvd3"], function() {
 
                 jQuery(document).ready(function($) {
                     e2 = edges.newEdge({
@@ -121,13 +116,3 @@ requirejs(["jquery"], function() {
         })
     })
 });
-
-/*
-requirejs([
-    "jquery", "jquery-ui", "vendor/select2-3.5.1/select2.min",
-    "d3", "nvd3",
-    "es", "edges", "bs3.edges", "d3.edges", "google.edges", "nvd3.edges"], function() {
-
-
-});
-    */
