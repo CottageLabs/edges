@@ -87,7 +87,7 @@ $.extend(edges, {
 
                 // list all of the pre-defined filters for this field from the baseQuery
                 var predefined = [];
-                if (this.excludePreDefinedFilters) {
+                if (this.excludePreDefinedFilters && this.edge.baseQuery) {
                     predefined = this.edge.baseQuery.listMust(es.TermFilter({field: this.field}));
                 }
 
