@@ -1,0 +1,60 @@
+/********************************************************
+ *  Refining AND Term Selector
+ */
+
+.edges-bs3-refiningand-term-selector-facet {
+    border-top: 1px solid #cccccc;
+    border-bottom: 1px solid #cccccc;
+}
+
+.edges-bs3-refiningand-term-selector-header {
+    font-weight: bold;
+    padding-left: 5px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    background-color: #eeeeee;
+}
+
+.edges-bs3-refiningand-term-selector-header a {
+    color: #000000;
+}
+
+.edges-bs3-refiningand-term-selector-header a:hover {
+    font-weight: bold;
+    text-decoration: none;
+}
+
+.edges-bs3-refiningand-term-selector-controls {
+    padding-bottom: 5px;
+    padding-left: 5px;
+    border-bottom: 1px solid #cccccc;
+    background-color: #eeeeee;
+}
+
+.edges-bs3-refiningand-term-selector-result {
+    padding-left: 5px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+}
+
+.edges-bs3-refiningand-term-selector-result:nth-of-type(odd) {
+    background-color: #ffffff;
+}
+
+.edges-bs3-refiningand-term-selector-result:nth-of-type(even) {
+    background-color: #f4f4f4;
+}
+
+.edges-bs3-refiningand-term-selector-result:hover {
+    background-color: #eeeeee;
+}
+
+.edges-bs3-refiningand-term-selector-value {}
+
+.edges-bs3-refiningand-term-selector-filter-remove {
+    color: #000000;
+}
+
+.edges-bs3-refiningand-term-selector-filter-remove:hover {
+    color: #000000;
+}

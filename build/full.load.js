@@ -6,15 +6,33 @@ requirejs.config({
         select2 : "vendor/select2-3.5.1/select2.min",
         d3: "vendor/d3-v3/d3.min",
         nvd3: "vendor/nvd3-1.8.1/nv.d3",
+
         es : "src/es",
         edges : "src/edges",
         "edges-jquery" : "src/edges.jquery",
+
         "edges.charts" : "src/components/charts",
         "edges.maps" : "src/components/maps",
         "edges.ranges" : "src/components/ranges",
         "edges.search" : "src/components/search",
         "edges.selectors" : "src/components/selectors",
-        "edges.bs3" : "src/renderers/bs3.edges",
+
+        "edges.bs3.facetview" : "src/templates/bs3.Facetview",
+        "edges.bs3.tabbed" : "src/templates/bs3.Tabbed",
+
+        "edges.bs3.basicrangeselector" : "src/renderers/bs3.BasicRangeSelectorRenderer",
+        "edges.bs3.fullsearchcontroller" : "src/renderers/bs3.FullSearchControllerRenderer",
+        "edges.bs3.multidaterange" : "src/renderers/bs3.MultiDateRangeRenderer",
+        "edges.bs3.numericrangeentry" : "src/renderers/bs3.NumericRangeEntryRenderer",
+        "edges.bs3.ortermselector" : "src/renderers/bs3.ORTermSelectorRenderer",
+        "edges.bs3.pager" : "src/renderers/bs3.PagerRenderer",
+        "edges.bs3.refiningandtermselector" : "src/renderers/bs3.RefiningANDTermSelectorRenderer",
+        "edges.bs3.resultsdisplay" : "src/renderers/bs3.ResultsDisplayRenderer",
+        "edges.bs3.searchingnotification" : "src/renderers/bs3.SearchingNotificationRenderer",
+        "edges.bs3.selectedfilters" : "src/renderers/bs3.SelectedFiltersRenderer",
+        "edges.bs3.tabularresults" : "src/renderers/bs3.TabularResultsRenderer",
+
+        // "edges.bs3" : "src/renderers/bs3.edges",
         "edges.d3" : "src/renderers/d3.edges",
         "edges.google" : "src/renderers/google.edges",
         "edges.highcharts" : "src/renderers/highcharts.edges",
@@ -25,7 +43,33 @@ requirejs.config({
 requirejs(["jquery"], function() {
     requirejs(["jquery-ui", "select2", "d3", "nvd3", "es", "edges-jquery"], function() {
         requirejs(["edges"], function() {
-            requirejs(["edges.charts", "edges.maps", "edges.ranges", "edges.search", "edges.selectors", "edges.bs3", "edges.d3", "edges.google", "edges.highcharts", "edges.nvd3"], function() {
+            requirejs([
+                "edges.charts",
+                "edges.maps",
+                "edges.ranges",
+                "edges.search",
+                "edges.selectors",
+
+                "edges.bs3.facetview",
+                "edges.bs3.tabbed",
+
+                "edges.bs3.basicrangeselector",
+                "edges.bs3.fullsearchcontroller",
+                "edges.bs3.multidaterange",
+                "edges.bs3.numericrangeentry",
+                "edges.bs3.ortermselector",
+                "edges.bs3.pager",
+                "edges.bs3.refiningandtermselector",
+                "edges.bs3.resultsdisplay",
+                "edges.bs3.searchingnotification",
+                "edges.bs3.selectedfilters",
+                "edges.bs3.tabularresults",
+
+                "edges.d3",
+                "edges.google",
+                "edges.highcharts",
+                "edges.nvd3"
+            ], function() {
 
                 jQuery(document).ready(function($) {
                     e2 = edges.newEdge({
