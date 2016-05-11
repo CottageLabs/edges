@@ -92,7 +92,7 @@ var es = {
         this.facets = params.facets || [];
 
         this.getSize = function() {
-            if (this.size !== undefined) {
+            if (this.size !== undefined && this.size !== false) {
                 return this.size;
             }
             return 10;

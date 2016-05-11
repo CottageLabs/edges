@@ -1,12 +1,14 @@
-$.extend(edges, {
-    bs3 : {
+$.extend(true, edges, {
 
-        newTabbed : function(params) {
-            if (!params) { params = {} }
+    bs3 : {
+        newTabbed: function (params) {
+            if (!params) {
+                params = {}
+            }
             edges.bs3.Tabbed.prototype = edges.newTemplate(params);
             return new edges.bs3.Tabbed(params);
         },
-        Tabbed : function(params) {
+        Tabbed: function (params) {
             // later we'll store the edge instance here
             this.edge = false;
 
@@ -15,7 +17,7 @@ $.extend(edges, {
 
             this.namespace = "edges-bs3-tabbed";
 
-            this.draw = function(edge) {
+            this.draw = function (edge) {
                 this.edge = edge;
 
                 // a simple nav-down-the-left, with arbitrary tabs in the main panel
@@ -99,21 +101,23 @@ $.extend(edges, {
                 }
             };
 
-            this.hideOffScreen = function(selector) {
+            this.hideOffScreen = function (selector) {
                 var el = $(selector, this.edge.context);
-                if (selector in this.hidden) { return }
-                this.hidden[selector] = {"position" : el.css("position"), "margin" : el.css("margin-left")};
+                if (selector in this.hidden) {
+                    return
+                }
+                this.hidden[selector] = {"position": el.css("position"), "margin": el.css("margin-left")};
                 $(selector, this.edge.context).css("position", "absolute").css("margin-left", -9999);
             };
 
-            this.bringIn = function(selector) {
+            this.bringIn = function (selector) {
                 var pos = this.hidden[selector].position;
                 var mar = this.hidden[selector].margin;
                 $(selector, this.edge.context).css("position", pos).css("margin-left", mar);
                 delete this.hidden[selector];
             };
 
-            this.activateTab = function(activate) {
+            this.activateTab = function (activate) {
                 var tabs = this.edge.category("tab");
                 for (var i = 0; i < tabs.length; i++) {
                     var tab = tabs[i];
@@ -127,7 +131,7 @@ $.extend(edges, {
                 }
             };
 
-            this.tabClicked = function(element) {
+            this.tabClicked = function (element) {
                 var id = $(element).attr("data-id");
                 this.activateTab(id);
             };
@@ -135,15 +139,17 @@ $.extend(edges, {
 
         // main template function, producing something that looks like the
         // old facetview interface
-        newFacetview : function(params) {
-            if (!params) { params = {} }
+        newFacetview: function (params) {
+            if (!params) {
+                params = {}
+            }
             edges.bs3.Facetview.prototype = edges.newTemplate(params);
             return new edges.bs3.Facetview(params);
         },
-        Facetview : function(params) {
+        Facetview: function (params) {
             this.namespace = "edges-bs3-facetview";
 
-            this.draw = function(edge) {
+            this.draw = function (edge) {
                 this.edge = edge;
 
                 // the classes we're going to need
@@ -226,12 +232,14 @@ $.extend(edges, {
             };
         },
 
-        newTabularResultsRenderer : function(params) {
-            if (!params) { params = {} }
+        newTabularResultsRenderer: function (params) {
+            if (!params) {
+                params = {}
+            }
             edges.bs3.TabularResultsRenderer.prototype = edges.newRenderer(params);
             return new edges.bs3.TabularResultsRenderer(params);
         },
-        TabularResultsRenderer : function(params) {
+        TabularResultsRenderer: function (params) {
 
             //////////////////////////////////////////////
             // parameters that can be passed in
@@ -251,7 +259,7 @@ $.extend(edges, {
             // variables for internal state
             this.namespace = "edges-bs3-tabular-results";
 
-            this.draw = function() {
+            this.draw = function () {
                 var frag = this.noResultsText;
                 if (this.component.results === false) {
                     frag = "";
@@ -299,12 +307,14 @@ $.extend(edges, {
             }
         },
 
-        newResultsDisplayRenderer : function(params) {
-            if (!params) { params = {} }
+        newResultsDisplayRenderer: function (params) {
+            if (!params) {
+                params = {}
+            }
             edges.bs3.ResultsDisplayRenderer.prototype = edges.newRenderer(params);
             return new edges.bs3.ResultsDisplayRenderer(params);
         },
-        ResultsDisplayRenderer : function(params) {
+        ResultsDisplayRenderer: function (params) {
 
             //////////////////////////////////////////////
             // parameters that can be passed in
@@ -329,7 +339,7 @@ $.extend(edges, {
 
             this.namespace = "edges-bs-results-display";
 
-            this.init = function(component) {
+            this.init = function (component) {
                 Object.getPrototypeOf(this).init.call(this, component);
                 // this.__proto__.init.call(this, component);
 
@@ -342,7 +352,7 @@ $.extend(edges, {
                 }
             };
 
-            this.draw = function() {
+            this.draw = function () {
                 var frag = this.noResultsText;
                 if (this.component.results === false) {
                     frag = "";
@@ -367,7 +377,7 @@ $.extend(edges, {
                 this.component.context.html(container);
             };
 
-            this._renderResult = function(res) {
+            this._renderResult = function (res) {
                 // list the css classes we'll require
                 var rowClasses = edges.css_classes(this.namespace, "row", this);
                 var fieldClasses = edges.css_classes(this.namespace, "field", this);
@@ -398,7 +408,7 @@ $.extend(edges, {
                 return frag;
             };
 
-            this._getValue = function(path, rec) {
+            this._getValue = function (path, rec) {
                 var bits = path.split(".");
                 var val = rec;
                 for (var i = 0; i < bits.length; i++) {
@@ -418,12 +428,14 @@ $.extend(edges, {
             };
         },
 
-        newRefiningANDTermSelectorRenderer : function(params) {
-            if (!params) { params = {} }
+        newRefiningANDTermSelectorRenderer: function (params) {
+            if (!params) {
+                params = {}
+            }
             edges.bs3.RefiningANDTermSelectorRenderer.prototype = edges.newRenderer(params);
             return new edges.bs3.RefiningANDTermSelectorRenderer(params);
         },
-        RefiningANDTermSelectorRenderer : function(params) {
+        RefiningANDTermSelectorRenderer: function (params) {
 
             ///////////////////////////////////////
             // parameters that can be passed in
@@ -447,7 +459,7 @@ $.extend(edges, {
             // namespace to use in the page
             this.namespace = "edges-bs3-refiningand-term-selector";
 
-            this.draw = function() {
+            this.draw = function () {
                 // for convenient short references ...
                 var ts = this.component;
                 var namespace = this.namespace;
@@ -532,8 +544,8 @@ $.extend(edges, {
 
                 // substitute in the component parts
                 frag = frag.replace(/{{RESULTS}}/g, results)
-                        .replace(/{{CONTROLS}}/g, controlFrag)
-                        .replace(/{{SELECTED}}/g, filterFrag);
+                    .replace(/{{CONTROLS}}/g, controlFrag)
+                    .replace(/{{SELECTED}}/g, filterFrag);
 
                 // now render it into the page
                 ts.context.html(frag);
@@ -552,7 +564,7 @@ $.extend(edges, {
 
                 // for when a value in the facet is selected
                 edges.on(valueSelector, "click", this, "termSelected");
-                 // for when the open button is clicked
+                // for when the open button is clicked
                 edges.on(toggleSelector, "click", this, "toggleOpen");
                 // for when a filter remove button is clicked
                 edges.on(filterRemoveSelector, "click", this, "removeFilter");
@@ -565,7 +577,7 @@ $.extend(edges, {
             /////////////////////////////////////////////////////
             // UI behaviour functions
 
-            this.setUIOpen = function() {
+            this.setUIOpen = function () {
                 // the selectors that we're going to use
                 var resultsSelector = edges.css_id_selector(this.namespace, "results", this);
                 var controlsSelector = edges.css_id_selector(this.namespace, "controls", this);
@@ -586,12 +598,12 @@ $.extend(edges, {
                 }
             };
 
-            this.setUISize = function() {
+            this.setUISize = function () {
                 var sizeSelector = edges.css_id_selector(this.namespace, "size", this);
                 this.component.jq(sizeSelector).html(this.component.size);
             };
 
-            this.setUISort = function() {
+            this.setUISort = function () {
                 var orderSelector = edges.css_id_selector(this.namespace, "order", this);
                 var el = this.component.jq(orderSelector);
 
@@ -613,22 +625,22 @@ $.extend(edges, {
             /////////////////////////////////////////////////////
             // event handlers
 
-            this.termSelected = function(element) {
+            this.termSelected = function (element) {
                 var term = this.component.jq(element).attr("data-key");
                 this.component.selectTerm(term);
             };
 
-            this.removeFilter = function(element) {
+            this.removeFilter = function (element) {
                 var term = this.component.jq(element).attr("data-key");
                 this.component.removeFilter(term);
             };
 
-            this.toggleOpen = function(element) {
+            this.toggleOpen = function (element) {
                 this.open = !this.open;
                 this.setUIOpen();
             };
 
-            this.changeSize = function(element) {
+            this.changeSize = function (element) {
                 var newSize = prompt('Currently displaying ' + this.component.size +
                     ' results per page. How many would you like instead?');
                 if (newSize) {
@@ -636,7 +648,7 @@ $.extend(edges, {
                 }
             };
 
-            this.changeSort = function(element) {
+            this.changeSort = function (element) {
                 var current = this.component.orderBy + " " + this.component.orderDir;
                 var idx = $.inArray(current, this.sortCycle);
                 var next = this.sortCycle[(idx + 1) % 4];
@@ -645,12 +657,14 @@ $.extend(edges, {
             };
         },
 
-        newORTermSelectorRenderer : function(params) {
-            if (!params) { params = {} }
+        newORTermSelectorRenderer: function (params) {
+            if (!params) {
+                params = {}
+            }
             edges.bs3.ORTermSelectorRenderer.prototype = edges.newRenderer(params);
             return new edges.bs3.ORTermSelectorRenderer(params);
         },
-        ORTermSelectorRenderer : function(params) {
+        ORTermSelectorRenderer: function (params) {
             // whether the facet should be open or closed
             // can be initialised and is then used to track internal state
             this.open = params.open !== undefined ? params.open : false;
@@ -667,7 +681,7 @@ $.extend(edges, {
             // namespace to use in the page
             this.namespace = "edges-bs3-or-term-selector";
 
-            this.draw = function() {
+            this.draw = function () {
                 // for convenient short references ...
                 var ts = this.component;
                 var namespace = this.namespace;
@@ -702,7 +716,7 @@ $.extend(edges, {
                             results += '<div class="' + resultClass + '"><a href="#" class="' + valClass + '" data-key="' + edges.escapeHtml(val.term) + '">' +
                                 edges.escapeHtml(val.display) + "</a>";
                             if (this.showCount) {
-                                results +=  " (" + val.count + ")";
+                                results += " (" + val.count + ")";
                             }
                             results += "</div>";
                         }
@@ -718,7 +732,7 @@ $.extend(edges, {
                         if (def) {
                             filterFrag += '<div class="' + resultClass + '"><strong>' + edges.escapeHtml(def.display);
                             if (this.showCount) {
-                                filterFrag +=  " (" + def.count + ")";
+                                filterFrag += " (" + def.count + ")";
                             }
                             filterFrag += '&nbsp;<a href="#" class="' + filterRemoveClass + '" data-key="' + edges.escapeHtml(def.term) + '">';
                             filterFrag += '<i class="glyphicon glyphicon-black glyphicon-remove"></i></a>';
@@ -751,7 +765,7 @@ $.extend(edges, {
 
                 // substitute in the component parts
                 frag = frag.replace(/{{RESULTS}}/g, results)
-                        .replace(/{{SELECTED}}/g, filterFrag);
+                    .replace(/{{SELECTED}}/g, filterFrag);
 
                 // now render it into the page
                 ts.context.html(frag);
@@ -766,13 +780,13 @@ $.extend(edges, {
 
                 // for when a value in the facet is selected
                 edges.on(valueSelector, "click", this, "termSelected");
-                 // for when the open button is clicked
+                // for when the open button is clicked
                 edges.on(toggleSelector, "click", this, "toggleOpen");
                 // for when a filter remove button is clicked
                 edges.on(filterRemoveSelector, "click", this, "removeFilter");
             };
 
-            this.setUIOpen = function() {
+            this.setUIOpen = function () {
                 // the selectors that we're going to use
                 var resultsSelector = edges.css_id_selector(this.namespace, "results", this);
                 var toggleSelector = edges.css_id_selector(this.namespace, "toggle", this);
@@ -789,22 +803,22 @@ $.extend(edges, {
                 }
             };
 
-            this.termSelected = function(element) {
+            this.termSelected = function (element) {
                 var term = this.component.jq(element).attr("data-key");
                 this.component.selectTerm(term);
             };
 
-            this.removeFilter = function(element) {
+            this.removeFilter = function (element) {
                 var term = this.component.jq(element).attr("data-key");
                 this.component.removeFilter(term);
             };
 
-            this.toggleOpen = function(element) {
+            this.toggleOpen = function (element) {
                 this.open = !this.open;
                 this.setUIOpen();
             };
 
-            this._getFilterDef = function(term) {
+            this._getFilterDef = function (term) {
                 for (var i = 0; i < this.component.terms.length; i++) {
                     var t = this.component.terms[i];
                     if (term === t.term) {
@@ -815,14 +829,16 @@ $.extend(edges, {
             }
         },
 
-        newBasicRangeSelectorRenderer : function(params) {
-            if (!params) { params = {} }
+        newBasicRangeSelectorRenderer: function (params) {
+            if (!params) {
+                params = {}
+            }
             edges.bs3.BasicRangeSelectorRenderer.prototype = edges.newRenderer(params);
             return new edges.bs3.BasicRangeSelectorRenderer(params);
         },
-        BasicRangeSelectorRenderer : function(params) {
+        BasicRangeSelectorRenderer: function (params) {
             // if there are no results for a given range, should it be hidden
-            this.hideEmptyRange = params.hideEmptyRange === undefined ?  true : params.hideEmptyRange;
+            this.hideEmptyRange = params.hideEmptyRange === undefined ? true : params.hideEmptyRange;
 
             // whether the facet should be open or closed
             // can be initialised and is then used to track internal state
@@ -834,7 +850,7 @@ $.extend(edges, {
             // namespace to use in the page
             this.namespace = "edges-bs3-basic-range-selector";
 
-            this.draw = function() {
+            this.draw = function () {
                 var results = "Loading...";
 
                 // sort out all the classes that we're going to be using
@@ -891,7 +907,7 @@ $.extend(edges, {
 
                 // substitute in the component parts
                 frag = frag.replace(/{{RESULTS}}/g, results)
-                        .replace(/{{SELECTED}}/g, filterFrag);
+                    .replace(/{{SELECTED}}/g, filterFrag);
 
                 // now render it into the page
                 this.component.context.html(frag);
@@ -914,7 +930,7 @@ $.extend(edges, {
             /////////////////////////////////////////////////////
             // UI behaviour functions
 
-            this.setUIOpen = function() {
+            this.setUIOpen = function () {
                 // the selectors that we're going to use
                 var resultsSelector = edges.css_id_selector(this.namespace, "results", this);
                 var toggleSelector = edges.css_id_selector(this.namespace, "toggle", this);
@@ -934,18 +950,18 @@ $.extend(edges, {
             /////////////////////////////////////////////////////
             // event handlers
 
-            this.toggleOpen = function(element) {
+            this.toggleOpen = function (element) {
                 this.open = !this.open;
                 this.setUIOpen();
             };
 
-            this.rangeSelected = function(element) {
+            this.rangeSelected = function (element) {
                 var from = this.component.jq(element).attr("data-from");
                 var to = this.component.jq(element).attr("data-to");
                 this.component.selectRange(parseFloat(from), parseFloat(to));
             };
 
-            this.removeFilter = function(element) {
+            this.removeFilter = function (element) {
                 var from = this.component.jq(element).attr("data-from");
                 var to = this.component.jq(element).attr("data-to");
                 this.component.removeFilter(parseFloat(from), parseFloat(to));
@@ -953,12 +969,14 @@ $.extend(edges, {
 
         },
 
-        newFullSearchControllerRenderer : function(params) {
-            if (!params) { params = {} }
+        newFullSearchControllerRenderer: function (params) {
+            if (!params) {
+                params = {}
+            }
             edges.bs3.FullSearchControllerRenderer.prototype = edges.newRenderer(params);
             return new edges.bs3.FullSearchControllerRenderer(params);
         },
-        FullSearchControllerRenderer : function(params) {
+        FullSearchControllerRenderer: function (params) {
             // enable the search button
             this.searchButton = params.searchButton || false;
 
@@ -978,7 +996,7 @@ $.extend(edges, {
 
             this.namespace = "edges-bs3-search-controller";
 
-            this.draw = function() {
+            this.draw = function () {
                 var comp = this.component;
 
                 // if sort options are provided render the orderer and the order by
@@ -992,7 +1010,7 @@ $.extend(edges, {
                             <div class="form-group"> \
                                 <div class="input-group"> \
                                     <span class="input-group-btn"> \
-                                        <button type="button" class="btn btn-default btn-sm ' + directionClass +'" title="" href="#"></button> \
+                                        <button type="button" class="btn btn-default btn-sm ' + directionClass + '" title="" href="#"></button> \
                                     </span> \
                                     <select class="form-control input-sm ' + sortFieldClass + '"> \
                                         <option value="_score">Relevance</option>';
@@ -1087,6 +1105,7 @@ $.extend(edges, {
                         var code = (event.keyCode ? event.keyCode : event.which);
                         return code === 13;
                     }
+
                     edges.on(textSelector, "keyup", this, "setSearchText", false, onlyEnter);
                 }
 
@@ -1100,20 +1119,20 @@ $.extend(edges, {
             //////////////////////////////////////////////////////
             // functions for setting UI values
 
-            this.setUISortDir = function() {
+            this.setUISortDir = function () {
                 // get the selector we need
                 var directionSelector = edges.css_class_selector(this.namespace, "direction", this);
                 var el = this.component.jq(directionSelector);
                 if (this.component.sortDir === 'asc') {
                     el.html('sort <i class="glyphicon glyphicon-arrow-up"></i> by');
-                    el.attr('title','Current order ascending. Click to change to descending');
+                    el.attr('title', 'Current order ascending. Click to change to descending');
                 } else {
                     el.html('sort <i class="glyphicon glyphicon-arrow-down"></i> by');
-                    el.attr('title','Current order descending. Click to change to ascending');
+                    el.attr('title', 'Current order descending. Click to change to ascending');
                 }
             };
 
-            this.setUISortField = function() {
+            this.setUISortField = function () {
                 if (!this.component.sortBy) {
                     return;
                 }
@@ -1123,7 +1142,7 @@ $.extend(edges, {
                 el.val(this.component.sortBy);
             };
 
-            this.setUISearchField = function() {
+            this.setUISearchField = function () {
                 if (!this.component.searchField) {
                     return;
                 }
@@ -1133,7 +1152,7 @@ $.extend(edges, {
                 el.val(this.component.searchField);
             };
 
-            this.setUISearchText = function() {
+            this.setUISearchText = function () {
                 if (!this.component.searchString) {
                     return;
                 }
@@ -1146,49 +1165,51 @@ $.extend(edges, {
             ////////////////////////////////////////
             // event handlers
 
-            this.changeSortDir = function(element) {
+            this.changeSortDir = function (element) {
                 this.component.changeSortDir();
             };
 
-            this.changeSortBy = function(element) {
+            this.changeSortBy = function (element) {
                 var val = this.component.jq(element).val();
                 this.component.setSortBy(val);
             };
 
-            this.changeSearchField = function(element) {
+            this.changeSearchField = function (element) {
                 var val = this.component.jq(element).val();
                 this.component.setSearchField(val);
             };
 
-            this.setSearchText = function(element) {
+            this.setSearchText = function (element) {
                 var val = this.component.jq(element).val();
                 this.component.setSearchText(val);
             };
 
-            this.clearSearch = function(element) {
+            this.clearSearch = function (element) {
                 this.component.clearSearch();
             };
 
-            this.doSearch = function(element) {
+            this.doSearch = function (element) {
                 var textId = edges.css_id_selector(this.namespace, "text", this);
                 var text = this.component.jq(textId).val();
                 this.component.setSearchText(text);
             };
         },
 
-        newNumericRangeEntryRenderer : function(params) {
-            if (!params) { params = {} }
+        newNumericRangeEntryRenderer: function (params) {
+            if (!params) {
+                params = {}
+            }
             edges.bs3.NumericRangeEntryRenderer.prototype = edges.newRenderer(params);
             return new edges.bs3.NumericRangeEntryRenderer(params);
         },
-        NumericRangeEntryRenderer : function(params) {
+        NumericRangeEntryRenderer: function (params) {
 
             this.fromText = "From";
             this.toText = "To";
 
             this.namespace = "edges-bs3-numeric-range-entry";
 
-            this.draw = function() {
+            this.draw = function () {
                 // sort out all the classes that we're going to be using
                 var facetClass = edges.css_classes(this.namespace, "facet", this);
                 var headerClass = edges.css_classes(this.namespace, "header", this);
@@ -1260,11 +1281,11 @@ $.extend(edges, {
                 edges.on(fromSelector, "change", this, "fromChanged");
                 // for when the to value is changed
                 edges.on(toSelector, "change", this, "toChanged");
-                 // for when the open button is clicked
+                // for when the open button is clicked
                 edges.on(toggleSelector, "click", this, "toggleOpen");
             };
 
-            this.setUIOpen = function() {
+            this.setUIOpen = function () {
                 // the selectors that we're going to use
                 var formSelector = edges.css_id_selector(this.namespace, "form", this);
                 var toggleSelector = edges.css_id_selector(this.namespace, "toggle", this);
@@ -1281,7 +1302,7 @@ $.extend(edges, {
                 }
             };
 
-            this.setUIFrom = function() {
+            this.setUIFrom = function () {
                 if (this.component.from) {
                     var fromName = edges.css_id_selector(this.namespace, "from", this);
                     var fromSel = this.component.jq(fromName);
@@ -1289,7 +1310,7 @@ $.extend(edges, {
                 }
             };
 
-            this.setUITo = function() {
+            this.setUITo = function () {
                 if (this.component.to) {
                     var toName = edges.css_id_selector(this.namespace, "to", this);
                     var toSel = this.component.jq(toName);
@@ -1300,12 +1321,12 @@ $.extend(edges, {
             //////////////////////////////////////////
             // behaviour functions
 
-            this.toggleOpen = function(element) {
+            this.toggleOpen = function (element) {
                 this.open = !this.open;
                 this.setUIOpen();
             };
 
-            this.fromChanged = function(element) {
+            this.fromChanged = function (element) {
                 // get the value we've been asked for
                 var from = parseInt($(element).val());
 
@@ -1324,7 +1345,7 @@ $.extend(edges, {
                 this.component.selectRange(from, to);
             };
 
-            this.toChanged = function(element) {
+            this.toChanged = function (element) {
                 // get the value we've been asked for
                 var to = parseInt($(element).val());
 
@@ -1344,12 +1365,14 @@ $.extend(edges, {
             };
         },
 
-        newMultiDateRangeRenderer : function(params) {
-            if (!params) { params = {} }
+        newMultiDateRangeRenderer: function (params) {
+            if (!params) {
+                params = {}
+            }
             edges.bs3.MultiDateRangeRenderer.prototype = edges.newRenderer(params);
             return new edges.bs3.MultiDateRangeRenderer(params);
         },
-        MultiDateRangeRenderer : function(params) {
+        MultiDateRangeRenderer: function (params) {
             this.dre = false;
 
             this.selectId = false;
@@ -1360,7 +1383,7 @@ $.extend(edges, {
             this.fromJq = false;
             this.toJq = false;
 
-            this.draw = function() {
+            this.draw = function () {
                 var dre = this.component;
 
                 this.selectId = dre.id + "_date-type";
@@ -1408,7 +1431,7 @@ $.extend(edges, {
                 this.prepDates();
             };
 
-            this.dateChanged = function(element) {
+            this.dateChanged = function (element) {
                 // a date or type has been changed, so set up the parent object
 
                 // ensure that the correct field is set (it may initially be not set)
@@ -1438,7 +1461,7 @@ $.extend(edges, {
                 this.component.triggerSearch();
             };
 
-            this.prepDates = function() {
+            this.prepDates = function () {
                 var min = this.component.currentEarliest();
                 var max = this.component.currentLatest();
                 var fr = this.component.fromDate;
@@ -1470,18 +1493,20 @@ $.extend(edges, {
             };
         },
 
-        newSelectedFiltersRenderer : function(params) {
-            if (!params) { params = {} }
+        newSelectedFiltersRenderer: function (params) {
+            if (!params) {
+                params = {}
+            }
             edges.bs3.SelectedFiltersRenderer.prototype = edges.newRenderer(params);
             return new edges.bs3.SelectedFiltersRenderer(params);
         },
-        SelectedFiltersRenderer : function(params) {
+        SelectedFiltersRenderer: function (params) {
 
             this.showFilterField = params.showFilterField || true;
 
             this.namespace = "edges-bs3-selected-filters";
 
-            this.draw = function() {
+            this.draw = function () {
                 // for convenient short references
                 var sf = this.component;
                 var ns = this.namespace;
@@ -1548,7 +1573,7 @@ $.extend(edges, {
             /////////////////////////////////////////////////////
             // event handlers
 
-            this.removeFilter = function(element) {
+            this.removeFilter = function (element) {
                 var el = this.component.jq(element);
                 var field = el.attr("data-field");
                 var ft = el.attr("data-filter");
@@ -1573,19 +1598,21 @@ $.extend(edges, {
             };
         },
 
-        newSearchingNotificationRenderer : function(params) {
-            if (!params) { params = {} }
+        newSearchingNotificationRenderer: function (params) {
+            if (!params) {
+                params = {}
+            }
             edges.bs3.SearchingNotificationRenderer.prototype = edges.newRenderer(params);
             return new edges.bs3.SearchingNotificationRenderer(params);
         },
-        SearchingNotificationRenderer : function(params) {
+        SearchingNotificationRenderer: function (params) {
 
             this.searchingMessage = params.searchingMessage || "Loading, please wait...";
 
             // namespace to use in the page
             this.namespace = "edges-bs3-searching-notification";
 
-            this.draw = function() {
+            this.draw = function () {
                 var frag = "";
                 if (this.component.searching) {
                     // classes that we need
@@ -1598,12 +1625,14 @@ $.extend(edges, {
             }
         },
 
-        newPagerRenderer : function(params) {
-            if (!params) { params = {} }
+        newPagerRenderer: function (params) {
+            if (!params) {
+                params = {}
+            }
             edges.bs3.PagerRenderer.prototype = edges.newRenderer(params);
             return new edges.bs3.PagerRenderer(params);
         },
-        PagerRenderer : function(params) {
+        PagerRenderer: function (params) {
 
             this.scroll = params.scroll || true;
 
@@ -1613,7 +1642,7 @@ $.extend(edges, {
 
             this.namespace = "edges-bs3-pager";
 
-            this.draw = function() {
+            this.draw = function () {
                 if (this.component.total === false || this.component.total === 0) {
                     this.component.context.html("");
                     return;
@@ -1639,7 +1668,9 @@ $.extend(edges, {
                 if ($.inArray(this.component.pageSize, optarr) === -1) {
                     optarr.push(this.component.pageSize)
                 }
-                optarr.sort(function(a,b) { return a - b});  // sort numerically
+                optarr.sort(function (a, b) {
+                    return a - b
+                });  // sort numerically
                 for (var i = 0; i < optarr.length; i++) {
                     var so = optarr[i];
                     var selected = "";
@@ -1688,34 +1719,34 @@ $.extend(edges, {
                 edges.on(sizeSelector, "change", this, "changeSize");
             };
 
-            this.doScroll = function() {
+            this.doScroll = function () {
                 $(this.scrollSelector).animate({    // note we do not use component.jq, because the scroll target could be outside it
                     scrollTop: $(this.scrollSelector).offset().top
                 }, 1);
             };
 
-            this.goToFirst = function(element) {
+            this.goToFirst = function (element) {
                 if (this.scroll) {
                     this.doScroll();
                 }
                 this.component.setFrom(1);
             };
 
-            this.goToPrev = function(element) {
+            this.goToPrev = function (element) {
                 if (this.scroll) {
                     this.doScroll();
                 }
                 this.component.decrementPage();
             };
 
-            this.goToNext = function(element) {
+            this.goToNext = function (element) {
                 if (this.scroll) {
                     this.doScroll();
                 }
                 this.component.incrementPage();
             };
 
-            this.changeSize = function(element) {
+            this.changeSize = function (element) {
                 var size = $(element).val();
                 this.component.setSize(size);
             };

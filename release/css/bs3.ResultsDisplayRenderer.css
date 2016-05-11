@@ -1,0 +1,21 @@
+
+.edges-bs-results-display-container {
+}
+.edges-bs-results-display-record {
+    padding-bottom: 15px;
+    padding-top: 15px;
+    padding-left: 10px;
+    padding-right: 10px;
+    border-bottom: 1px dashed #cccccc;
+}
+.edges-bs-results-display-record:hover {
+    background-color: #eeeeee;
+}
+.edges-bs-results-display-row {
+}
+.edges-bs-results-display-field {
+    font-weight: bold;
+    padding-right: 10px;
+}
+.edges-bs-results-display-value {
+}
