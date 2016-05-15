@@ -21,6 +21,7 @@ requirejs.config({
         "edges.bs3.tabbed" : "src/templates/bs3.Tabbed",
 
         "edges.bs3.basicrangeselector" : "src/renderers/bs3.BasicRangeSelectorRenderer",
+        "edges.bs3.facetfiltersetter" : "src/renderers/bs3.FacetFilterSetterRenderer",
         "edges.bs3.fullsearchcontroller" : "src/renderers/bs3.FullSearchControllerRenderer",
         "edges.bs3.multidaterange" : "src/renderers/bs3.MultiDateRangeRenderer",
         "edges.bs3.numericrangeentry" : "src/renderers/bs3.NumericRangeEntryRenderer",
@@ -54,6 +55,7 @@ requirejs(["jquery"], function() {
                 "edges.bs3.tabbed",
 
                 "edges.bs3.basicrangeselector",
+                "edges.bs3.facetfiltersetter",
                 "edges.bs3.fullsearchcontroller",
                 "edges.bs3.multidaterange",
                 "edges.bs3.numericrangeentry",
