@@ -86,6 +86,9 @@ $.extend(edges, {
 
                 // pie chart uses the native data series, so just make a ref to it
                 var data_series = this.component.dataSeries;
+                if (!data_series) {
+                    data_series = [];
+                }
                 if (data_series.length > 0) {
                     data_series = data_series[0].values;
                 } else {
@@ -162,6 +165,9 @@ $.extend(edges, {
                 var margin_left = this.marginLeft;
 
                 var data_series = this.component.dataSeries;
+                if (!data_series) {
+                    data_series = [];
+                }
 
                 nv.addGraph(function () {
                     var chart = nv.models.multiBarHorizontalChart()
@@ -219,7 +225,11 @@ $.extend(edges, {
                 var svgSelector = edges.css_id_selector(this.namespace, "svg", this);
                 this.component.context.html(displayFrag + '<svg id="' + svgId + '"></svg>');
 
-                var data_series = edges.nvd3.DataSeriesConversions.toXY(this.component.dataSeries);
+                var data_series = this.component.dataSeries;
+                if (!data_series) {
+                    data_series = [];
+                }
+                data_series = edges.nvd3.DataSeriesConversions.toXY(this.component.dataSeries);
                 var outer = this;
 
                 nv.addGraph(function () {
@@ -280,7 +290,11 @@ $.extend(edges, {
                 var svgSelector = edges.css_id_selector(this.namespace, "svg", this);
                 this.component.context.html(displayFrag + '<svg id="' + svgId + '"></svg>');
 
-                var ds = edges.nvd3.DataSeriesConversions.toXY(this.component.dataSeries);
+                var data_series = this.component.dataSeries;
+                if (!data_series) {
+                    data_series = [];
+                }
+                var ds = edges.nvd3.DataSeriesConversions.toXY(data_series);
                 var outer = this;
 
                 nv.addGraph(function() {
