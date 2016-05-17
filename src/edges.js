@@ -555,16 +555,26 @@ var edges = {
     //////////////////////////////////////////////////////////////////
     // Shared utilities
 
-    escapeHtml : function(unsafe) {
-        if (typeof unsafe.replace !== "function") {
-            return unsafe
+    escapeHtml : function(unsafe, def) {
+        if (def === undefined) {
+            def = "";
         }
-        return unsafe
-            .replace(/&/g, "&amp;")
-            .replace(/</g, "&lt;")
-            .replace(/>/g, "&gt;")
-            .replace(/"/g, "&quot;")
-            .replace(/'/g, "&#039;");
+        if (unsafe === undefined || unsafe == null) {
+            return def;
+        }
+        try {
+            if (typeof unsafe.replace !== "function") {
+                return unsafe
+            }
+            return unsafe
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        } catch(err) {
+            return def;
+        }
     },
 
     objVal : function(path, rec, def) {
