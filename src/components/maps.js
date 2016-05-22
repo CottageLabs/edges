@@ -123,10 +123,29 @@ $.extend(edges, {
         // if provided should be of the form {"lat" : <lat>, "lon" : <lon>}
         this.center = edges.getParam(params.center, false);
 
+        // if the regions in the underlying map can be grouped into larger regions, specify that here
+        // you should specify the name of the super region as the key, and a list of identifiers for the
+        // regular regions as the value.
+        //
+        // {"Europe" : ["GBR", "FRA", ...]}
+        this.superRegions = edges.getParam(params.superRegions, {});
+
         //////////////////////////////////
         // internal state
 
         this.synchronise = function() {};
 
+        ///////////////////////////////////
+        // methods for working with this component
+
+        this.getSuperRegion = function(params) {
+            var region = params.region;
+            for (var srn in this.superRegions) {
+                if ($.inArray(region, this.superRegions[srn]) !== -1) {
+                    return srn;
+                }
+            }
+            return false;
+        }
     }
 });

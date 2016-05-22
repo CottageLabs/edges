@@ -1,6 +1,35 @@
 $.extend(edges, {
     d3: {
 
+        regions : {
+            COUNTRIES_BY_CONTINENT : {
+                "Africa": ["Algeria", "Angola", "Benin", "Botswana", "Burkina", "Burkina Faso", "Burundi", "Cameroon", "Cape Verde", "Central African Republic", "Chad", "Comoros", "Congo", "Congo, Democratic Republic of",
+                    "Republic of the Congo", "Democratic Republic of the Congo", "Djibouti", "Egypt", "Equatorial Guinea", "Eritrea", "Ethiopia", "Gabon", "Gambia", "Ghana", "Guinea", "Guinea Bissau", "Guinea-Bissau", "Ivory Coast", "Kenya", "Lesotho",
+                    "Liberia", "Libya", "Madagascar", "Malawi", "Mali", "Mauritania", "Mauritius", "Morocco", "Mozambique", "Namibia", "Niger", "Nigeria", "Rwanda", "Sao Tome and Principe",
+                    "Senegal", "Seychelles", "Sierra Leone", "Somalia", "South Africa", "South Sudan", "Sudan", "Swaziland", "Tanzania", "United Republic of Tanzania", "Togo", "Tunisia", "Uganda", "Western Sahara", "Zambia", "Zimbabwe", "Somaliland"],
+
+                "Asia": ["Afghanistan", "Bahrain", "Bangladesh", "Bhutan", "Brunei", "Burma (Myanmar)", "Cambodia", "China", "East Timor", "India", "Indonesia", "Iran", "Iraq",
+                    "Israel", "Japan", "Jordan", "Kazakhstan", "Korea, North", "North Korea", "Korea, South", "South Korea", "Kuwait", "Kyrgyzstan", "Laos", "Lebanon", "Myanmar", "Malaysia", "Maldives", "Mongolia", "Nepal",
+                    "Oman", "Pakistan", "Philippines", "Qatar", "Russian Federation", "Russia", "Saudi Arabia", "Singapore", "Sri Lanka", "Syria", "Tajikistan", "Thailand", "Turkey", "Turkmenistan",
+                    "Taiwan", "United Arab Emirates", "Uzbekistan", "Vietnam", "Yemen"],
+
+                "Europe": ["Albania", "Andorra", "Armenia", "Austria", "Azerbaijan", "Belarus", "Belgium", "Bosnia and Herzegovina", "Bulgaria", "Croatia", "Cyprus", "Czech Republic",
+                    "Denmark", "Estonia", "Falkland Islands", "Finland", "France", "Georgia", "Germany", "Greece", "Hungary", "Iceland", "Ireland", "Italy", "Latvia", "Liechtenstein", "Lithuania",
+                    "Luxembourg", "Macedonia", "Malta", "Moldova", "Monaco", "Montenegro", "Netherlands", "Norway", "Poland", "Portugal", "Romania", "San Marino", "Serbia", "Slovakia",
+                    "Slovenia", "Spain", "Sweden", "Switzerland", "Ukraine", "United Kingdom", "Vatican City", "Republic of Serbia"],
+
+                "North America": ["Antigua and Barbuda", "Bahamas", "Barbados", "Belize", "Canada", "Costa Rica", "Cuba", "Dominica", "Dominican Republic", "El Salvador", "Greenland", "Grenada",
+                    "Guatemala", "Haiti", "Honduras", "Jamaica", "Mexico", "Nicaragua", "Panama", "Saint Kitts and Nevis", "Saint Lucia", "Saint Vincent and the Grenadines",
+                    "Trinidad and Tobago", "United States", "United States of America"],
+
+                "Oceana": ["Antarctica", "Australia", "Fiji", "Kiribati", "Marshall Islands", "Micronesia", "Nauru", "New Zealand", "Palau", "Papua New Guinea", "Samoa", "Solomon Islands",
+                    "Tonga", "Tuvalu", "Vanuatu", "French Southern and Antarctic Lands", "New Caledonia"],
+
+
+                "South America": ["Argentina", "Bolivia", "Brazil", "Chile", "Colombia", "Ecuador", "French Guiana", "Guyana", "Paraguay", "Peru", "Suriname", "Uruguay", "Venezuela"]
+            }
+        },
+
         featureSetBoundary : function(params) {
             var features = params.features;
             var path = params.path;
@@ -48,6 +77,14 @@ $.extend(edges, {
             }
 
             return s;
+        },
+
+        mouseXY : function(params) {
+            var svg = params.svg;
+            var mouse = d3.mouse(svg.node()).map(function(d) {
+                return parseInt(d);
+            });
+            return mouse;
         },
 
         newGroupedUSStates : function(params) {
@@ -270,6 +307,16 @@ $.extend(edges, {
             this.defaultStrokeWidth = edges.getParam(params.defaultStrokeWidth, 1);
             this.defaultFill = edges.getParam(params.defaultFill, "#cccccc");
 
+            // specify the style elements for the path elements
+            // { "<region_id>" : {"stroke" : "#ffffff", "stroke-width" : 1, "fill" : "#000000"} }
+            // if regionStyles are specified, these will take precedence over superRegionStyles
+            this.regionStyles = edges.getParam(params.regionStyles, {});
+            this.superRegionStyles = edges.getParam(params.superRegionStyles, {});
+
+            // this is the spacing between the mouse pointer and where the top left of the tool tip appears
+            this.toolTipLeftOffset = edges.getParam(params.toolTipLeftOffset, 30);
+            this.toolTipTopOffset = edges.getParam(params.toolTipTopOffset, 5);
+
             //////////////////////////////////////////////////////
             // parameters for managing internal state
 
@@ -278,6 +325,12 @@ $.extend(edges, {
             this.projectionMap = {
                 "mercator" : d3.geo.mercator
             };
+
+            // need to keep track of the svg for use in object methods
+            this.svg = false;
+            this.container = false;
+
+            this.pinned = [];
 
             this.namespace = "edges-d3-generic-vector-map";
 
@@ -308,26 +361,14 @@ $.extend(edges, {
                 var path = d3.geo.path()
                              .projection(projection);
 
-                var container = d3.select(domElement)
+                this.container = d3.select(domElement)
                             .append("div").attr("class", containerClass);
 
                 //Create SVG element and append map to the SVG
-                var svg = container
+                this.svg = this.container
                             .append("svg")
                             .attr("width", this.width)
                             .attr("height", this.height);
-
-                // Append Div for tooltip to SVG
-
-                // This is the actual tooltip that appears on hover. It needs to be a separate div defined outside of the svg appending,
-                // otherwise it won't be redrawn on change of location
-                var tip = container
-                            .append("div")
-                            .attr("class", tooltipClass)
-                            .style("display", "none");
-
-                // If we have the country name as the key, we can use d.properties.name to access the correct data
-                // var sample_data = {"country" : {"year" : {"consumption":1000, "production":500}}};
 
                 // Load GeoJSON data - this will work with arbitrary geojson, so long as it has the name of the country at
                 // d.properties.name. The projection could work with any map, provided the scale, center etc are adjusted.
@@ -344,7 +385,7 @@ $.extend(edges, {
                         border: that.mapScaleBorder
                     });
 
-                    var c = that.center;
+                    var c = that.component.center;
                     if (!c) {
                         c = {"lat" : 17, "lon" : 0}; // a reasonable centre point for a map, somewhere over the gobi desert, I think
                     }
@@ -357,83 +398,172 @@ $.extend(edges, {
                         projection.precision(that.resamplingPrecision);
                     }
 
+                    var show = edges.objClosure(that, "showToolTip", ["d"]);
+                    var hide = edges.objClosure(that, "hideToolTip", ["d"]);
+                    var pin = edges.objClosure(that, "togglePinToolTip", ["d"]);
+
                     // Bind the data to the SVG and create one path per GeoJSON feature
-                    svg.selectAll("path")
+                    that.svg.selectAll("path")
                         .data(json.features)
                         .enter()
                         .append("path")
                         .attr("d", path)
+                        .attr("id", function(d) { return edges.css_id(that.namespace, "path-" + d.id, that) })
                         .style("stroke", function(d) { return that._getStroke({d : d}) })
                         .style("stroke-width", function(d) { return that._getStrokeWidth({d : d}) })
                         .style("fill", function(d) { return that._getFill({d : d}) })
-                        .on("mouseover", function(d) {
-                            // A lot of the code below is repeated in both mouse events. This is spaghetti, but at
-                            // the same time, both functions need specific information only avaible to them.
-                            // In particular the two separate divs needed for the two types of tooltips make it difficult
-                            // to generalise more. We might end up wanting different content in them anyway, maybe more information
-                            // in the second
-
-                            var mouse = d3.mouse(svg.node()).map(function(d) {
-                                return parseInt(d);
-                            });
-
-                            var name = d.properties.name.replace(/\s+/g, '');
-                            var regionData = that._getRegionData({d: d});
-                            var frag = that._renderRegionData({regionData: regionData, d : d});
-
-                            if ($('#'+name).length==0){
-                                tip.html(frag)
-                                    .attr('style', 'left:' + (mouse[0] + 15) +
-                                        'px; top:' + (mouse[1] - 35) + 'px')
-                                    .style("color", "black");
-                            }
-                        })
-                        .on("click", function(d) {
-                            var mouse = d3.mouse(svg.node()).map(function(d) {
-                                return parseInt(d);
-                            });
-
-                            var name = d.properties.name.replace(/\s+/g, '');
-                            var regionData = that._getRegionData({d: d});
-                            var frag = that._renderRegionData({regionData: regionData, d : d});
-
-                            if ($('#'+name).length) {
-                                $('#'+name).remove();
-                            } else {
-                                var div = component
-                                    .append("div")
-                                    .attr("class", tooltipClass)
-                                    .attr("id", name)
-                                    .style("display", "block");
-
-                                div.html(frag)
-                                    .attr('style', 'left:' + (mouse[0] + 15) +
-                                        'px; top:' + (mouse[1] - 35) + 'px')
-                                    .style("color", "black");
-                            }
-                        });
-
+                        .on("mouseover", show)
+                        .on("mouseout", hide)
+                        .on("click", pin);
                 });
 
                 this.loaded = true;
             };
 
+            this.togglePinToolTip = function(params) {
+                var d = params.d;
+                var cssIdSelector = edges.css_id_selector(this.namespace, "path-" + d.id, this);
+
+                if (this._isPinned({id : d.id})) {
+                    var idx = $.inArray(d.id, this.pinned);
+                    this.pinned.splice(idx, 1);
+                    this.hideToolTip(params);
+                    this.component.jq(cssIdSelector).attr("class", "");
+                } else {
+                    var pinnedClass = edges.css_classes(this.namespace, "pinned", this);
+                    this.component.jq(cssIdSelector).attr("class", pinnedClass);
+                    this.showToolTip(params);
+                    this.pinned.push(d.id);
+                }
+            };
+
+            this.showToolTip = function(params) {
+                var d = params.d;
+                if (this._isPinned({id : d.id})) {
+                    return;
+                }
+
+                var mouse = edges.d3.mouseXY({svg: this.svg});
+
+                var id = d.id;
+                var cssIdSelector = edges.css_id_selector(this.namespace, "tooltip-" + id, this);
+
+                var el = this.component.jq(cssIdSelector);
+                if (el.length === 0) {
+                    var cssId = edges.css_id(this.namespace, "tooltip-" + id, this);
+                    var tooltipClass = edges.css_classes(this.namespace, "tooltip", this);
+                    var regionData = this._getRegionData({d: d});
+                    var frag = this._renderRegionData({regionData: regionData, d : d});
+                    this.container.append("div")
+                        .attr("id", cssId)
+                        .attr("class", tooltipClass)
+                        .html(frag)
+                        .attr("style", this._positionStyles({ref : mouse}));
+                    el = this.component.jq(cssIdSelector);
+                } else {
+                    el.attr("style", this._positionStyles({ref : mouse}));
+                }
+
+                // it would be nice to get the tool top to follow the mouse pointer while it's inside
+                // the country, especially as the transition to pinned would then be seamless.
+                // but atm I'm haivng trouble figuring out how to do that
+                // edges.on("#edges-d3-generic-vector-map-path-AFG-world-map", "mousemove", this, "trackPointer");
+            };
+
+            this.trackPointer = function(element) {
+                console.log("tracked");
+            };
+
+            this.hideToolTip = function(params) {
+                var d = params.d;
+                if (this._isPinned({id : d.id})) {
+                    return;
+                }
+
+                var id = d.id;
+                var cssIdSelector = edges.css_id_selector(this.namespace, "tooltip-" + id, this);
+
+                var el = this.component.jq(cssIdSelector);
+                if (el.length > 0) {
+                    el.attr("style", "display:none");
+                }
+            };
+
+            this._positionStyles = function(params) {
+                var mouse = params.ref;
+                return 'left:' + (mouse[0] + this.toolTipLeftOffset) + 'px; top:' + (mouse[1] + this.toolTipTopOffset) + 'px'
+            };
+
+            this._isPinned = function(params) {
+                return $.inArray(params.id, this.pinned) !== -1;
+            };
+
             this._getStroke = function(params) {
-                return this.defaultStroke;
+                return this._getStyle({
+                    d : params.d,
+                    style : "stroke",
+                    def : this.defaultStroke
+                });
             };
 
             this._getStrokeWidth = function(params) {
-                return this.defaultStrokeWidth;
+                return this._getStyle({
+                    d : params.d,
+                    style : "stroke-width",
+                    def : this.defaultStrokeWidth
+                });
             };
 
             this._getFill = function(params) {
-                var d = params.d;
+                return this._getStyle({
+                    d : params.d,
+                    style : "fill",
+                    def : this.defaultFill
+                });
+            };
 
-                var name = d.properties.name;
-                if (name === "Australia") {
-                    return "#000000";
+            this._getStyle = function(params) {
+                var d = params.d;
+                var style = params.style;
+                var def = params.def;
+
+                // first look to see if there's a region style
+                for (var i = 0; i < this.matchRegionOn.length; i++) {
+                    var matchField = this.matchRegionOn[i];
+                    var fieldVal = edges.objVal(matchField, d, false);
+                    if (!fieldVal) {
+                        continue;
+                    }
+
+                    if (fieldVal && this.regionStyles[fieldVal]) {
+                        var rs = this.regionStyles[fieldVal];
+                        if (rs[style]) {
+                            return rs[style];
+                        }
+                    }
                 }
-                return this.defaultFill;
+
+                // first check to see if there's a super region style
+                for (var i = 0; i < this.matchRegionOn.length; i++) {
+                    var matchField = this.matchRegionOn[i];
+                    var fieldVal = edges.objVal(matchField, d, false);
+                    if (!fieldVal) {
+                        continue;
+                    }
+
+                    // determine if this field is in a super-region
+                    var sr = this.component.getSuperRegion({region: fieldVal});
+
+                    // if it is in a super region, get the styles for it
+                    if (sr) {
+                        var srs = this.superRegionStyles[sr];
+                        if (srs[style]) {
+                            return srs[style];
+                        }
+                    }
+                }
+
+                return def;
             };
 
             this._getRegionData = function(params) {
@@ -462,6 +592,8 @@ $.extend(edges, {
 
                 return frag;
             };
+
+
         }
     }
 });
