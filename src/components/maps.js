@@ -87,5 +87,65 @@ $.extend(edges, {
         pickFirst : function(locations) {
             return {lat: locations[0].lat, lon: locations[0].lon}
         }
+    },
+
+    newRegionDataMap : function(params) {
+        if (!params) { params = {} }
+        edges.RegionDataMap.prototype = edges.newComponent(params);
+        return new edges.RegionDataMap(params);
+    },
+    RegionDataMap : function(params) {
+        //////////////////////////////////
+        // parameters that can be passed in
+
+        // Data to display assocated with each region.
+        //
+        // {
+        //      "<region_id>" : { <arbitrary data> }
+        // }
+        //
+        // By default, renderers for this type should support the following arbitrary data format
+        //
+        // {
+        //      "<Display name for field>" : "<display value>",
+        //      ....
+        // }
+        this.regionData = edges.getParam(params.regionData, {});
+
+        // if a region is not defined in the regionData, when it is asked to display its
+        // data, the renderer will present the following.  This is also in the form of the <arbitrary data>
+        this.defaultRegionData = edges.getParam(params.defaultRegionData, false);
+
+        this.defaultRenderer = edges.getParam(params.defaultRenderer, "newRegionDataMapRenderer");
+
+        // specify the centre point of the map when it renders.  If you do not provide one, one will be
+        // chosen by the renderer
+        // if provided should be of the form {"lat" : <lat>, "lon" : <lon>}
+        this.center = edges.getParam(params.center, false);
+
+        // if the regions in the underlying map can be grouped into larger regions, specify that here
+        // you should specify the name of the super region as the key, and a list of identifiers for the
+        // regular regions as the value.
+        //
+        // {"Europe" : ["GBR", "FRA", ...]}
+        this.superRegions = edges.getParam(params.superRegions, {});
+
+        //////////////////////////////////
+        // internal state
+
+        this.synchronise = function() {};
+
+        ///////////////////////////////////
+        // methods for working with this component
+
+        this.getSuperRegion = function(params) {
+            var region = params.region;
+            for (var srn in this.superRegions) {
+                if ($.inArray(region, this.superRegions[srn]) !== -1) {
+                    return srn;
+                }
+            }
+            return false;
+        }
     }
 });

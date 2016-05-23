@@ -477,6 +477,26 @@ var edges = {
     //////////////////////////////////////////////////////////////////
     // Closures for integrating the object with other modules
 
+    // returns a function that will call the named function (fn) on
+    // a specified object instance (obj), with all "arguments"
+    // supplied to the closure by the caller
+    //
+    // if the args property is specified here, instead a parameters object
+    // will be constructed with a one to one mapping between the names in args
+    // and the values in the "arguments" supplied to the closure, until all
+    // values in "args" are exhausted.
+    //
+    // so, for example,
+    //
+    // objClosure(this, "function")(arg1, arg2, arg3)
+    // results in a call to
+    // this.function(arg1, arg2, arg3, ...)
+    //
+    // and
+    // objClosure(this, "function", ["one", "two"])(arg1, arg2, arg3)
+    // results in a call to
+    // this.function({one: arg1, two: arg2})
+    //
     objClosure : function(obj, fn, args) {
         return function() {
             if (args) {
@@ -495,6 +515,25 @@ var edges = {
         }
     },
 
+    // returns a function that is suitable for triggering by an event, and which will
+    // call the specified function (fn) on the specified object (obj) with the element
+    // which fired the event as the argument
+    //
+    // if "conditional" is specified, this is a function (which can take the event as an argument)
+    // which is called to determine whether the event will propagate to the object function.
+    //
+    // so, for example
+    //
+    // eventClosure(this, "handler")(event)
+    // results in a call to
+    // this.handler(element)
+    //
+    // and
+    //
+    // eventClosure(this, "handler", function(event) { return event.type === "click" })(event)
+    // results in a call (only in the case that the event is a click), to
+    // this.handler(element)
+    //
     eventClosure : function(obj, fn, conditional) {
         return function(event) {
             if (conditional) {
