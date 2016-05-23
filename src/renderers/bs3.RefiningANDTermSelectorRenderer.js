@@ -13,20 +13,20 @@ $.extend(true, edges, {
             // parameters that can be passed in
 
             // whether to hide or just disable the facet if below deactivate threshold
-            this.hideInactive = params.hideInactive || false;
+            this.hideInactive = edges.getParam(params.hideInactive, false);
 
             // should the facet sort/size controls be shown?
-            this.controls = params.controls || true;
+            this.controls = edges.getParam(params.controls, true);
 
             // whether the facet should be open or closed
             // can be initialised and is then used to track internal state
-            this.open = params.open || false;
+            this.open = edges.getParam(params.open, false);
 
             // whether to display selected filters
-            this.showSelected = params.showSelected || true;
+            this.showSelected = edges.getParam(params.showSelected, true);
 
             // sort cycle to use
-            this.sortCycle = params.sortCycle || ["count desc", "count asc", "term desc", "term asc"];
+            this.sortCycle = edges.getParam(params.sortCycle, ["count desc", "count asc", "term desc", "term asc"]);
 
             // namespace to use in the page
             this.namespace = "edges-bs3-refiningand-term-selector";

@@ -1094,7 +1094,11 @@ var es = {
 
         this.term_count = function() {
             return this.values === false ? 0 : this.values.length;
-        }
+        };
+
+        this.clear_terms = function() {
+            this.values = false;
+        };
 
         if (params.raw) {
             this.parse(params.raw);
