@@ -267,24 +267,35 @@ $.extend(edges, {
                 var nq = this.edge.cloneQuery();
 
                 // remove any old filters managed by this component
+                var removeCount = 0;
                 for (var i = 0; i < this.fields.length; i++) {
                     var fieldName = this.fields[i].field;
-                    nq.removeMust(es.newRangeFilter({field: fieldName}));
+                    removeCount += nq.removeMust(es.newRangeFilter({field: fieldName}));
                 }
 
-                // only contrib if there's anything to actually do
-                if (!this.currentField || (!this.toDate && !this.fromDate)) {
+                // in order to avoid unnecessary searching, check the state of the data and determine
+                // if we need to.
+                // - we need to add a new filter to the query if there is a current field and one/both of from and to dates
+                // - we need to do a search if we removed filters before, or are about to add one
+                var addFilter = this.currentField && (this.toDate || this.fromDate);
+                var doSearch = removeCount > 0 || addFilter;
+
+                // if we're not going to do a search, return
+                if (!doSearch) {
                     return false;
                 }
 
-                var range = {field: this.currentField};
-                if (this.toDate) {
-                    range["lt"] = this.toDate;
+                // if there's a filter to be added, do that here
+                if (addFilter) {
+                    var range = {field: this.currentField};
+                    if (this.toDate) {
+                        range["lt"] = this.toDate;
+                    }
+                    if (this.fromDate) {
+                        range["gte"] = this.fromDate;
+                    }
+                    nq.addMust(es.newRangeFilter(range));
                 }
-                if (this.fromDate) {
-                    range["gte"] = this.fromDate;
-                }
-                nq.addMust(es.newRangeFilter(range));
 
                 // push the new query and trigger the search
                 this.edge.pushQuery(nq);

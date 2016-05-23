@@ -254,6 +254,8 @@ var es = {
             for (var i = 0; i < removes.length; i++) {
                 this.must.splice(removes[i], 1);
             }
+            // return the count of filters that were removed
+            return removes.length;
         };
         this.clearMust = function() {};
 
