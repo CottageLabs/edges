@@ -50,7 +50,7 @@ $.extend(edges, {
         // values that the renderer should render
         // wraps an object (so the list is ordered) which in turn is the
         // { display: <display>, term: <term>, count: <count> }
-        this.values = [];
+        this.values = false;
 
         //////////////////////////////////////////
         // overrides on the parent object's standard functions

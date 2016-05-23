@@ -22,6 +22,8 @@ $.extend(true, edges, {
             // can be initialised and is then used to track internal state
             this.open = edges.getParam(params.open, false);
 
+            this.togglable = edges.getParam(params.togglable, true);
+
             // whether to display selected filters
             this.showSelected = edges.getParam(params.showSelected, true);
 
@@ -52,9 +54,12 @@ $.extend(true, edges, {
 
                 // this is what's displayed in the body if there are no results
                 var results = "Loading...";
+                if (ts.values !== false) {
+                    results = "No data available";
+                }
 
                 // render a list of the values
-                if (ts.values.length > 0) {
+                if (ts.values && ts.values.length > 0) {
                     results = "";
 
                     // get the terms of the filters that have already been set
@@ -99,11 +104,17 @@ $.extend(true, edges, {
                     }
                 }
 
+                // render the toggle capability
+                var tog = ts.display;
+                if (this.togglable) {
+                    tog = '<a href="#" id="' + toggleId + '"><i class="glyphicon glyphicon-plus"></i>&nbsp;' + tog + "</a>";
+                }
+
                 // render the overall facet
                 var frag = '<div class="' + facetClass + '">\
                         <div class="' + headerClass + '"><div class="row"> \
                             <div class="col-md-12">\
-                                <a href="#" id="' + toggleId + '"><i class="glyphicon glyphicon-plus"></i>&nbsp;' + ts.display + '</a>\
+                                ' + tog + '\
                             </div>\
                         </div></div>\
                         {{CONTROLS}}\

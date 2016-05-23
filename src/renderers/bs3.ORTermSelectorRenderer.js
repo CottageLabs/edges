@@ -85,16 +85,16 @@ $.extend(true, edges, {
                 }
 
                 // render the toggle capability
-                var tog = "";
+                var tog = ts.display;
                 if (this.togglable) {
-                    tog = '<a href="#" id="' + toggleId + '"><i class="glyphicon glyphicon-plus"></i>&nbsp;';
+                    tog = '<a href="#" id="' + toggleId + '"><i class="glyphicon glyphicon-plus"></i>&nbsp;' + tog + "</a>";
                 }
 
                 // render the overall facet
                 var frag = '<div class="' + facetClass + '">\
                         <div class="' + headerClass + '"><div class="row"> \
                             <div class="col-md-12">\
-                                ' + tog + ts.display + '</a>\
+                                ' + tog + '\
                             </div>\
                         </div></div>\
                         <div class="row" style="display:none" id="' + resultsId + '">\
