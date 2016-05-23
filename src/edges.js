@@ -542,13 +542,37 @@ var edges = {
     //////////////////////////////////////////////////////////////////
     // Event binding utilities
 
-    on : function(selector, event, renderer, targetFunction, delay, conditional) {
-        event = event + "." + renderer.component.id;
-        var clos = edges.eventClosure(renderer, targetFunction, conditional);
+    on : function(selector, event, caller, targetFunction, delay, conditional) {
+        // if the caller has an inner component (i.e. it is a Renderer), use the component's id
+        // otherwise, if it has a namespace (which is true of Renderers or Templates) use that
+        if (caller.component && caller.component.id) {
+            event = event + "." + caller.component.id;
+        } else if (caller.namespace) {
+            event = event + "." + caller.namespace;
+        }
+
+        // create the closure to be called on the event
+        var clos = edges.eventClosure(caller, targetFunction, conditional);
+
+        // now bind the closure directly or with delay
+        // if the caller has an inner component (i.e. it is a Renderer) use the components jQuery selector
+        // otherwise, if it has an inner, use the selector on that.
         if (delay) {
-            renderer.component.jq(selector).bindWithDelay(event, clos, delay);
+            if (caller.component) {
+                caller.component.jq(selector).bindWithDelay(event, clos, delay);
+            } else if (caller.edge) {
+                caller.edge.jq(selector).bindWithDelay(event, clos, delay);
+            } else {
+                console.log("attempt to bindWithDelay on caller which has neither inner component or edge")
+            }
         } else {
-            renderer.component.jq(selector).on(event, clos)
+            if (caller.component) {
+                caller.component.jq(selector).on(event, clos)
+            } else if (caller.edge) {
+                caller.edge.jq(selector).on(event, clos)
+            } else {
+                console.log("attempt to bindWithDelay on caller which has neither inner component or edge")
+            }
         }
     },
 
