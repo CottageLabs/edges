@@ -299,6 +299,12 @@ $.extend(edges, {
 
             // fields that you want to search in the geojson for identifiers to match to region data
             this.matchRegionOn = edges.getParam(params.matchRegionOn, ["id", "properties.name"]);
+            
+            // move the center of the map
+            this.mapCenter = edges.getParam(params.center);
+            
+            // change the rotation. NB: make sure the projection type you're using supports rotation
+            this.mapRotate = edges.getParam(params.rotate);
 
             // if you want to adjust the precision of the adaptive resampling, you can do that here, otherwise it will default
             this.resamplingPrecision = edges.getParam(params.resamplingPrecision, false);
@@ -323,7 +329,8 @@ $.extend(edges, {
             this.loaded = false;
 
             this.projectionMap = {
-                "mercator" : d3.geo.mercator
+                "mercator" : d3.geo.mercator,
+                "conicConformal": d3.geo.conicConformal
             };
 
             // need to keep track of the svg for use in object methods
@@ -385,12 +392,18 @@ $.extend(edges, {
                         border: that.mapScaleBorder
                     });
 
-                    var c = that.component.center;
+                    var c = that.mapCenter;
+                    var r = that.mapRotate;
                     if (!c) {
                         c = {"lat" : 17, "lon" : 0}; // a reasonable centre point for a map, somewhere over the gobi desert, I think
                     }
 
+                    if (!r) {
+                        r = {"lambda": 0, "phi": 0};
+                    }
+
                     projection.center([c.lon, c.lat])
+                        .rotate([r.lambda, r.phi])
                         .scale(s)
                         .translate([that.width / 2, that.height / 2]);
 
