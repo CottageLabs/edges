@@ -137,7 +137,9 @@ $.extend(edges, {
             this.showValues = params.showValues || true;
             this.toolTips = params.toolTips || true;
             this.controls = params.controls || false;
-            this.yTickFormat = params.yTickFormat || ",.0f";
+            this.noDataMessage = edges.getParam(params.noDataMessage, false);
+            this.yTickFormat = edges.getParam(params.yTickFormat, ",.0f");
+            this.xTickFormat = edges.getParam(params.xTickFormat, false);
             this.transitionDuration = params.transitionDuration || 500;
             this.marginTop = params.marginTop || 30;
             this.marginRight = params.marginRight || 50;
@@ -153,22 +155,12 @@ $.extend(edges, {
                 var svgSelector = edges.css_id_selector(this.namespace, "svg", this);
                 this.component.context.html('<svg id="' + svgId + '"></svg>');
 
-                var show_values = this.showValues;
-                var tool_tips = this.toolTips;
-                var controls = this.controls;
-                var y_tick_format = this.yTickFormat;
-                var transition_duration = this.transitionDuration;
-
-                var margin_top = this.marginTop;
-                var margin_right = this.marginRight;
-                var margin_bottom = this.marginBottom;
-                var margin_left = this.marginLeft;
-
                 var data_series = this.component.dataSeries;
                 if (!data_series) {
                     data_series = [];
                 }
 
+                var that = this;
                 nv.addGraph(function () {
                     var chart = nv.models.multiBarHorizontalChart()
                         .x(function (d) {
@@ -177,17 +169,28 @@ $.extend(edges, {
                         .y(function (d) {
                             return d.value
                         })
-                        .margin({top: margin_top, right: margin_right, bottom: margin_bottom, left: margin_left})
-                        .showValues(show_values)
-                        .tooltips(tool_tips)
-                        .showControls(controls);
+                        .margin({top: that.marginTop, right: that.marginRight, bottom: that.marginBottom, left: that.marginLeft})
+                        .showValues(that.showValues)
+                        .tooltips(that.toolTips)
+                        .showControls(that.controls);
 
-                    chart.yAxis
-                        .tickFormat(d3.format(y_tick_format));
+                    if (that.yTickFormat) {
+                        chart.yAxis
+                            .tickFormat(d3.format(that.yTickFormat));
+                    }
+
+                    if (that.xTickFormat) {
+                        chart.xAxis
+                            .tickFormat(d3.format(that.xTickFormat));
+                    }
+
+                    if (that.noDataMessage) {
+                        chart.noData(that.noDataMessage);
+                    }
 
                     d3.select(svgSelector)
                         .datum(data_series)
-                        .transition().duration(transition_duration)
+                        .transition().duration(that.transitionDuration)
                         .call(chart);
 
                     nv.utils.windowResize(chart.update);
