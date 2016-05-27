@@ -37,11 +37,13 @@ nodejs r.js -o cssIn=$IN_CSS/google.edges.css out=$CSS/google.edges.css baseUrl=
 cat $SRC/es.js <(echo) \
     $SRC/edges.jquery.js <(echo) \
     $SRC/edges.js <(echo) \
+    $SRC/edges.csv.js <(echo) \
     $SRC/components/charts.js <(echo) \
     $SRC/components/maps.js <(echo) \
     $SRC/components/ranges.js <(echo) \
     $SRC/components/search.js <(echo) \
     $SRC/components/selectors.js <(echo) \
+    $SRC/components/tables.js <(echo) \
     $SRC/templates/bs3.Facetview.js <(echo) \
     $SRC/templates/bs3.Tabbed.js <(echo) \
     $SRC/renderers/bs3.BasicRangeSelectorRenderer.js <(echo) \

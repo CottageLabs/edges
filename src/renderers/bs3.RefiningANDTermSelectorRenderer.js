@@ -16,7 +16,7 @@ $.extend(true, edges, {
             this.hideInactive = params.hideInactive || false;
 
             // should the facet sort/size controls be shown?
-            this.controls = params.controls || true;
+            this.controls = edges.getParam(params.controls, true);
 
             // whether the facet should be open or closed
             // can be initialised and is then used to track internal state

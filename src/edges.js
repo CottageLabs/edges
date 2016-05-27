@@ -16,7 +16,7 @@ var edges = {
         this.selector = params.selector || "body";
 
         // the base search url which will respond to elasticsearch queries.  Generally ends with _search
-        this.search_url = params.search_url;
+        this.search_url = edges.getParam(params.search_url, false);
 
         // datatype for ajax requests to use - overall recommend using jsonp
         this.datatype = params.datatype || "jsonp";
@@ -31,7 +31,12 @@ var edges = {
         this.openingQuery = params.openingQuery || es.newQuery();
 
         // should the init process do a search
-        this.initialSearch = params.initialSearch || true;
+        this.initialSearch = edges.getParam(params.initialSearch, true);
+
+        // list of static files (e.g. data files) to be loaded at startup, and made available
+        // on the object for use by components
+        // {"id" : "<internal id to give the file>", "url" : "<file url>", "processor" : edges.csv.ObjectByRow, "datatype" : "text"}
+        this.staticFiles = edges.getParam(params.staticFiles, []);
 
         // should the search url be synchronised with the browser's url bar after search
         // and should queries be retrieved from the url on init
@@ -75,6 +80,20 @@ var edges = {
         // jquery object that represents the selected element
         this.context = false;
 
+        // raw access to this.staticFiles loaded resources, keyed by id
+        this.static = {};
+
+        // access to processed static files, keyed by id
+        this.resources = {};
+
+        // flags that tells us whether all the static files have been loaded or not
+        this.staticLoaded = false;
+        this.staticError = false;
+        this.errorLoadingStatic = [];
+
+        ////////////////////////////////////////////////////////
+        // startup functions
+
         // at the bottom of this constructor, we'll call this function
         this.startup = function() {
             // obtain the jquery context for all our operations
@@ -105,10 +124,16 @@ var edges = {
             }
 
             // now call each component to render itself (pre-search)
-            for (var i = 0; i < this.components.length; i++) {
-                var component = this.components[i];
-                component.draw(this);
-            }
+            this.draw();
+
+            // load any static files - this will happen asynchronously, so afterwards
+            // we call finaliseStartup to finish the process
+            var finalise = edges.objClosure(this, "finaliseStartup");
+            this.loadStaticFiles(finalise);
+        };
+
+        this.finaliseStartup = function() {
+            // FIXME: at this point we should check whether the statics all loaded correctly
 
             // determine whether to initialise with either the openingQuery or the urlQuery
             var requestedQuery = this.openingQuery;
@@ -131,7 +156,22 @@ var edges = {
             this.context.trigger("edges:post-init");
 
             // now issue a query
-            this.doQuery();
+            // this.doQuery();
+            this.cycle();
+        };
+
+        /////////////////////////////////////////////////////////
+        // Edges lifecycle functions
+
+        this.cycle = function() {
+            // if there's a search url, do a query, otherwise call synchronise and draw directly
+            if (this.search_url) {
+                // on completion, doQuery calls synchronise and draw anyway, so no need to worry about it here
+                this.doQuery();
+            } else {
+                this.synchronise();
+                this.draw();
+            }
         };
 
         this.synchronise = function() {
@@ -139,6 +179,13 @@ var edges = {
             for (var i = 0; i < this.components.length; i++) {
                 var component = this.components[i];
                 component.synchronise()
+            }
+        };
+
+        this.draw = function() {
+            for (var i = 0; i < this.components.length; i++) {
+                var component = this.components[i];
+                component.draw(this);
             }
         };
 
@@ -163,7 +210,8 @@ var edges = {
             this.context.trigger("edges:post-reset");
 
             // now execute the query
-            this.doQuery();
+            // this.doQuery();
+            this.cycle();
         };
 
         ////////////////////////////////////////////////////
@@ -196,10 +244,15 @@ var edges = {
 
         // execute the query and all the associated workflow
         this.doQuery = function() {
+            // we only want to trigger ES queries if there's a query url
+            if (!this.search_url) {
+                return;
+            }
+
             // if a search is currently executing, don't do anything, else turn it on
             // FIXME: should we queue them up?
             if (this.searching) {
-                return
+                return;
             }
             this.searching = true;
 
@@ -387,6 +440,77 @@ var edges = {
         };
 
         /////////////////////////////////////////////
+        // static file management
+
+        this.loadStaticFiles = function(callback) {
+            this.context.trigger("edges:pre-load-static");
+
+            if (this.staticFiles.length == 0) {
+                this.staticLoaded = true;
+                this.context.trigger("edges:post-load-static");
+                callback();
+            }
+            for (var i = 0; i < this.staticFiles.length; i++) {
+                var id = this.staticFiles[i].id;
+                var url = this.staticFiles[i].url;
+                var datatype = edges.getParam(this.staticFiles[i].datatype, "text");
+                var context = {id: id, callback: callback};
+
+                $.ajax({
+                    type: "get",
+                    url: url,
+                    dataType: datatype,
+                    success: edges.objClosure(this, "staticFileLoaded", ["data"], context),
+                    error: edges.objClosure(this, "staticFileError", ["data"], context)
+                })
+            }
+        };
+
+        this.staticFileLoaded = function(params) {
+            var id = params.id;
+            for (var i = 0; i < this.staticFiles.length; i++) {
+                var sfRecord = this.staticFiles[i];
+                if (sfRecord.processor) {
+                    var processed = sfRecord.processor({data : params.data});
+                    this.resources[id] = processed;
+                    break;
+                }
+            }
+            this.static[id] = params.data;
+            if (this.allStaticsResolved()) {
+                this.finishStaticLoad(params.callback);
+            }
+        };
+
+        this.staticFileError = function(params) {
+            this.errorLoadingStatic.push(params.id);
+            this.staticError = true;
+            this.context.trigger("edges:error-load-static");
+        };
+
+        this.allStaticsResolved = function() {
+            for (var i = 0; i < this.staticFiles.length; i++) {
+                var id = this.staticFiles[i].id;
+                var loaded = id in this.static;
+                var errored = $.inArray(id, this.errorLoadingStatic) > -1;
+                if (!loaded && !errored) {
+                    return false;
+                }
+            }
+            return true;
+        };
+
+        this.finishStaticLoad = function(callback) {
+            // just in case there's a race condition, rely on the actual object state to stop us
+            if (this.staticLoaded) {
+                return;
+            }
+            this.staticLoaded = true;
+            this.context.trigger("edges:post-load-static");
+            callback();
+        };
+
+        /////////////////////////////////////////////
         // final bits of construction
         this.startup();
     },
@@ -497,7 +621,7 @@ var edges = {
     // results in a call to
     // this.function({one: arg1, two: arg2})
     //
-    objClosure : function(obj, fn, args) {
+    objClosure : function(obj, fn, args, context_params) {
         return function() {
             if (args) {
                 var params = {};
@@ -506,12 +630,18 @@ var edges = {
                         params[args[i]] = arguments[i];
                     }
                 }
+                if (context_params) {
+                    params = $.extend(params, context_params);
+                }
                 obj[fn](params);
             } else {
                 var slice = Array.prototype.slice;
-                obj[fn].apply(obj, slice.apply(arguments));
+                var theArgs = slice.apply(arguments);
+                if (context_params) {
+                    theArgs.push(context_params);
+                }
+                obj[fn].apply(obj, theArgs);
             }
-
         }
     },
 
