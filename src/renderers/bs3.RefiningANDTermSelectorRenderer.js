@@ -13,20 +13,22 @@ $.extend(true, edges, {
             // parameters that can be passed in
 
             // whether to hide or just disable the facet if below deactivate threshold
-            this.hideInactive = params.hideInactive || false;
+            this.hideInactive = edges.getParam(params.hideInactive, false);
 
             // should the facet sort/size controls be shown?
             this.controls = edges.getParam(params.controls, true);
 
             // whether the facet should be open or closed
             // can be initialised and is then used to track internal state
-            this.open = params.open || false;
+            this.open = edges.getParam(params.open, false);
+
+            this.togglable = edges.getParam(params.togglable, true);
 
             // whether to display selected filters
-            this.showSelected = params.showSelected || true;
+            this.showSelected = edges.getParam(params.showSelected, true);
 
             // sort cycle to use
-            this.sortCycle = params.sortCycle || ["count desc", "count asc", "term desc", "term asc"];
+            this.sortCycle = edges.getParam(params.sortCycle, ["count desc", "count asc", "term desc", "term asc"]);
 
             // namespace to use in the page
             this.namespace = "edges-bs3-refiningand-term-selector";
@@ -52,9 +54,12 @@ $.extend(true, edges, {
 
                 // this is what's displayed in the body if there are no results
                 var results = "Loading...";
+                if (ts.values !== false) {
+                    results = "No data available";
+                }
 
                 // render a list of the values
-                if (ts.values.length > 0) {
+                if (ts.values && ts.values.length > 0) {
                     results = "";
 
                     // get the terms of the filters that have already been set
@@ -99,11 +104,17 @@ $.extend(true, edges, {
                     }
                 }
 
+                // render the toggle capability
+                var tog = ts.display;
+                if (this.togglable) {
+                    tog = '<a href="#" id="' + toggleId + '"><i class="glyphicon glyphicon-plus"></i>&nbsp;' + tog + "</a>";
+                }
+
                 // render the overall facet
                 var frag = '<div class="' + facetClass + '">\
                         <div class="' + headerClass + '"><div class="row"> \
                             <div class="col-md-12">\
-                                <a href="#" id="' + toggleId + '"><i class="glyphicon glyphicon-plus"></i>&nbsp;' + ts.display + '</a>\
+                                ' + tog + '\
                             </div>\
                         </div></div>\
                         {{CONTROLS}}\

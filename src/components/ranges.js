@@ -122,9 +122,7 @@ $.extend(edges, {
     },
 
     newMultiDateRangeEntry: function (params) {
-        if (!params) {
-            params = {}
-        }
+        if (!params) { params = {}}
         edges.MultiDateRangeEntry.prototype = edges.newComponent(params);
         return new edges.MultiDateRangeEntry(params);
     },
@@ -132,31 +130,36 @@ $.extend(edges, {
         ///////////////////////////////////////////////
         // fields that can be passed in, and their defaults
 
+        // free text to prefix entry boxes with
+        this.display = edges.getParam(params.display, false);
+
         // list of field objects, which provide the field itself, and the display name.  e.g.
         // [{field : "monitor.rioxxterms:publication_date", display: "Publication Date"}]
-        this.fields = params.fields || [];
+        this.fields = edges.getParam(params.fields, []);
 
         // map from field name (as in this.field[n].field) to a function which will provide
         // the earliest allowed date for that field.  e.g.
         // {"monitor.rioxxterms:publication_date" : earliestDate}
-        this.earliest = params.earliest || {};
+        this.earliest = edges.getParam(params.earliest, {});
 
         // map from field name (as in this.field[n].field) to a function which will provide
         // the latest allowed date for that field.  e.g.
         // {"monitor.rioxxterms:publication_date" : latestDate}
-        this.latest = params.latest || {};
+        this.latest = edges.getParam(params.latest, {});
+
+        this.autoLookupRange = edges.getParam(params.autoLookupRange, false);
 
         // category for this component, defaults to "selector"
-        this.category = params.category || "selector";
+        this.category = edges.getParam(params.category, "selector");
 
         // default earliest date to use in all cases (defaults to start of the unix epoch)
-        this.defaultEarliest = params.defaultEarliest || new Date(0);
+        this.defaultEarliest = edges.getParam(params.defaultEarliest, new Date(0));
 
         // default latest date to use in all cases (defaults to now)
-        this.defaultLatest = params.defaultLatest || new Date();
+        this.defaultLatest = edges.getParam(params.defaultLatest, new Date());
 
         // default renderer from render pack to use
-        this.defaultRenderer = params.defaultRenderer || "newMultiDateRangeRenderer";
+        this.defaultRenderer = edges.getParam(params.defaultRenderer, "newMultiDateRangeRenderer");
 
         ///////////////////////////////////////////////
         // fields used to track internal state
@@ -168,7 +171,7 @@ $.extend(edges, {
         this.touched = false;
         this.dateOptions = {};
 
-        this.init = function (edge) {
+        this.init = function(edge) {
             Object.getPrototypeOf(this).init.call(this, edge);
             // this.__proto__.init.call(this, edge);
 
@@ -178,14 +181,63 @@ $.extend(edges, {
             // track the last field, for query building purposes
             this.lastField = false;
 
-            // load the dates once at the init - this means they can't
-            // be responsive to the filtering unless they are loaded
-            // again at a later date
-            this.loadDates();
+            // if required, load the dates once at init
+            if (!this.autoLookupRange)
+            {
+                this.loadDates();
+            }
+        };
+
+        this.contrib = function(query) {
+            if (!this.autoLookupRange) { return }
+
+            for (var i = 0; i < this.fields.length; i++) {
+                var field = this.fields[i].field;
+                query.addAggregation(
+                    es.newStatsAggregation({
+                        name: field,
+                        field : field
+                    })
+                );
+            }
+        };
+
+        this.synchronise = function() {
+            if (!this.autoLookupRange) { return }
+
+            for (var i = 0; i < this.fields.length; i++) {
+                var field = this.fields[i].field;
+                var agg = this.edge.result.aggregation(field);
+                var min = new Date(agg.min);
+                var max = new Date(agg.max);
+
+                this.dateOptions[field] = {
+                    earliest: min,
+                    latest: max
+                }
+            }
         };
 
         //////////////////////////////////////////////
         // functions that can be used to trigger state change
+
+        this.currentEarliest = function () {
+            if (!this.currentField) {
+                return false;
+            }
+            if (this.dateOptions[this.currentField]) {
+                return this.dateOptions[this.currentField].earliest;
+            }
+        };
+
+        this.currentLatest = function () {
+            if (!this.currentField) {
+                return false;
+            }
+            if (this.dateOptions[this.currentField]) {
+                return this.dateOptions[this.currentField].latest;
+            }
+        };
 
         this.changeField = function (newField) {
             this.lastField = this.currentField;
@@ -214,41 +266,59 @@ $.extend(edges, {
                 this.touched = false;
                 var nq = this.edge.cloneQuery();
 
-                // remove the old filter
-                nq.removeMust(es.newRangeFilter({field: this.lastField}));
-
-                // only contrib if there's anything to actually do
-                if (!this.currentField || (!this.toDate && !this.fromDate)) {
-                    return;
+                // remove any old filters managed by this component
+                var removeCount = 0;
+                for (var i = 0; i < this.fields.length; i++) {
+                    var fieldName = this.fields[i].field;
+                    removeCount += nq.removeMust(es.newRangeFilter({field: fieldName}));
                 }
 
-                var range = {field: this.currentField};
-                if (this.toDate) {
-                    range["lt"] = this.toDate;
+                // in order to avoid unnecessary searching, check the state of the data and determine
+                // if we need to.
+                // - we need to add a new filter to the query if there is a current field and one/both of from and to dates
+                // - we need to do a search if we removed filters before, or are about to add one
+                var addFilter = this.currentField && (this.toDate || this.fromDate);
+                var doSearch = removeCount > 0 || addFilter;
+
+                // if we're not going to do a search, return
+                if (!doSearch) {
+                    return false;
                 }
-                if (this.fromDate) {
-                    range["gte"] = this.fromDate;
+
+                // if there's a filter to be added, do that here
+                if (addFilter) {
+                    var range = {field: this.currentField};
+                    if (this.toDate) {
+                        range["lt"] = this.toDate;
+                    }
+                    if (this.fromDate) {
+                        range["gte"] = this.fromDate;
+                    }
+                    nq.addMust(es.newRangeFilter(range));
                 }
-                nq.addMust(es.newRangeFilter(range));
 
                 // push the new query and trigger the search
                 this.edge.pushQuery(nq);
                 this.edge.doQuery();
+
+                return true;
             }
         };
 
         this.loadDates = function () {
             for (var i = 0; i < this.fields.length; i++) {
                 var field = this.fields[i].field;
+
+                // start with the default earliest and latest
+                var early = this.defaultEarliest;
+                var late = this.defaultLatest;
+
+                // if specific functions are provided for getting the dates, run them
                 var earlyFn = this.earliest[field];
                 var lateFn = this.latest[field];
-
-                var early = this.defaultEarliest;
                 if (earlyFn) {
                     early = earlyFn();
                 }
-
-                var late = this.defaultLatest;
                 if (lateFn) {
                     late = lateFn();
                 }
@@ -259,23 +329,5 @@ $.extend(edges, {
                 }
             }
         };
-
-        this.currentEarliest = function () {
-            if (!this.currentField) {
-                return
-            }
-            if (this.dateOptions[this.currentField]) {
-                return this.dateOptions[this.currentField].earliest;
-            }
-        };
-
-        this.currentLatest = function () {
-            if (!this.currentField) {
-                return
-            }
-            if (this.dateOptions[this.currentField]) {
-                return this.dateOptions[this.currentField].latest;
-            }
-        }
     }
 });

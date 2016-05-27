@@ -254,6 +254,8 @@ var es = {
             for (var i = 0; i < removes.length; i++) {
                 this.must.splice(removes[i], 1);
             }
+            // return the count of filters that were removed
+            return removes.length;
         };
         this.clearMust = function() {};
 
@@ -1092,7 +1094,11 @@ var es = {
 
         this.term_count = function() {
             return this.values === false ? 0 : this.values.length;
-        }
+        };
+
+        this.clear_terms = function() {
+            this.values = false;
+        };
 
         if (params.raw) {
             this.parse(params.raw);

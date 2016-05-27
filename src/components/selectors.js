@@ -44,12 +44,13 @@ $.extend(edges, {
         // properties used to store internal state
 
         // filters that have been selected via this component
+        // {display: <display>, term: <term>}
         this.filters = [];
 
         // values that the renderer should render
         // wraps an object (so the list is ordered) which in turn is the
         // { display: <display>, term: <term>, count: <count> }
-        this.values = [];
+        this.values = false;
 
         //////////////////////////////////////////
         // overrides on the parent object's standard functions
@@ -150,6 +151,17 @@ $.extend(edges, {
         this.selectTerm = function(term) {
             var nq = this.edge.cloneQuery();
 
+            // first make sure we're not double-selecting a term
+            var removeCount = nq.removeMust(es.newTermFilter({
+                field: this.field,
+                value: term
+            }));
+
+            // all we've done is remove and then re-add the same term, so take no action
+            if (removeCount > 0) {
+                return false;
+            }
+
             // just add a new term filter (the query builder will ensure there are no duplicates)
             // this means that the behaviour here is that terms are ANDed together
             nq.addMust(es.newTermFilter({
@@ -161,6 +173,8 @@ $.extend(edges, {
             nq.from = 0;
             this.edge.pushQuery(nq);
             this.edge.doQuery();
+
+            return true;
         };
 
         this.removeFilter = function(term) {
@@ -225,24 +239,24 @@ $.extend(edges, {
     ORTermSelector : function(params) {
         // whether this component updates itself on every request, or whether it is static
         // throughout its lifecycle.  One of "update" or "static"
-        this.lifecycle = params.lifecycle || "static";
+        this.lifecycle = edges.getParam(params.lifecycle, "static");
 
         // which ordering to use term/count and asc/desc
-        this.orderBy = params.orderBy || "term";
-        this.orderDir = params.orderDir || "asc";
+        this.orderBy = edges.getParam(params.orderBy, "term");
+        this.orderDir = edges.getParam(params.orderDir, "asc");
 
         // number of results that we should display - remember that this will only
         // be used once, so should be large enough to gather all the values that might
         // be in the index
-        this.size = params.size || 10;
+        this.size = edges.getParam(params.size, 10);
 
         // provide a map of values for terms to displayable terms, or a function
         // which can be used to translate terms to displyable values
-        this.valueMap = params.valueMap || false;
-        this.valueFunction = params.valueFunction || false;
+        this.valueMap = edges.getParam(params.valueMap, false);
+        this.valueFunction = edges.getParam(params.valueFunction, false);
 
         // override the parent's defaultRenderer
-        this.defaultRenderer = params.defaultRenderer || "newORTermSelectorRenderer";
+        this.defaultRenderer = edges.getParam(params.defaultRenderer, "newORTermSelectorRenderer");
 
         //////////////////////////////////////////
         // properties used to store internal state
@@ -251,9 +265,10 @@ $.extend(edges, {
         // will be issues which will populate this with the values
         // of the form
         // [{term: "<value>", display: "<display value>", count: <number of records>}]
-        this.terms = params.terms || false;
+        this.terms = edges.getParam(params.terms, false);
 
         // values of terms that have been selected from this.terms
+        // this is just a plain list of the values
         this.selected = [];
 
         // is the object currently updating itself
@@ -416,7 +431,10 @@ $.extend(edges, {
         ///////////////////////////////////////////
         // state change functions
 
-        this.selectTerm = function(term) {
+        this.selectTerms = function(params) {
+            var terms = params.terms;
+            var clearOthers = edges.getParam(params.clearOthers, false);
+
             var nq = this.edge.cloneQuery();
 
             // first find out if there was a terms filter already in place
@@ -425,12 +443,31 @@ $.extend(edges, {
             // if there is, just add the term to it
             if (filters.length > 0) {
                 var filter = filters[0];
-                filter.add_term(term);
+                if (clearOthers) {
+                    filter.clear_terms();
+                }
+
+                var hadTermAlready = 0;
+                for (var i = 0; i < terms.length; i++) {
+                    var term = terms[i];
+                    if (filter.has_term(term)) {
+                        hadTermAlready++;
+                    } else {
+                        filter.add_term(term);
+                    }
+                }
+
+                // if all we did was remove terms that we're then going to re-add, just do nothing
+                if (filter.has_terms() && hadTermAlready == terms.length) {
+                    return false;
+                } else if (!filter.has_terms()) {
+                    nq.removeMust(es.newTermsFilter({field: this.field}));
+                }
             } else {
                 // otherwise, set the Terms Filter
                 nq.addMust(es.newTermsFilter({
                     field: this.field,
-                    values: [term]
+                    values: terms
                 }));
             }
 
@@ -438,6 +475,12 @@ $.extend(edges, {
             nq.from = 0;
             this.edge.pushQuery(nq);
             this.edge.doQuery();
+
+            return true;
+        };
+
+        this.selectTerm = function(term) {
+            return this.selectTerms({terms : [term]});
         };
 
         this.removeFilter = function(term) {
