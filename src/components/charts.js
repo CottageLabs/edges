@@ -338,5 +338,52 @@ $.extend(edges, {
         this.yAxisLabel = params.yAxisLabel || "";
 
         this.defaultRenderer = params.defaultRenderer || "newSimpleLineChartRenderer";
+    },
+
+    ///////////////////////////////////////////////////////
+    // Chart-related components
+
+    newChartsTable : function(params) {
+        if (!params) { params = {} }
+        // edges.ChartsTable.prototype = edges.newChart(params);
+        edges.ChartsTable.prototype = edges.newComponent(params);
+        return new edges.ChartsTable(params);
+    },
+    ChartsTable : function(params) {
+        this.chartComponents = edges.getParam(params.chartComponents, false);
+
+        this.tabularise = edges.getParam(params.tabularise, false);
+
+        this.defaultRenderer = params.defaultRenderer || "newChartsTableRenderer";
+
+        this.results = [];
+
+        this.synchronise = function() {
+            this.results = [];
+            if (!this.chartComponents) {
+                return;
+            }
+
+            var comps = [];
+            for (var i = 0; i < this.edge.components.length; i++) {
+                var comp = this.edge.components[i];
+                if ($.inArray(comp.id, this.chartComponents) > -1) {
+                    comps.push(comp);
+                }
+            }
+
+            if (this.tabularise) {
+                this.results = this.tabularise(comps);
+            }
+        };
+
+        /*
+        this.synchronise = function() {
+            Object.getPrototypeOf(this).synchronise.call(this);
+            if (this.tabularise) {
+                this.results = this.tabularise(this.dataSeries);
+            }
+        };
+        */
     }
 });

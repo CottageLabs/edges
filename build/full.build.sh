@@ -30,6 +30,7 @@ nodejs r.js -o cssIn=$IN_CSS/bs3.ResultsDisplayRenderer.css out=$CSS/bs3.Results
 nodejs r.js -o cssIn=$IN_CSS/bs3.SearchingNotificationRenderer.css out=$CSS/bs3.SearchingNotificationRenderer.css baseUrl=.
 nodejs r.js -o cssIn=$IN_CSS/bs3.SelectedFiltersRenderer.css out=$CSS/bs3.SelectedFiltersRenderer.css baseUrl=.
 nodejs r.js -o cssIn=$IN_CSS/bs3.Tabbed.css out=$CSS/bs3.Tabbed.css baseUrl=.
+nodejs r.js -o cssIn=$IN_CSS/bs3.TabularResultsRenderer.css out=$CSS/bs3.TabularResultsRenderer.css baseUrl=.
 
 nodejs r.js -o cssIn=$IN_CSS/d3.edges.css out=$CSS/d3.edges.css baseUrl=.
 nodejs r.js -o cssIn=$IN_CSS/google.edges.css out=$CSS/google.edges.css baseUrl=.
@@ -80,6 +81,7 @@ cat $CSS/d3.edges.css <(echo) \
     $CSS/bs3.ResultsDisplayRenderer.css <(echo) \
     $CSS/bs3.SearchingNotificationRenderer.css <(echo) \
     $CSS/bs3.SelectedFiltersRenderer.css <(echo) \
+    $CSS/bs3.TabularResultsRenderer.css <(echo) \
     > $OUT/full.edges.min.css
 
 echo "Build $(date -u +"%Y-%m-%dT%H:%M:%SZ")" > $OUT/build.txt
