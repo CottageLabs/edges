@@ -10,12 +10,14 @@ requirejs.config({
         es : "src/es",
         edges : "src/edges",
         "edges-jquery" : "src/edges.jquery",
+        "edges.csv" : "src/edges.csv",
 
         "edges.charts" : "src/components/charts",
         "edges.maps" : "src/components/maps",
         "edges.ranges" : "src/components/ranges",
         "edges.search" : "src/components/search",
         "edges.selectors" : "src/components/selectors",
+        "edges.tables" : "src/components/tables",
 
         "edges.bs3.facetview" : "src/templates/bs3.Facetview",
         "edges.bs3.tabbed" : "src/templates/bs3.Tabbed",
@@ -46,11 +48,13 @@ requirejs(["jquery"], function() {
     requirejs(["jquery-ui", "select2", "d3", "nvd3", "es", "edges-jquery"], function() {
         requirejs(["edges"], function() {
             requirejs([
+                "edges.csv",
                 "edges.charts",
                 "edges.maps",
                 "edges.ranges",
                 "edges.search",
                 "edges.selectors",
+                "edges.tables",
 
                 "edges.bs3.facetview",
                 "edges.bs3.tabbed",

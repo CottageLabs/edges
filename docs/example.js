@@ -1,5 +1,22 @@
 jQuery(document).ready(function($) {
 
+    //////////////////////////////////////////////////////
+    // test loading static files
+
+    e4 = edges.newEdge({
+        selector: "#statics",
+        search_url: "http://localhost:9200/wna/reactor/_search",
+        staticFiles : [
+            {
+                id: "mycsv",
+                url: "http://localhost:5029/static/vendor/edges_build/docs/static.csv",
+                datatype: "text"
+            }
+        ],
+        components: []
+    });
+    e4.loadStaticFiles();
+
     //////////////////////////////////////////////////////////////
     // this stuff tests the building of a complicated query
 
