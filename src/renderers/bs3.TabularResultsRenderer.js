@@ -119,11 +119,11 @@ $.extend(true, edges, {
                 // bind the download link if necessary
                 if (this.download) {
                     var downloadIdSelector = edges.css_id_selector(this.namespace, "download", this);
-                    edges.on(downloadIdSelector, "click", this, "download");
+                    edges.on(downloadIdSelector, "click", this, "doDownload");
                 }
             };
 
-            this.download = function(element) {
+            this.doDownload = function(element) {
                 if (!this.download) {
                     return;
                 }

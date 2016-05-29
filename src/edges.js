@@ -90,9 +90,7 @@ var edges = {
         // access to processed static files, keyed by id
         this.resources = {};
 
-        // flags that tells us whether all the static files have been loaded or not
-        this.staticLoaded = false;
-        this.staticError = false;
+        // list of static resources where errors were encountered
         this.errorLoadingStatic = [];
 
         ////////////////////////////////////////////////////////
@@ -133,7 +131,8 @@ var edges = {
             // load any static files - this will happen asynchronously, so afterwards
             // we call finaliseStartup to finish the process
             var finalise = edges.objClosure(this, "finaliseStartup");
-            this.loadStaticFiles(finalise);
+            // this.loadStaticFiles(finalise);
+            this.loadStaticsAsync(finalise);
         };
 
         this.finaliseStartup = function() {
@@ -455,22 +454,21 @@ var edges = {
 
         this.loadStaticsAsync = function(callback) {
             if (this.staticFiles.length == 0) {
-                this.staticLoaded = true;
                 this.context.trigger("edges:post-load-static");
                 callback();
             }
 
             var that = this;
-            var pg = edges.async.newProcessGroup({
+            var pg = edges.newAsyncGroup({
                 list: this.staticFiles,
                 action: function(params) {
                     var entry = params.entry;
                     var success = params.success_callback;
                     var error = params.error_callback;
 
-                    var id = data.id;
-                    var url = data.url;
-                    var datatype = edges.getParam(data.datatype, "text");
+                    var id = entry.id;
+                    var url = entry.url;
+                    var datatype = edges.getParam(entry.datatype, "text");
 
                     $.ajax({
                         type: "get",
@@ -493,7 +491,6 @@ var edges = {
                 errorCallbackArgs : ["data"],
                 error:  function(params) {
                     that.errorLoadingStatic.push(params.entry.id);
-                    that.staticError = true;
                     that.context.trigger("edges:error-load-static");
                 },
                 carryOn: function() {
@@ -505,6 +502,7 @@ var edges = {
             pg.process();
         };
 
+        /*
         this.loadStaticFiles = function(callback) {
             this.context.trigger("edges:pre-load-static");
 
@@ -571,11 +569,111 @@ var edges = {
             this.staticLoaded = true;
             this.context.trigger("edges:post-load-static");
             callback();
-        };
+        };*/
 
         /////////////////////////////////////////////
         // final bits of construction
         this.startup();
+    },
+
+    //////////////////////////////////////////////////
+    // Asynchronous resource loading feature
+
+    newAsyncGroup : function(params) {
+        if (!params) { params = {} }
+        return new edges.AsyncGroup(params);
+    },
+    AsyncGroup : function(params) {
+        this.list = params.list;
+        this.successCallbackArgs = params.successCallbackArgs;
+        this.errorCallbackArgs = params.errorCallbackArgs;
+
+        var action = params.action;
+        var success = params.success;
+        var carryOn = params.carryOn;
+        var error = params.error;
+
+        this.functions = {
+            action: action,
+            success: success,
+            carryOn: carryOn,
+            error: error
+        };
+
+        this.checkList = [];
+
+        this.finished = false;
+
+        this.construct = function(params) {
+            for (var i = 0; i < this.list.length; i++) {
+                this.checkList.push(0);
+            }
+        };
+
+        this.process = function(params) {
+            if (this.list.length == 0) {
+                this.functions.carryOn();
+            }
+
+            for (var i = 0; i < this.list.length; i++) {
+                var context = {index: i};
+
+                var success_callback = edges.objClosure(this, "_actionSuccess", this.successCallbackArgs, context);
+                var error_callback = edges.objClosure(this, "_actionError", this.successCallbackArgs, context);
+                var complete_callback = false;
+
+                this.functions.action({entry: this.list[i],
+                    success_callback: success_callback,
+                    error_callback: error_callback,
+                    complete_callback: complete_callback
+                });
+            }
+        };
+
+        this._actionSuccess = function(params) {
+            var index = params.index;
+            delete params.index;
+
+            params["entry"] = this.list[index];
+            this.functions.success(params);
+            this.checkList[index] = 1;
+
+            if (this._isComplete()) {
+                this._finalise();
+            }
+        };
+
+        this._actionError = function(params) {
+            var index = params.index;
+            delete params.index;
+
+            params["entry"] = this.list[index];
+            this.functions.error(params);
+            this.checkList[index] = -1;
+
+            if (this._isComplete()) {
+                this._finalise();
+            }
+        };
+
+        this._actionComplete = function(params) {
+
+        };
+
+        this._isComplete = function() {
+            return $.inArray(0, this.checkList) === -1;
+        };
+
+        this._finalise = function() {
+            if (this.finished) {
+                return;
+            }
+            this.finished = true;
+            this.functions.carryOn();
+        };
+
+        ////////////////////////////////////////
+        this.construct();
     },
 
     /////////////////////////////////////////////
