@@ -30,6 +30,10 @@ var edges = {
         // reset the interface will return to this query
         this.openingQuery = params.openingQuery || es.newQuery();
 
+        // list of functions that will generate secondary queries which also need to be
+        // run at the point that cycle() is called
+        this.secondaryQueries = edges.getParam(params.secondaryQueries, false);
+
         // should the init process do a search
         this.initialSearch = edges.getParam(params.initialSearch, true);
 
@@ -166,6 +170,13 @@ var edges = {
         this.cycle = function() {
             // if there's a search url, do a query, otherwise call synchronise and draw directly
             if (this.search_url) {
+                // find out if there are any secondary queries to run
+                var queries = [];
+                if (this.secondaryQueries && this.secondaryQueries.length > 0) {
+                    for (var i = 0; i < this.secondaryQueries.length; i++) {
+                        queries.push(this.secondaryQueries[i](this));
+                    }
+                }
                 // on completion, doQuery calls synchronise and draw anyway, so no need to worry about it here
                 this.doQuery();
             } else {
@@ -441,6 +452,58 @@ var edges = {
 
         /////////////////////////////////////////////
         // static file management
+
+        this.loadStaticsAsync = function(callback) {
+            if (this.staticFiles.length == 0) {
+                this.staticLoaded = true;
+                this.context.trigger("edges:post-load-static");
+                callback();
+            }
+
+            var that = this;
+            var pg = edges.async.newProcessGroup({
+                list: this.staticFiles,
+                action: function(params) {
+                    var entry = params.entry;
+                    var success = params.success_callback;
+                    var error = params.error_callback;
+
+                    var id = data.id;
+                    var url = data.url;
+                    var datatype = edges.getParam(data.datatype, "text");
+
+                    $.ajax({
+                        type: "get",
+                        url: url,
+                        dataType: datatype,
+                        success: success,
+                        error: error
+                    })
+                },
+                successCallbackArgs: ["data"],
+                success: function(params) {
+                    var data = params.data;
+                    var entry = params.entry;
+                    if (entry.processor) {
+                        var processed = entry.processor({data : data});
+                        that.resources[entry.id] = processed;
+                    }
+                    that.static[entry.id] = data;
+                },
+                errorCallbackArgs : ["data"],
+                error:  function(params) {
+                    that.errorLoadingStatic.push(params.entry.id);
+                    that.staticError = true;
+                    that.context.trigger("edges:error-load-static");
+                },
+                carryOn: function() {
+                    that.context.trigger("edges:post-load-static");
+                    callback();
+                }
+            });
+
+            pg.process();
+        };
 
         this.loadStaticFiles = function(callback) {
             this.context.trigger("edges:pre-load-static");
