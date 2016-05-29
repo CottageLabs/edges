@@ -13,3 +13,7 @@
 .edges-bs3-tabular-results-cell {
     padding: 5px;
 }
+
+.edges-bs3-tabular-results-download {
+    text-align: right;
+}

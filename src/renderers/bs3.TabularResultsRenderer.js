@@ -30,6 +30,10 @@ $.extend(true, edges, {
             // a function to explicitly order the header row
             this.headerOrderingFunction = edges.getParam(params.headerOrderingFunction, false);
 
+            this.download = edges.getParam(params.download, false);
+            this.downloadText = edges.getParam(params.downloadText, "download");
+            this.downloadPrefix = edges.getParam(params.downloadPrefix, "download");
+
             //////////////////////////////////////////////
             // variables for internal state
             this.namespace = "edges-bs3-tabular-results";
@@ -43,12 +47,21 @@ $.extend(true, edges, {
                 var results = this.component.results;
                 if (results && results.length > 0) {
                     var headerKeys = this._getHeaderRow();
-                    var frag = '<div class="table-responsive">';
 
                     // list the css classes we'll require
                     var tableClasses = edges.css_classes(this.namespace, "table", this);
                     var headerClasses = edges.css_classes(this.namespace, "header", this);
                     var cellClasses = edges.css_classes(this.namespace, "cell", this);
+                    var downloadClasses = edges.css_classes(this.namespace, "download", this);
+                    var downloadId = edges.css_id(this.namespace, "download", this);
+
+                    var down = "";
+                    if (this.download) {
+                        down = '<div class="row"><div class="col-md-12"><div class="' + downloadClasses + '"><a href="#" id="' + downloadId +
+                            '">' + edges.escapeHtml(this.downloadText) + '</a></div></div></div>';
+                    }
+
+                    var frag = down + '<div class="table-responsive">';
 
                     // render the table header
                     frag += '<table class="' + tableClasses + '"><thead><tr>_HEADERS_</tr></thead><tbody>';
@@ -102,6 +115,92 @@ $.extend(true, edges, {
 
                 // and render into the page
                 this.component.context.html(frag);
+
+                // bind the download link if necessary
+                if (this.download) {
+                    var downloadIdSelector = edges.css_id_selector(this.namespace, "download", this);
+                    edges.on(downloadIdSelector, "click", this, "download");
+                }
+            };
+
+            this.download = function(element) {
+                if (!this.download) {
+                    return;
+                }
+
+                var downloadInfo = this._downloadData();
+                var blob = new Blob([downloadInfo.data], {type: downloadInfo.fileType});
+                var url = window.URL.createObjectURL(blob);
+
+                // Create link.
+                var a = document.createElement( "a" );
+                document.body.appendChild( a );
+                a.style = "display: none";
+                a.href = url;
+                a.download = downloadInfo.fileName;
+
+                // Trigger click of link.
+                a.click();
+
+                // Clear.
+                window.URL.revokeObjectURL( url );
+            };
+
+            this._downloadData = function() {
+                if (!this.download) {
+                    return false;
+                }
+
+                var table = [];
+                var results = this.component.results;
+
+                if (results && results.length > 0) {
+                    var headerKeys = this._getHeaderRow();
+
+                    // translate the header keys to header display values
+                    var headerDisplay = [];
+                    for (var i = 0; i < headerKeys.length; i++) {
+                        var trip = false;
+                        for (var j = 0; j < this.fieldDisplay.length; j++) {
+                            var fd = this._getFieldDisplay(headerKeys[i]);
+                            if (fd) {
+                                headerDisplay.push(fd.display);
+                                trip = true;
+                                break;
+                            }
+                        }
+                        if (!trip) {
+                            headerDisplay.push(headerKeys[i]);
+                        }
+                    }
+
+                    table.push(headerDisplay);
+
+                    // now go through each record and append the rows
+                    for (var i = 0; i < results.length; i++) {
+                        var res = results[i];
+                        var row = [];
+                        for (var j = 0; j < headerKeys.length; j++) {
+                            var key = headerKeys[j];
+                            var val = edges.objVal(key, res, "");
+                            row.push(val);
+                        }
+                        table.push(row);
+                    }
+                }
+
+                var data = edges.csv.serialise({data: table});
+
+                // Set MIME type and encoding.
+                var fileType = "text/csv;charset=UTF-8";
+                var extension = "csv";
+
+                // Set file name.
+                var stamp = new Date().getTime();
+                var fileName = this.downloadPrefix + "_" + stamp + "." + extension;
+
+
+                return {data : data, fileType: fileType, fileName: fileName};
             };
 
             this._getFieldDisplay = function(field) {

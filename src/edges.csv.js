@@ -1,20 +1,30 @@
 $.extend(edges, {
     csv : {
+        serialise : function(params) {
+            var json = params.data;
+            return Papa.unparse(json, {newline: "\n"});
+        },
+
         newObjectByRow : function(params) {
             if (!params) { params = {} }
             return new edges.csv.ObjectByRow(params);
         },
         ObjectByRow : function(params) {
+
             this.sheet = false;
 
             this.filters = [];
 
+            // this is essentially the constructor
             this.parse = function(params) {
                 this.sheet = Papa.parse(params.data, {
                     header: true,
                     newline: "\n"
                 });
             };
+
+            /////////////////////////////////////////////////
+            // methods for interacting with the contents of the sheet
 
             this.add_filter = function(params) {
                 var filter = params.filter;
@@ -112,6 +122,9 @@ $.extend(edges, {
 
                 return true;
             };
+
+            ////////////////////////////////////////
+            // call the constructor
 
             this.parse(params);
         }

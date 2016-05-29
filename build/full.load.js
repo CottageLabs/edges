@@ -6,6 +6,7 @@ requirejs.config({
         select2 : "vendor/select2-3.5.1/select2.min",
         d3: "vendor/d3-v3/d3.min",
         nvd3: "vendor/nvd3-1.8.1/nv.d3",
+        papa : "vendor/PapaParse-4.1.2/papaparse.min",
 
         es : "src/es",
         edges : "src/edges",
@@ -45,7 +46,7 @@ requirejs.config({
 });
 
 requirejs(["jquery"], function() {
-    requirejs(["jquery-ui", "select2", "d3", "nvd3", "es", "edges-jquery"], function() {
+    requirejs(["jquery-ui", "select2", "d3", "nvd3", "es", "edges-jquery", "papa"], function() {
         requirejs(["edges"], function() {
             requirejs([
                 "edges.csv",

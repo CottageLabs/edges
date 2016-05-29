@@ -376,14 +376,5 @@ $.extend(edges, {
                 this.results = this.tabularise(comps);
             }
         };
-
-        /*
-        this.synchronise = function() {
-            Object.getPrototypeOf(this).synchronise.call(this);
-            if (this.tabularise) {
-                this.results = this.tabularise(this.dataSeries);
-            }
-        };
-        */
     }
 });
