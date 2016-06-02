@@ -21,6 +21,12 @@ var edges = {
         // datatype for ajax requests to use - overall recommend using jsonp
         this.datatype = params.datatype || "jsonp";
 
+        // dictionary of queries to be run before the primary query is executed
+        // {"<preflight id>" : es.newQuery(....)}
+        // results will appear with the same ids in this.preflightResults
+        // preflight queries are /not/ subject to the base query
+        this.preflightQueries = edges.getParam(params.preflightQueries, false);
+
         // query that forms the basis of all queries that are assembled and run
         // Note that baseQuery is inviolable - it's requirements will always be enforced
         this.baseQuery = params.baseQuery || false;
@@ -30,8 +36,12 @@ var edges = {
         // reset the interface will return to this query
         this.openingQuery = params.openingQuery || es.newQuery();
 
-        // list of functions that will generate secondary queries which also need to be
-        // run at the point that cycle() is called
+        // dictionary of functions that will generate secondary queries which also need to be
+        // run at the point that cycle() is called.  These functions and their resulting
+        // queries will be run /after/ the primary query (so can take advantage of the
+        // results).  Their results will be stored in this.secondaryResults.
+        // secondary queries are not subject the base query, although the functions
+        // may of course apply the base query too if they wish
         this.secondaryQueries = edges.getParam(params.secondaryQueries, false);
 
         // should the init process do a search
@@ -77,6 +87,12 @@ var edges = {
 
         // the last result object from the ES layer
         this.result = false;
+
+        // the results of the preflight queries, keyed by their id
+        this.preflightResults = {};
+
+        // results of the secondary queries, keyed by their id
+        this.secondaryResults = {};
 
         // if the search is currently executing
         this.searching = false;
@@ -130,14 +146,17 @@ var edges = {
 
             // load any static files - this will happen asynchronously, so afterwards
             // we call finaliseStartup to finish the process
-            var finalise = edges.objClosure(this, "finaliseStartup");
-            // this.loadStaticFiles(finalise);
-            this.loadStaticsAsync(finalise);
+            var onward = edges.objClosure(this, "startupPart2");
+            this.loadStaticsAsync(onward);
         };
 
-        this.finaliseStartup = function() {
+        this.startupPart2 = function() {
             // FIXME: at this point we should check whether the statics all loaded correctly
+            var onward = edges.objClosure(this, "startupPart3");
+            this.runPreflightQueries(onward);
+        };
 
+        this.startupPart3 = function() {
             // determine whether to initialise with either the openingQuery or the urlQuery
             var requestedQuery = this.openingQuery;
             if (this.urlQuery) {
@@ -166,22 +185,61 @@ var edges = {
         /////////////////////////////////////////////////////////
         // Edges lifecycle functions
 
+        this.doQuery = function() {
+            // the original doQuery has become doPrimaryQuery, so this has been aliased for this.cycle
+            this.cycle();
+        };
+
         this.cycle = function() {
+            // if a search is currently executing, don't do anything, else turn it on
+            // FIXME: should we queue them up?
+            if (this.searching) {
+                return;
+            }
+            this.searching = true;
+
+            // invalidate the short url
+            this.shortUrl = false;
+
+            // pre query event
+            this.context.trigger("edges:pre-query");
+
+            // if we are managing the url space, use pushState to set it
+            if (this.manageUrl) {
+                this.updateUrl();
+            }
+
             // if there's a search url, do a query, otherwise call synchronise and draw directly
             if (this.search_url) {
-                // find out if there are any secondary queries to run
-                var queries = [];
-                if (this.secondaryQueries && this.secondaryQueries.length > 0) {
-                    for (var i = 0; i < this.secondaryQueries.length; i++) {
-                        queries.push(this.secondaryQueries[i](this));
-                    }
-                }
-                // on completion, doQuery calls synchronise and draw anyway, so no need to worry about it here
-                this.doQuery();
+                var onward = edges.objClosure(this, "cyclePart2");
+                this.doPrimaryQuery(onward);
             } else {
-                this.synchronise();
-                this.draw();
+                this.cyclePart2();
             }
+        };
+
+        this.cyclePart2 = function() {
+            // find out if there are any secondary queries to run
+            var queries = [];
+            if (this.secondaryQueries && this.secondaryQueries.length > 0) {
+                for (var i = 0; i < this.secondaryQueries.length; i++) {
+                    queries.push(this.secondaryQueries[i](this));
+                }
+                var onward = edges.objClosure(this, "finaliseCycle");
+                this.runSecondaryQueries(queries, onward);
+            }
+
+            this.synchronise();
+
+            // pre-render trigger
+            this.context.trigger("edges:pre-render");
+            // render
+            this.draw();
+            // post render trigger
+            this.context.trigger("edges:post-render");
+
+            // searching has completed, so flip the switch back
+            this.searching = false;
         };
 
         this.synchronise = function() {
@@ -253,7 +311,21 @@ var edges = {
         };
 
         // execute the query and all the associated workflow
-        this.doQuery = function() {
+        this.doPrimaryQuery = function(callback) {
+            var context = {"callback" : callback};
+
+            // issue the query to elasticsearch
+            es.doQuery({
+                search_url: this.search_url,
+                queryobj: this.currentQuery.objectify(),
+                datatype: this.datatype,
+                success: edges.objClosure(this, "querySuccess", ["result"], context),
+                error: edges.objClosure(this, "queryFail", context) //,
+                // complete: edges.objClosure(this, "queryComplete", context)
+            })
+        };
+        /*
+        this.doPrimaryQuery = function() {
             // we only want to trigger ES queries if there's a query url
             if (!this.search_url) {
                 return;
@@ -286,23 +358,24 @@ var edges = {
                 error: edges.objClosure(this, "queryFail"),
                 complete: edges.objClosure(this, "queryComplete")
             })
-        };
+        };*/
 
         this.queryFail = function(params) {
+            var callback = params.context;
             this.context.trigger("edges:query-fail");
+            callback();
         };
 
         this.querySuccess = function(params) {
             this.result = params.result;
+            var callback = params.callback;
 
             // success trigger
             this.context.trigger("edges:query-success");
-
-            // ask the components to prepare themselves based on the latest
-            // results
-            this.synchronise();
+            callback();
         };
 
+        /*
         this.queryComplete = function() {
             // pre-render trigger
             this.context.trigger("edges:pre-render");
@@ -317,6 +390,48 @@ var edges = {
 
             // searching has completed, so flip the switch back
             this.searching = false;
+        };
+        */
+
+        this.runPreflightQueries = function(callback) {
+            callback();
+        };
+
+        this.runSecondaryQueries = function(queries, callback) {
+            var that = this;
+            var pg = edges.newAsyncGroup({
+                list: queries,
+                action: function(params) {
+                    var entry = params.entry;
+                    var success = params.success_callback;
+                    var error = params.error_callback;
+
+                    es.doQuery({
+                        search_url: that.search_url,
+                        queryobj: entry,
+                        datatype: that.datatype,
+                        success: success,
+                        complete: false
+                    });
+                },
+                successCallbackArgs: ["result"],
+                success: function(params) {
+                    var result = params.result;
+                    var entry = params.entry;
+                    // FIXME: carry on ...
+                },
+                errorCallbackArgs : ["result"],
+                error:  function(params) {
+                    that.errorLoadingStatic.push(params.entry.id);
+                    that.context.trigger("edges:error-load-static");
+                },
+                carryOn: function() {
+                    that.context.trigger("edges:post-load-static");
+                    callback();
+                }
+            });
+
+            pg.process();
         };
 
         ////////////////////////////////////////////////
