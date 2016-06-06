@@ -354,7 +354,8 @@ $.extend(edges, {
         this.setupEvent = function() {
             if (this.lifecycle === "update") {
                 this.edge.context.on("edges:pre-query", edges.eventClosure(this, "doUpdate"));
-                this.doUpdate();
+                // we used to do this, but no need, as when the query cycles, the event handler set above will run it anyway
+                // this.doUpdate();
             }
         };
 
