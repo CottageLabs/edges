@@ -33,7 +33,8 @@ var es = {
             range: es.newRangeAggregation,
             geo_distance: es.newGeoDistanceAggregation,
             date_histogram: es.newDateHistogramAggregation,
-            stats: es.StatsAggregation
+            stats: es.StatsAggregation,
+            cardinality: es.CardinalityAggregation
         };
 
         if (constructors[type]) {
@@ -802,6 +803,29 @@ var es = {
         }
     },
 
+    newCardinalityAggregation : function(params) {
+        if (!params) { params = {} }
+        es.CardinalityAggregation.prototype = es.newAggregation(params);
+        return new es.CardinalityAggregation(params);
+    },
+    CardinalityAggregation : function(params) {
+        this.field = es.getParam(params.field, false);
+
+        this.objectify = function() {
+            var body = {field: this.field};
+            return this._make_aggregation("cardinality", body);
+        };
+
+        this.parse = function(obj) {
+            var body = this._parse_wrapper(obj, "cardinality");
+            this.field = body.field;
+        };
+
+        if (params.raw) {
+            this.parse(params.raw);
+        }
+    },
+
     newRangeAggregation : function(params) {
         if (!params) { params = {} }
         es.RangeAggregation.prototype = es.newAggregation(params);
@@ -1315,7 +1339,11 @@ var es = {
             var result = es.newResult({raw: data});
             callback(result);
         }
-    }
+    },
 
     /////////////////////////////////////////////////////
+
+    getParam : function(value, def) {
+        return value !== undefined ? value : def;
+    }
 };
