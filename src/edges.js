@@ -130,6 +130,8 @@ var edges = {
                 this.urlParams = urlParams;
             }
 
+
+
             // render the template if necessary
             if (this.template) {
                 this.template.draw(this);
@@ -157,6 +159,7 @@ var edges = {
         };
 
         this.startupPart3 = function() {
+
             // determine whether to initialise with either the openingQuery or the urlQuery
             var requestedQuery = this.openingQuery;
             if (this.urlQuery) {
@@ -286,7 +289,10 @@ var edges = {
         // functions to handle the query lifecycle
 
         this.cloneQuery = function() {
-            return $.extend(true, {}, this.currentQuery);
+            if (this.currentQuery) {
+                return $.extend(true, {}, this.currentQuery);
+            }
+            return false;
         };
 
         this.pushQuery = function(query) {
@@ -394,7 +400,53 @@ var edges = {
         */
 
         this.runPreflightQueries = function(callback) {
-            callback();
+            if (!this.preflightQueries || Object.keys(this.preflightQueries).length == 0) {
+                callback();
+                return;
+            }
+
+            this.context.trigger("edges:pre-preflight");
+
+            var entries = [];
+            var ids = Object.keys(this.preflightQueries);
+            for (var i = 0; i < ids.length; i++) {
+                var id = ids[i];
+                entries.push({id: id, query: this.preflightQueries[id]});
+            }
+
+            var that = this;
+            var pg = edges.newAsyncGroup({
+                list: entries,
+                action: function(params) {
+                    var entry = params.entry;
+                    var success = params.success_callback;
+                    var error = params.error_callback;
+
+                    es.doQuery({
+                        search_url: that.search_url,
+                        queryobj: entry.query.objectify(),
+                        datatype: that.datatype,
+                        success: success,
+                        error: error
+                    });
+                },
+                successCallbackArgs: ["result"],
+                success: function(params) {
+                    var result = params.result;
+                    var entry = params.entry;
+                    that.preflightResults[entry.id] = result;
+                },
+                errorCallbackArgs : ["result"],
+                error:  function(params) {
+                    that.context.trigger("edges:error-preflight");
+                },
+                carryOn: function() {
+                    that.context.trigger("edges:post-preflight");
+                    callback();
+                }
+            });
+
+            pg.process();
         };
 
         this.runSecondaryQueries = function(queries, callback) {
@@ -568,9 +620,10 @@ var edges = {
         // static file management
 
         this.loadStaticsAsync = function(callback) {
-            if (this.staticFiles.length == 0) {
+            if (!this.staticFiles || this.staticFiles.length == 0) {
                 this.context.trigger("edges:post-load-static");
                 callback();
+                return;
             }
 
             var that = this;
