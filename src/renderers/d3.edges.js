@@ -306,11 +306,10 @@ $.extend(edges, {
             // change the rotation. NB: make sure the projection type you're using supports rotation
             this.mapRotate = edges.getParam(params.rotate);
 
-            this.dataOnRender = edges.getParam(params.dataOnRender);
+            this.preDisplayToolTips = edges.getParam(params.preDisplayToolTips, false);
+            this.enableTooltipInteractions = edges.getParam(params.enableTooltipInteractions, true);
 
-            this.regionData = {AFG : { "Consumption": 1000, "Production": 2000}, AUS: { "Consumption": 3000, "Production": 4000}, Canada: { "Consumption": 3000, "Production": 4000}, "United States of America":{ "Consumption": 3000, "Production": 4000}}
-
-                // if you want to adjust the precision of the adaptive resampling, you can do that here, otherwise it will default
+            // if you want to adjust the precision of the adaptive resampling, you can do that here, otherwise it will default
             this.resamplingPrecision = edges.getParam(params.resamplingPrecision, false);
 
             this.defaultStroke = edges.getParam(params.defaultStroke, "#ffffff");
@@ -322,6 +321,9 @@ $.extend(edges, {
             // if regionStyles are specified, these will take precedence over superRegionStyles
             this.regionStyles = edges.getParam(params.regionStyles, {});
             this.superRegionStyles = edges.getParam(params.superRegionStyles, {});
+
+            // this is a by-path tooltip offset
+            this.toolTipOffsets = edges.getParam(params.toolTipOffsets, false);
 
             // this is the spacing between the mouse pointer and where the top left of the tool tip appears
             this.toolTipLeftOffset = edges.getParam(params.toolTipLeftOffset, 30);
@@ -430,77 +432,58 @@ $.extend(edges, {
                         .style("stroke", function(d) { return that._getStroke({d : d}) })
                         .style("stroke-width", function(d) { return that._getStrokeWidth({d : d}) })
                         .style("fill", function(d) { return that._getFill({d : d}) })
-                        .on("mouseover", show)
+                        .on("mouseover", show)// FIXME: we should seriously consider breaking these out to a separate block, so that we can set them conditionally
                         .on("mouseout", hide)
                         .on("click", pin);
 
-                    if (that.dataOnRender !== false) {
+                    if (that.preDisplayToolTips !== false) {
+                        for (var i = 0; i < json.features.length; i++) {
+                            var d = json.features[i];
 
-                        that.svg.selectAll("text.consumption")
-                            .data(json.features)
-                            .enter()
-                            .append("svg:text")
-                            .attr("d", path)
-                            .attr("class", "consumption")
-                            .text(function(d) {
-                                if (d.properties.name === "United States of America" || d.properties.name === "Canada"){
-                                    return "Consumption: " + that.regionData[d.properties.name]["Consumption"]
-                                }
-                            })
-                            .attr("x", function(d){
-                                if (!isNaN(path.centroid(d)[0])) {
-                                    if (d.properties.name === "United States of America") {
-                                        return path.centroid(d)[0] + 150;
-                                    } else if (d.properties.name === "Canada") {
-                                        return path.centroid(d)[0] - 50;
+                            var display = that.preDisplayToolTips === true;
+                            if (!display) {
+                                for (var j = 0; j < that.preDisplayToolTips.length; j++) {
+                                    if (that._identifies({id: that.preDisplayToolTips[j], d: d})) {
+                                        display = true;
+                                        break;
                                     }
                                 }
-                            })
-                            .attr("y", function(d){
-                                if (!isNaN(path.centroid(d)[1])) {
-                                    if (d.properties.name === "United States of America") {
-                                        return path.centroid(d)[1] + 130;
-                                    } else if (d.properties.name === "Canada") {
-                                        return path.centroid(d)[1] + 150;
-                                    }
-                                }
-                            })
-                            .attr("text-anchor","middle")
-                            .attr('font-size','16pt')
-                            .attr("font-weight", "bold");
+                            }
 
-                        that.svg.selectAll("text.production")
-                            .data(json.features)
-                            .enter()
-                            .append("svg:text")
-                            .attr("d", path)
-                            .attr("class", "production")
-                            .text(function(d) {
-                                if (d.properties.name === "United States of America" || d.properties.name === "Canada"){
-                                    return "Production: " + that.regionData[d.properties.name]["Production"]
-                                }
-                            })
-                            .attr("x", function(d){
-                                if (!isNaN(path.centroid(d)[0])) {
-                                    if (d.properties.name === "United States of America") {
-                                        return path.centroid(d)[0] + 150;
-                                    } else if (d.properties.name === "Canada") {
-                                        return path.centroid(d)[0] - 50;
+                            if (display) {
+                                var centroid = path.centroid(d);
+                                var pos = [false,false];
+
+                                var left_offset = 0;
+                                var top_offset = 0;
+                                if (that.toolTipOffsets !== false) {
+                                    var keys = Object.keys(that.toolTipOffsets);
+                                    for (var j = 0; j < keys.length; j++) {
+                                        if (that._identifies({id: keys[j], d: d})) {
+                                            left_offset = that.toolTipOffsets[keys[j]].left;
+                                            top_offset = that.toolTipOffsets[keys[j]].top;
+                                            break;
+                                        }
                                     }
                                 }
-                            })
-                            .attr("y", function(d){
-                                if (!isNaN(path.centroid(d)[1])) {
-                                    if (d.properties.name === "United States of America") {
-                                        return path.centroid(d)[1] + 170;
-                                    } else if (d.properties.name === "Canada") {
-                                        return path.centroid(d)[1] + 200;
-                                    }
+
+                                if (!isNaN(centroid[0])) {
+                                    pos[0] = centroid[0] + left_offset;
                                 }
-                            })
-                            .attr("text-anchor","middle")
-                            .attr('font-size','16pt')
-                            .attr("font-weight", "bold");
+
+                                if (!isNaN(centroid[1])) {
+                                    pos[1] = centroid[1] + top_offset;
+                                }
+
+                                if (pos[0] !== false && pos[1] !== false) {
+                                    that.togglePinToolTip({
+                                        d: d,
+                                        position: pos,
+                                        force: true
+                                    });
+                                }
+                            }
+                        }
                     }
 
                 });
@@ -509,6 +492,10 @@ $.extend(edges, {
             };
 
             this.togglePinToolTip = function(params) {
+                if (this.enableTooltipInteractions === false && !params.force) {
+                    return;
+                }
+
                 var d = params.d;
                 var cssIdSelector = edges.css_id_selector(this.namespace, "path-" + d.id, this);
 
@@ -526,12 +513,19 @@ $.extend(edges, {
             };
 
             this.showToolTip = function(params) {
+                if (this.enableTooltipInteractions === false && !params.force) {
+                    return;
+                }
+
                 var d = params.d;
                 if (this._isPinned({id : d.id})) {
                     return;
                 }
 
-                var mouse = edges.d3.mouseXY({svg: this.svg});
+                var position = edges.getParam(params.position, false);
+                if (position === false) {
+                    position = edges.d3.mouseXY({svg: this.svg});
+                }
 
                 var id = d.id;
                 var cssIdSelector = edges.css_id_selector(this.namespace, "tooltip-" + id, this);
@@ -546,10 +540,10 @@ $.extend(edges, {
                         .attr("id", cssId)
                         .attr("class", tooltipClass)
                         .html(frag)
-                        .attr("style", this._positionStyles({ref : mouse}));
+                        .attr("style", this._positionStyles({ref : position}));
                     el = this.component.jq(cssIdSelector);
                 } else {
-                    el.attr("style", this._positionStyles({ref : mouse}));
+                    el.attr("style", this._positionStyles({ref : position}));
                 }
 
                 // it would be nice to get the tool top to follow the mouse pointer while it's inside
@@ -563,6 +557,10 @@ $.extend(edges, {
             };
 
             this.hideToolTip = function(params) {
+                if (this.enableTooltipInteractions === false && !params.force) {
+                    return;
+                }
+
                 var d = params.d;
                 if (this._isPinned({id : d.id})) {
                     return;
@@ -681,7 +679,20 @@ $.extend(edges, {
                 return frag;
             };
 
+            this._identifies = function(params) {
+                var id = params.id;
+                var d = params.d;
 
+                for (var i = 0; i < this.matchRegionOn.length; i++) {
+                    var matchField = this.matchRegionOn[i];
+                    var fieldVal = edges.objVal(matchField, d, false);
+                    if (fieldVal && id === fieldVal) {
+                        return true;
+                    }
+                }
+
+                return false;
+            };
         }
     }
 });
