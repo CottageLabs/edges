@@ -299,8 +299,18 @@ $.extend(edges, {
 
             // fields that you want to search in the geojson for identifiers to match to region data
             this.matchRegionOn = edges.getParam(params.matchRegionOn, ["id", "properties.name"]);
+            
+            // move the center of the map
+            this.mapCenter = edges.getParam(params.center);
+            
+            // change the rotation. NB: make sure the projection type you're using supports rotation
+            this.mapRotate = edges.getParam(params.rotate);
 
-            // if you want to adjust the precision of the adaptive resampling, you can do that here, otherwise it will default
+            this.dataOnRender = edges.getParam(params.dataOnRender);
+
+            this.regionData = {AFG : { "Consumption": 1000, "Production": 2000}, AUS: { "Consumption": 3000, "Production": 4000}, Canada: { "Consumption": 3000, "Production": 4000}, "United States of America":{ "Consumption": 3000, "Production": 4000}}
+
+                // if you want to adjust the precision of the adaptive resampling, you can do that here, otherwise it will default
             this.resamplingPrecision = edges.getParam(params.resamplingPrecision, false);
 
             this.defaultStroke = edges.getParam(params.defaultStroke, "#ffffff");
@@ -323,7 +333,8 @@ $.extend(edges, {
             this.loaded = false;
 
             this.projectionMap = {
-                "mercator" : d3.geo.mercator
+                "mercator" : d3.geo.mercator,
+                "conicConformal": d3.geo.conicConformal
             };
 
             // need to keep track of the svg for use in object methods
@@ -385,12 +396,18 @@ $.extend(edges, {
                         border: that.mapScaleBorder
                     });
 
-                    var c = that.component.center;
+                    var c = that.mapCenter;
+                    var r = that.mapRotate;
                     if (!c) {
                         c = {"lat" : 17, "lon" : 0}; // a reasonable centre point for a map, somewhere over the gobi desert, I think
                     }
 
+                    if (!r) {
+                        r = {"lambda": 0, "phi": 0}; // do not rotate by default
+                    }
+
                     projection.center([c.lon, c.lat])
+                        .rotate([r.lambda, r.phi])
                         .scale(s)
                         .translate([that.width / 2, that.height / 2]);
 
@@ -401,6 +418,7 @@ $.extend(edges, {
                     var show = edges.objClosure(that, "showToolTip", ["d"]);
                     var hide = edges.objClosure(that, "hideToolTip", ["d"]);
                     var pin = edges.objClosure(that, "togglePinToolTip", ["d"]);
+
 
                     // Bind the data to the SVG and create one path per GeoJSON feature
                     that.svg.selectAll("path")
@@ -415,6 +433,76 @@ $.extend(edges, {
                         .on("mouseover", show)
                         .on("mouseout", hide)
                         .on("click", pin);
+
+                    if (that.dataOnRender !== false) {
+
+                        that.svg.selectAll("text.consumption")
+                            .data(json.features)
+                            .enter()
+                            .append("svg:text")
+                            .attr("d", path)
+                            .attr("class", "consumption")
+                            .text(function(d) {
+                                if (d.properties.name === "United States of America" || d.properties.name === "Canada"){
+                                    return "Consumption: " + that.regionData[d.properties.name]["Consumption"]
+                                }
+                            })
+                            .attr("x", function(d){
+                                if (!isNaN(path.centroid(d)[0])) {
+                                    if (d.properties.name === "United States of America") {
+                                        return path.centroid(d)[0] + 150;
+                                    } else if (d.properties.name === "Canada") {
+                                        return path.centroid(d)[0] - 50;
+                                    }
+                                }
+                            })
+                            .attr("y", function(d){
+                                if (!isNaN(path.centroid(d)[1])) {
+                                    if (d.properties.name === "United States of America") {
+                                        return path.centroid(d)[1] + 130;
+                                    } else if (d.properties.name === "Canada") {
+                                        return path.centroid(d)[1] + 150;
+                                    }
+                                }
+                            })
+                            .attr("text-anchor","middle")
+                            .attr('font-size','16pt')
+                            .attr("font-weight", "bold");
+
+                        that.svg.selectAll("text.production")
+                            .data(json.features)
+                            .enter()
+                            .append("svg:text")
+                            .attr("d", path)
+                            .attr("class", "production")
+                            .text(function(d) {
+                                if (d.properties.name === "United States of America" || d.properties.name === "Canada"){
+                                    return "Production: " + that.regionData[d.properties.name]["Production"]
+                                }
+                            })
+                            .attr("x", function(d){
+                                if (!isNaN(path.centroid(d)[0])) {
+                                    if (d.properties.name === "United States of America") {
+                                        return path.centroid(d)[0] + 150;
+                                    } else if (d.properties.name === "Canada") {
+                                        return path.centroid(d)[0] - 50;
+                                    }
+                                }
+                            })
+                            .attr("y", function(d){
+                                if (!isNaN(path.centroid(d)[1])) {
+                                    if (d.properties.name === "United States of America") {
+                                        return path.centroid(d)[1] + 170;
+                                    } else if (d.properties.name === "Canada") {
+                                        return path.centroid(d)[1] + 200;
+                                    }
+                                }
+                            })
+                            .attr("text-anchor","middle")
+                            .attr('font-size','16pt')
+                            .attr("font-weight", "bold");
+                    }
+
                 });
 
                 this.loaded = true;
