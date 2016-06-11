@@ -49,7 +49,7 @@ var edges = {
 
         // list of static files (e.g. data files) to be loaded at startup, and made available
         // on the object for use by components
-        // {"id" : "<internal id to give the file>", "url" : "<file url>", "processor" : edges.csv.ObjectByRow, "datatype" : "text"}
+        // {"id" : "<internal id to give the file>", "url" : "<file url>", "processor" : edges.csv.newObjectByRow, "datatype" : "text"}
         this.staticFiles = edges.getParam(params.staticFiles, []);
 
         // should the search url be synchronised with the browser's url bar after search

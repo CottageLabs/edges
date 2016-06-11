@@ -17,7 +17,8 @@ $.extend(edges, {
 
             // this is essentially the constructor
             this.parse = function(params) {
-                this.sheet = Papa.parse(params.data, {
+                var data = params.data.replace(/\r\n/g, "\n");
+                this.sheet = Papa.parse(data, {
                     header: true,
                     newline: "\n"
                 });
