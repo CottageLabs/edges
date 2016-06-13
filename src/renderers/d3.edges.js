@@ -332,7 +332,9 @@ $.extend(edges, {
             //////////////////////////////////////////////////////
             // parameters for managing internal state
 
-            this.loaded = false;
+            // this.loaded = false;
+            this.status = "fresh";
+            this.redrawRequest = false;
 
             this.projectionMap = {
                 "mercator" : d3.geo.mercator,
@@ -345,9 +347,191 @@ $.extend(edges, {
 
             this.pinned = [];
 
+            // where we put the actual loaded json
+            this.json = false;
+
             this.namespace = "edges-d3-generic-vector-map";
 
             this.draw = function() {
+                if (this.status === "fresh") {
+                    this.freshDraw();
+                } else if (this.status === "drawing_initial") {
+                    this.redrawRequest = true;
+                } else if (this.status === "drawn") {
+                    this.updateDraw();
+                } else if (this.status === "drawing_update") {
+                    this.redrawRequest = true;
+                }
+            };
+
+            this.freshDraw = function() {
+                this.status = "drawing_initial";
+
+                // ensure that we are starting from scratch
+                this.component.context.html("");
+
+                // get the dom element from the context, so that we can use it for the d3 selectors
+                var domElement = this.component.context.get(0);
+
+                var containerClass = edges.css_classes(this.namespace, "container", this);
+                var tooltipClass = edges.css_classes(this.namespace, "tooltip", this);
+
+                // D3 Projection
+                var projection = this.projectionMap[this.projectionType]();
+                projection.scale(1);    // will be scaled correctly later
+
+                // Define path generator
+                var path = d3.geo.path()
+                             .projection(projection);
+
+                this.container = d3.select(domElement)
+                            .append("div").attr("class", containerClass);
+
+                //Create SVG element and append map to the SVG
+                this.svg = this.container
+                            .append("svg")
+                            .attr("width", this.width)
+                            .attr("height", this.height);
+
+                // load the geojson, and then render the features (this happens asynchronously)
+                var that = this;
+                d3.json(this.geojson, function(json) {
+                    that.json = json;
+
+                    var s = edges.d3.calculateMapScale({
+                        features: json.features,
+                        path: path,
+                        width: that.width,
+                        height: that.height,
+                        scaleFit: that.mapScaleFit,
+                        border: that.mapScaleBorder
+                    });
+
+                    var c = that.mapCenter;
+                    var r = that.mapRotate;
+                    if (!c) {
+                        c = {"lat" : 17, "lon" : 0}; // a reasonable centre point for a map, somewhere over the gobi desert, I think
+                    }
+
+                    if (!r) {
+                        r = {"lambda": 0, "phi": 0}; // do not rotate by default
+                    }
+
+                    projection.center([c.lon, c.lat])
+                        .rotate([r.lambda, r.phi])
+                        .scale(s)
+                        .translate([that.width / 2, that.height / 2]);
+
+                    if (that.resamplingPrecision !== false) {
+                        projection.precision(that.resamplingPrecision);
+                    }
+
+                    var show = edges.objClosure(that, "showToolTip", ["d"]);
+                    var hide = edges.objClosure(that, "hideToolTip", ["d"]);
+                    var pin = edges.objClosure(that, "togglePinToolTip", ["d"]);
+
+
+                    // Bind the data to the SVG and create one path per GeoJSON feature
+                    that.svg.selectAll("path")
+                        .data(json.features)
+                        .enter()
+                        .append("path")
+                        .attr("d", path)
+                        .attr("id", function(d) { return edges.css_id(that.namespace, "path-" + d.id, that) })
+                        .style("stroke", function(d) { return that._getStroke({d : d}) })
+                        .style("stroke-width", function(d) { return that._getStrokeWidth({d : d}) })
+                        .style("fill", function(d) { return that._getFill({d : d}) })
+                        .on("mouseover", show)// FIXME: we should seriously consider breaking these out to a separate block, so that we can set them conditionally
+                        .on("mouseout", hide)
+                        .on("click", pin);
+
+                    if (that.preDisplayToolTips !== false) {
+                        for (var i = 0; i < json.features.length; i++) {
+                            var d = json.features[i];
+
+                            var display = that.preDisplayToolTips === true;
+                            if (!display) {
+                                for (var j = 0; j < that.preDisplayToolTips.length; j++) {
+                                    if (that._identifies({id: that.preDisplayToolTips[j], d: d})) {
+                                        display = true;
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (display) {
+                                var centroid = path.centroid(d);
+                                var pos = [false,false];
+
+                                var left_offset = 0;
+                                var top_offset = 0;
+                                if (that.toolTipOffsets !== false) {
+                                    var keys = Object.keys(that.toolTipOffsets);
+                                    for (var j = 0; j < keys.length; j++) {
+                                        if (that._identifies({id: keys[j], d: d})) {
+                                            left_offset = that.toolTipOffsets[keys[j]].left;
+                                            top_offset = that.toolTipOffsets[keys[j]].top;
+                                            break;
+                                        }
+                                    }
+                                }
+
+                                if (!isNaN(centroid[0])) {
+                                    pos[0] = centroid[0] + left_offset;
+                                }
+
+                                if (!isNaN(centroid[1])) {
+                                    pos[1] = centroid[1] + top_offset;
+                                }
+
+                                if (pos[0] !== false && pos[1] !== false) {
+                                    that.togglePinToolTip({
+                                        d: d,
+                                        position: pos,
+                                        force: true
+                                    });
+                                }
+                            }
+                        }
+                    }
+
+                });
+
+                if (this.redrawRequest) {
+                    this.redrawRequest = false;
+                    this.updateDraw();
+                } else {
+                    this.status = "drawn";
+                }
+            };
+
+            this.updateDraw = function() {
+                this.status = "drawing_update";
+
+                var invisibleSel = edges.css_class_selector(this.namespace, "invisible", this);
+                var visibleSel = edges.css_class_selector(this.namespace, "visible", this);
+
+                // first remove any invisible tooltips - they can be re-drawn when they need to become visible again
+                this.component.jq(invisibleSel).remove();
+
+                // now re-draw all the visible tooltips
+                var visibles = this.component.jq(visibleSel);
+                for (var i = 0; i < visibles.length; i++) {
+                    var vis = this.component.jq(visibles[i]);
+                    var id = vis.attr("data-id");
+                    var d = this._getPath({id : id});
+                    this.reRenderToolTip({d : d});
+                }
+
+                if (this.redrawRequest) {
+                    this.redrawRequest = false;
+                    this.updateDraw();
+                } else {
+                    this.status = "drawn";
+                }
+            };
+
+            this.oldDraw = function() {
                 // we only need to render this the first time draw is called
                 if (this.loaded) { return }
 
@@ -529,31 +713,34 @@ $.extend(edges, {
 
                 var id = d.id;
                 var cssIdSelector = edges.css_id_selector(this.namespace, "tooltip-" + id, this);
+                var tooltipClass = edges.css_classes(this.namespace, "tooltip", this);
+                var visibleClass = edges.css_classes(this.namespace, "visible", this);
 
                 var el = this.component.jq(cssIdSelector);
                 if (el.length === 0) {
                     var cssId = edges.css_id(this.namespace, "tooltip-" + id, this);
-                    var tooltipClass = edges.css_classes(this.namespace, "tooltip", this);
                     var regionData = this._getRegionData({d: d});
                     var frag = this._renderRegionData({regionData: regionData, d : d});
                     this.container.append("div")
                         .attr("id", cssId)
-                        .attr("class", tooltipClass)
+                        .attr("class", tooltipClass + " " + visibleClass)
+                        .attr("data-id", id)
                         .html(frag)
                         .attr("style", this._positionStyles({ref : position}));
                     el = this.component.jq(cssIdSelector);
                 } else {
-                    el.attr("style", this._positionStyles({ref : position}));
+                    el.attr("style", this._positionStyles({ref : position})).attr("class", tooltipClass + " " + visibleClass);
                 }
-
-                // it would be nice to get the tool top to follow the mouse pointer while it's inside
-                // the country, especially as the transition to pinned would then be seamless.
-                // but atm I'm haivng trouble figuring out how to do that
-                // edges.on("#edges-d3-generic-vector-map-path-AFG-world-map", "mousemove", this, "trackPointer");
             };
 
-            this.trackPointer = function(element) {
-                console.log("tracked");
+            this.reRenderToolTip = function(params) {
+                var d = params.d;
+
+                var cssIdSelector = edges.css_id_selector(this.namespace, "tooltip-" + d.id, this);
+                var regionData = this._getRegionData({d: d});
+                var frag = this._renderRegionData({regionData: regionData, d : d});
+                var el = this.component.jq(cssIdSelector);
+                el.html(frag);
             };
 
             this.hideToolTip = function(params) {
@@ -569,9 +756,12 @@ $.extend(edges, {
                 var id = d.id;
                 var cssIdSelector = edges.css_id_selector(this.namespace, "tooltip-" + id, this);
 
+                var tooltipClass = edges.css_classes(this.namespace, "tooltip", this);
+                var inVisibleClasses = edges.css_classes(this.namespace, "invisible", this);
+
                 var el = this.component.jq(cssIdSelector);
                 if (el.length > 0) {
-                    el.attr("style", "display:none");
+                    el.attr("style", "display:none").attr("class", tooltipClass + " " + inVisibleClasses);
                 }
             };
 
@@ -693,6 +883,16 @@ $.extend(edges, {
 
                 return false;
             };
+
+            this._getPath = function(params) {
+                var id = params.id;
+                for (var i = 0; i < this.json.features.length; i++) {
+                    var feature = this.json.features[i];
+                    if (this._identifies({id : id, d : feature})) {
+                        return feature;
+                    }
+                }
+            }
         }
     }
 });
