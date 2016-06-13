@@ -98,6 +98,10 @@ $.extend(edges, {
         //////////////////////////////////
         // parameters that can be passed in
 
+        this.functions = {
+            sync : edges.getParam(params.synchronise, false)
+        };
+
         // Data to display assocated with each region.
         //
         // {
@@ -110,6 +114,8 @@ $.extend(edges, {
         //      "<Display name for field>" : "<display value>",
         //      ....
         // }
+        //
+        // if this is not provided, it should be populated by the "sync" function
         this.regionData = edges.getParam(params.regionData, {});
 
         // if a region is not defined in the regionData, when it is asked to display its
@@ -133,7 +139,11 @@ $.extend(edges, {
         //////////////////////////////////
         // internal state
 
-        this.synchronise = function() {};
+        this.synchronise = function() {
+            if (this.functions.sync) {
+                this.functions.sync(this);
+            }
+        };
 
         ///////////////////////////////////
         // methods for working with this component
