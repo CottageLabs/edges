@@ -42,7 +42,7 @@
     position: absolute;
     text-align: center;
     width: 150px;
-    height: 100px;
+    /*height: 100px;*/
     padding: 2px;
     font: 12px sans-serif;
     background: white;

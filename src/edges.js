@@ -49,7 +49,7 @@ var edges = {
 
         // list of static files (e.g. data files) to be loaded at startup, and made available
         // on the object for use by components
-        // {"id" : "<internal id to give the file>", "url" : "<file url>", "processor" : edges.csv.newObjectByRow, "datatype" : "text"}
+        // {"id" : "<internal id to give the file>", "url" : "<file url>", "processor" : edges.csv.newObjectByRow, "datatype" : "text", "opening" : <function to be run after processing for initial state>}
         this.staticFiles = edges.getParam(params.staticFiles, []);
 
         // should the search url be synchronised with the browser's url bar after search
@@ -653,6 +653,9 @@ var edges = {
                     if (entry.processor) {
                         var processed = entry.processor({data : data});
                         that.resources[entry.id] = processed;
+                        if (entry.opening) {
+                            entry.opening({resource : processed});
+                        }
                     }
                     that.static[entry.id] = data;
                 },
