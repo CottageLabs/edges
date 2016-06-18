@@ -27,6 +27,15 @@ $.extend(edges, {
 
 
                 "South America": ["Argentina", "Bolivia", "Brazil", "Chile", "Colombia", "Ecuador", "French Guiana", "Guyana", "Paraguay", "Peru", "Suriname", "Uruguay", "Venezuela"]
+            },
+            PADDS : {
+                "PADD 5" : ["Washington", "Oregon", "Nevada", "California", "Arizona", "Alaska", "Hawaii"],
+                "PADD 4" : ["Montana", "Wyoming", "Idaho", "Utah", "Colorado"],
+                "PADD 3" : ["New Mexico", "Louisiana", "Texas", "Arkansas", "Alabama", "Mississippi"],
+                "PADD 2" : ["North Dakota", "South Dakota", "Nebraska", "Kansas", "Minnesota", "Oklahoma", "Iowa", "Missouri", "Wisconsin", "Michigan", "Illinois",
+                                "Indiana", "Ohio", "Kentucky", "Tennessee"],
+                "PADD 1" : ["Maine", "Vermont", "New Hampshire", "Massachusetts", "Connecticut", "Rhode Island", "New York", "New Jersey",
+                                "Pennsylvania", "Maryland", "Delaware", "West Virginia", "Virginia", "North Carolina", "South Carolina", "Georgia", "Florida"]
             }
         },
 
@@ -79,9 +88,30 @@ $.extend(edges, {
             return s;
         },
 
+        findPositioningNode : function(params) {
+            var child = params.child;
+            var node = $(child).parent();
+            while (true) {
+                if (node.length == 0) {
+                    return $("body")[0];
+                }
+                if (node.prop("tagName") === "BODY") {
+                    return node[0];
+                }
+                if (node.css("position") !== "static") {
+                    return node[0];
+                }
+                node = node.parent();
+            }
+        },
+
         mouseXY : function(params) {
             var svg = params.svg;
-            var mouse = d3.mouse(svg.node()).map(function(d) {
+            var positioningNode = edges.getParam(params.positioningNode, false);
+            if (!positioningNode) {
+                positioningNode = $("body")[0];
+            }
+            var mouse = d3.mouse(positioningNode).map(function(d) {
                 return parseInt(d);
             });
             return mouse;
@@ -308,6 +338,7 @@ $.extend(edges, {
 
             this.preDisplayToolTips = edges.getParam(params.preDisplayToolTips, false);
             this.enableTooltipInteractions = edges.getParam(params.enableTooltipInteractions, true);
+            this.tooltipsBySuperRegion = edges.getParam(params.tooltipsBySuperRegion, false);
 
             // if you want to adjust the precision of the adaptive resampling, you can do that here, otherwise it will default
             this.resamplingPrecision = edges.getParam(params.resamplingPrecision, false);
@@ -329,6 +360,10 @@ $.extend(edges, {
             this.toolTipLeftOffset = edges.getParam(params.toolTipLeftOffset, 30);
             this.toolTipTopOffset = edges.getParam(params.toolTipTopOffset, 5);
 
+            this.functions = {
+                renderRegionData: edges.getParam(params.renderRegionData, false)
+            };
+
             //////////////////////////////////////////////////////
             // parameters for managing internal state
 
@@ -338,7 +373,8 @@ $.extend(edges, {
 
             this.projectionMap = {
                 "mercator" : d3.geo.mercator,
-                "conicConformal": d3.geo.conicConformal
+                "conicConformal": d3.geo.conicConformal,
+                "albersUsa" : d3.geo.albersUsa
             };
 
             // need to keep track of the svg for use in object methods
@@ -349,6 +385,9 @@ $.extend(edges, {
 
             // where we put the actual loaded json
             this.json = false;
+
+            // DOM element from which mouse positions and absolute positions will be determined
+            this.positioningNode = false;
 
             this.namespace = "edges-d3-generic-vector-map";
 
@@ -393,6 +432,9 @@ $.extend(edges, {
                             .attr("width", this.width)
                             .attr("height", this.height);
 
+                // calculate the positioning node for later use
+                this.positioningNode = edges.d3.findPositioningNode({child: this.svg.node()});
+
                 // load the geojson, and then render the features (this happens asynchronously)
                 var that = this;
                 d3.json(this.geojson, function(json) {
@@ -417,9 +459,13 @@ $.extend(edges, {
                         r = {"lambda": 0, "phi": 0}; // do not rotate by default
                     }
 
-                    projection.center([c.lon, c.lat])
-                        .rotate([r.lambda, r.phi])
-                        .scale(s)
+                    if (projection.center) {
+                        projection.center([c.lon, c.lat])
+                    }
+                    if (projection.rotate) {
+                         projection.rotate([r.lambda, r.phi])
+                    }
+                    projection.scale(s)
                         .translate([that.width / 2, that.height / 2]);
 
                     if (that.resamplingPrecision !== false) {
@@ -437,7 +483,7 @@ $.extend(edges, {
                         .enter()
                         .append("path")
                         .attr("d", path)
-                        .attr("id", function(d) { return edges.css_id(that.namespace, "path-" + d.id, that) })
+                        .attr("id", function(d) { return edges.css_id(that.namespace, "path-" + edges.safeId(d.id), that) })
                         .style("stroke", function(d) { return that._getStroke({d : d}) })
                         .style("stroke-width", function(d) { return that._getStrokeWidth({d : d}) })
                         .style("fill", function(d) { return that._getFill({d : d}) })
@@ -448,8 +494,11 @@ $.extend(edges, {
                     if (that.preDisplayToolTips !== false) {
                         for (var i = 0; i < json.features.length; i++) {
                             var d = json.features[i];
-
                             var display = that.preDisplayToolTips === true;
+
+                            // preDisplayToolTips may be either true (show all), false (show none) or a list of the ones to show
+                            // this checks to see if the one being looked at is due to be shown
+
                             if (!display) {
                                 for (var j = 0; j < that.preDisplayToolTips.length; j++) {
                                     if (that._identifies({id: that.preDisplayToolTips[j], d: d})) {
@@ -519,8 +568,14 @@ $.extend(edges, {
                 for (var i = 0; i < visibles.length; i++) {
                     var vis = this.component.jq(visibles[i]);
                     var id = vis.attr("data-id");
-                    var d = this._getPath({id : id});
-                    this.reRenderToolTip({d : d});
+                    if (this.tooltipsBySuperRegion) {
+                        this.reRenderToolTip({id : id});
+                    } else {
+                        var d = this._getPath({id : id});
+                        if (d) {
+                            this.reRenderToolTip({d : d});
+                        }
+                    }
                 }
 
                 if (this.redrawRequest) {
@@ -531,160 +586,25 @@ $.extend(edges, {
                 }
             };
 
-            this.oldDraw = function() {
-                // we only need to render this the first time draw is called
-                if (this.loaded) { return }
-
-                // ensure that we are starting from scratch
-                this.component.context.html("");
-
-                // get the dom element from the context, so that we can use it for the d3 selectors
-                var domElement = this.component.context.get(0);
-
-                var containerClass = edges.css_classes(this.namespace, "container", this);
-                var tooltipClass = edges.css_classes(this.namespace, "tooltip", this);
-
-                // D3 Projection
-
-                // In terms of projection, if this is an edges component, we can pass in arguments like scale, center, precision, translate, etc. The only thing that might
-                // be slightly difficult to pass in is the type, in this case mercator. We might need separate components for the different projections.
-                // And by different, I mean the alberUsa one, which is very US specific, and the mercator one, which I think is probably going to be our main world one.
-                // There are other world ones, there's even a globe, we can add them as needs arise.
-
-                var projection = this.projectionMap[this.projectionType]();
-                projection.scale(1);    // will be scaled correctly later
-
-                // Define path generator
-                var path = d3.geo.path()
-                             .projection(projection);
-
-                this.container = d3.select(domElement)
-                            .append("div").attr("class", containerClass);
-
-                //Create SVG element and append map to the SVG
-                this.svg = this.container
-                            .append("svg")
-                            .attr("width", this.width)
-                            .attr("height", this.height);
-
-                // Load GeoJSON data - this will work with arbitrary geojson, so long as it has the name of the country at
-                // d.properties.name. The projection could work with any map, provided the scale, center etc are adjusted.
-
-                var that = this;
-                d3.json(this.geojson, function(json) {
-
-                    var s = edges.d3.calculateMapScale({
-                        features: json.features,
-                        path: path,
-                        width: that.width,
-                        height: that.height,
-                        scaleFit: that.mapScaleFit,
-                        border: that.mapScaleBorder
-                    });
-
-                    var c = that.mapCenter;
-                    var r = that.mapRotate;
-                    if (!c) {
-                        c = {"lat" : 17, "lon" : 0}; // a reasonable centre point for a map, somewhere over the gobi desert, I think
-                    }
-
-                    if (!r) {
-                        r = {"lambda": 0, "phi": 0}; // do not rotate by default
-                    }
-
-                    projection.center([c.lon, c.lat])
-                        .rotate([r.lambda, r.phi])
-                        .scale(s)
-                        .translate([that.width / 2, that.height / 2]);
-
-                    if (that.resamplingPrecision !== false) {
-                        projection.precision(that.resamplingPrecision);
-                    }
-
-                    var show = edges.objClosure(that, "showToolTip", ["d"]);
-                    var hide = edges.objClosure(that, "hideToolTip", ["d"]);
-                    var pin = edges.objClosure(that, "togglePinToolTip", ["d"]);
-
-
-                    // Bind the data to the SVG and create one path per GeoJSON feature
-                    that.svg.selectAll("path")
-                        .data(json.features)
-                        .enter()
-                        .append("path")
-                        .attr("d", path)
-                        .attr("id", function(d) { return edges.css_id(that.namespace, "path-" + d.id, that) })
-                        .style("stroke", function(d) { return that._getStroke({d : d}) })
-                        .style("stroke-width", function(d) { return that._getStrokeWidth({d : d}) })
-                        .style("fill", function(d) { return that._getFill({d : d}) })
-                        .on("mouseover", show)// FIXME: we should seriously consider breaking these out to a separate block, so that we can set them conditionally
-                        .on("mouseout", hide)
-                        .on("click", pin);
-
-                    if (that.preDisplayToolTips !== false) {
-                        for (var i = 0; i < json.features.length; i++) {
-                            var d = json.features[i];
-
-                            var display = that.preDisplayToolTips === true;
-                            if (!display) {
-                                for (var j = 0; j < that.preDisplayToolTips.length; j++) {
-                                    if (that._identifies({id: that.preDisplayToolTips[j], d: d})) {
-                                        display = true;
-                                        break;
-                                    }
-                                }
-                            }
-
-                            if (display) {
-                                var centroid = path.centroid(d);
-                                var pos = [false,false];
-
-                                var left_offset = 0;
-                                var top_offset = 0;
-                                if (that.toolTipOffsets !== false) {
-                                    var keys = Object.keys(that.toolTipOffsets);
-                                    for (var j = 0; j < keys.length; j++) {
-                                        if (that._identifies({id: keys[j], d: d})) {
-                                            left_offset = that.toolTipOffsets[keys[j]].left;
-                                            top_offset = that.toolTipOffsets[keys[j]].top;
-                                            break;
-                                        }
-                                    }
-                                }
-
-                                if (!isNaN(centroid[0])) {
-                                    pos[0] = centroid[0] + left_offset;
-                                }
-
-                                if (!isNaN(centroid[1])) {
-                                    pos[1] = centroid[1] + top_offset;
-                                }
-
-                                if (pos[0] !== false && pos[1] !== false) {
-                                    that.togglePinToolTip({
-                                        d: d,
-                                        position: pos,
-                                        force: true
-                                    });
-                                }
-                            }
-                        }
-                    }
-
-                });
-
-                this.loaded = true;
-            };
-
             this.togglePinToolTip = function(params) {
                 if (this.enableTooltipInteractions === false && !params.force) {
                     return;
                 }
 
                 var d = params.d;
-                var cssIdSelector = edges.css_id_selector(this.namespace, "path-" + d.id, this);
+                var id = d.id;
+                var superRegionId = false;
+                if (this.tooltipsBySuperRegion) {
+                    superRegionId = this._pathToSuperRegion({d : d});
+                    if (superRegionId !== false) {
+                        id = superRegionId;
+                    }
+                }
 
-                if (this._isPinned({id : d.id})) {
-                    var idx = $.inArray(d.id, this.pinned);
+                var cssIdSelector = edges.css_id_selector(this.namespace, "path-" + edges.safeId(id), this);
+
+                if (this._isPinned({id : id})) {
+                    var idx = $.inArray(id, this.pinned);
                     this.pinned.splice(idx, 1);
                     this.hideToolTip(params);
                     this.component.jq(cssIdSelector).attr("class", "");
@@ -692,7 +612,7 @@ $.extend(edges, {
                     var pinnedClass = edges.css_classes(this.namespace, "pinned", this);
                     this.component.jq(cssIdSelector).attr("class", pinnedClass);
                     this.showToolTip(params);
-                    this.pinned.push(d.id);
+                    this.pinned.push(id);
                 }
             };
 
@@ -702,25 +622,41 @@ $.extend(edges, {
                 }
 
                 var d = params.d;
-                if (this._isPinned({id : d.id})) {
+                var id = d.id;
+                var superRegionId = false;
+                if (this.tooltipsBySuperRegion) {
+                    superRegionId = this._pathToSuperRegion({d : d});
+                    if (superRegionId) {
+                        id = superRegionId;
+                    }
+                }
+
+                if (this._isPinned({id : id})) {
                     return;
                 }
 
                 var position = edges.getParam(params.position, false);
                 if (position === false) {
-                    position = edges.d3.mouseXY({svg: this.svg});
+                    position = edges.d3.mouseXY({svg: this.svg, positioningNode: this.positioningNode});
                 }
 
-                var id = d.id;
-                var cssIdSelector = edges.css_id_selector(this.namespace, "tooltip-" + id, this);
+                var cssIdSelector = edges.css_id_selector(this.namespace, "tooltip-" + edges.safeId(id), this);
                 var tooltipClass = edges.css_classes(this.namespace, "tooltip", this);
                 var visibleClass = edges.css_classes(this.namespace, "visible", this);
 
                 var el = this.component.jq(cssIdSelector);
                 if (el.length === 0) {
-                    var cssId = edges.css_id(this.namespace, "tooltip-" + id, this);
-                    var regionData = this._getRegionData({d: d});
-                    var frag = this._renderRegionData({regionData: regionData, d : d});
+                    var cssId = edges.css_id(this.namespace, "tooltip-" + edges.safeId(id), this);
+
+                    var regionData = false;
+                    if (this.tooltipsBySuperRegion) {
+                        regionData = this._getRegionData({id: id});
+                    } else {
+                        regionData = this._getRegionData({d: d});
+                    }
+
+                    var frag = this._renderRegionData({regionData: regionData, d : d, superRegionId: superRegionId});
+
                     this.container.append("div")
                         .attr("id", cssId)
                         .attr("class", tooltipClass + " " + visibleClass)
@@ -735,10 +671,33 @@ $.extend(edges, {
 
             this.reRenderToolTip = function(params) {
                 var d = params.d;
+                var id = params.id;
 
-                var cssIdSelector = edges.css_id_selector(this.namespace, "tooltip-" + d.id, this);
-                var regionData = this._getRegionData({d: d});
-                var frag = this._renderRegionData({regionData: regionData, d : d});
+                if (!id) {
+                    id = d.id;
+                    var superRegionId = false;
+                    if (this.tooltipsBySuperRegion) {
+                        superRegionId = this._pathToSuperRegion({d : d});
+                        if (superRegionId) {
+                            id = superRegionId;
+                        }
+                    }
+                } else {
+                    if (this.tooltipsBySuperRegion) {
+                        superRegionId = id;
+                    }
+                }
+
+                var cssIdSelector = edges.css_id_selector(this.namespace, "tooltip-" + edges.safeId(id), this);
+
+                var regionData = false;
+                if (this.tooltipsBySuperRegion) {
+                    regionData = this._getRegionData({id: id});
+                } else {
+                    regionData = this._getRegionData({d: d});
+                }
+
+                var frag = this._renderRegionData({regionData: regionData, d : d, superRegionId: superRegionId});
                 var el = this.component.jq(cssIdSelector);
                 el.html(frag);
             };
@@ -749,12 +708,20 @@ $.extend(edges, {
                 }
 
                 var d = params.d;
-                if (this._isPinned({id : d.id})) {
+                var id = d.id;
+                var superRegionId = false;
+                if (this.tooltipsBySuperRegion) {
+                    superRegionId = this._pathToSuperRegion({d : d});
+                    if (superRegionId) {
+                        id = superRegionId;
+                    }
+                }
+
+                if (this._isPinned({id : id})) {
                     return;
                 }
 
-                var id = d.id;
-                var cssIdSelector = edges.css_id_selector(this.namespace, "tooltip-" + id, this);
+                var cssIdSelector = edges.css_id_selector(this.namespace, "tooltip-" + edges.safeId(id), this);
 
                 var tooltipClass = edges.css_classes(this.namespace, "tooltip", this);
                 var inVisibleClasses = edges.css_classes(this.namespace, "invisible", this);
@@ -844,12 +811,19 @@ $.extend(edges, {
 
             this._getRegionData = function(params) {
                 var d = params.d;
+                var id = params.id;
 
-                for (var i = 0; i < this.matchRegionOn.length; i++) {
-                    var matchField = this.matchRegionOn[i];
-                    var fieldVal = edges.objVal(matchField, d, false);
-                    if (fieldVal && this.component.regionData[fieldVal]) {
-                        return this.component.regionData[fieldVal];
+                if (d) {
+                    for (var i = 0; i < this.matchRegionOn.length; i++) {
+                        var matchField = this.matchRegionOn[i];
+                        var fieldVal = edges.objVal(matchField, d, false);
+                        if (fieldVal && this.component.regionData[fieldVal]) {
+                            return this.component.regionData[fieldVal];
+                        }
+                    }
+                } else if (id) {
+                    if (this.component.regionData[id]) {
+                        return this.component.regionData[id];
                     }
                 }
 
@@ -857,10 +831,19 @@ $.extend(edges, {
             };
 
             this._renderRegionData = function(params) {
+                if (this.functions.renderRegionData) {
+                    return this.functions.renderRegionData(params)
+                }
+
                 var regionData = params.regionData;
                 var d = params.d;
+                var superRegionId = edges.getParam(params.superRegionId, false);
 
-                var frag = '<h4>'+ d.properties.name + '</h4>';
+                var title = d.properties.name;
+                if (superRegionId) {
+                    title = superRegionId;
+                }
+                var frag = '<h4>'+ title + '</h4>';
                 for (var field in regionData) {
                     var val = regionData[field];
                     frag += '<p>' + edges.escapeHtml(field) + ": " + edges.escapeHtml(val) + "</p>";
@@ -892,6 +875,27 @@ $.extend(edges, {
                         return feature;
                     }
                 }
+                return false;
+            };
+
+            this._pathToSuperRegion = function(params) {
+                var d = params.d;
+
+                if (!this.component.superRegions) {
+                    return false;
+                }
+
+                for (var sr in this.component.superRegions) {
+                    var regions = this.component.superRegions[sr];
+                    for (var i = 0; i < regions.length; i++) {
+                        var region = regions[i];
+                        if (this._identifies({id: region, d: d})) {
+                            return sr;
+                        }
+                    }
+                }
+
+                return false;
             }
         }
     }

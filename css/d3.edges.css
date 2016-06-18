@@ -41,9 +41,9 @@
 .edges-d3-generic-vector-map-tooltip {
     position: absolute;
     text-align: center;
-    width: 150px;
+    width: 200px;
     /*height: 100px;*/
-    padding: 2px;
+    padding: 4px;
     font: 12px sans-serif;
     background: white;
     border: 0px;
