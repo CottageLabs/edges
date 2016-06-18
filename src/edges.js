@@ -1121,5 +1121,16 @@ var edges = {
 
     getParam : function(value, def) {
         return value !== undefined ? value : def;
+    },
+
+    safeId : function(unsafe) {
+        return unsafe.replace(/&/g, "_")
+                .replace(/</g, "_")
+                .replace(/>/g, "_")
+                .replace(/"/g, "_")
+                .replace(/'/g, "_")
+                .replace(/\./gi,'_')
+                .replace(/\:/gi,'_')
+                .replace(/\s/gi,"_");
     }
 };
