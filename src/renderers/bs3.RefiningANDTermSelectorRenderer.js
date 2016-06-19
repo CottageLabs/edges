@@ -39,12 +39,14 @@ $.extend(true, edges, {
                 var namespace = this.namespace;
 
                 // sort out all the classes that we're going to be using
+                var resultsListClass = edges.css_classes(namespace, "results-list", this);
                 var resultClass = edges.css_classes(namespace, "result", this);
                 var valClass = edges.css_classes(namespace, "value", this);
                 var controlClass = edges.css_classes(namespace, "controls", this);
                 var filterRemoveClass = edges.css_classes(namespace, "filter-remove", this);
                 var facetClass = edges.css_classes(namespace, "facet", this);
                 var headerClass = edges.css_classes(namespace, "header", this);
+                var selectedClass = edges.css_classes(namespace, "selected", this);
 
                 var controlId = edges.css_id(namespace, "controls", this);
                 var sizeId = edges.css_id(namespace, "size", this);
@@ -120,8 +122,8 @@ $.extend(true, edges, {
                         {{CONTROLS}}\
                         <div class="row" style="display:none" id="' + resultsId + '">\
                             <div class="col-md-12">\
-                                {{SELECTED}}\
-                                {{RESULTS}}\
+                                <div class="' + selectedClass + '">{{SELECTED}}</div>\
+                                <div class="' + resultsListClass + '">{{RESULTS}}</div>\
                             </div>\
                         </div></div>';
 
