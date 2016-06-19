@@ -42,6 +42,7 @@ var edges = {
         // results).  Their results will be stored in this.secondaryResults.
         // secondary queries are not subject the base query, although the functions
         // may of course apply the base query too if they wish
+        // {"<secondary id>" : function() }
         this.secondaryQueries = edges.getParam(params.secondaryQueries, false);
 
         // should the init process do a search
@@ -91,6 +92,9 @@ var edges = {
         // the results of the preflight queries, keyed by their id
         this.preflightResults = {};
 
+        // the actual secondary queries derived from the functions in this.secondaryQueries;
+        this.realisedSecondaryQueries = {};
+
         // results of the secondary queries, keyed by their id
         this.secondaryResults = {};
 
@@ -129,8 +133,6 @@ var edges = {
                 }
                 this.urlParams = urlParams;
             }
-
-
 
             // render the template if necessary
             if (this.template) {
@@ -195,7 +197,7 @@ var edges = {
 
         this.cycle = function() {
             // if a search is currently executing, don't do anything, else turn it on
-            // FIXME: should we queue them up?
+            // FIXME: should we queue them up? - see the d3 map for an example of how to do this
             if (this.searching) {
                 return;
             }
@@ -222,16 +224,11 @@ var edges = {
         };
 
         this.cyclePart2 = function() {
-            // find out if there are any secondary queries to run
-            var queries = [];
-            if (this.secondaryQueries && this.secondaryQueries.length > 0) {
-                for (var i = 0; i < this.secondaryQueries.length; i++) {
-                    queries.push(this.secondaryQueries[i](this));
-                }
-                var onward = edges.objClosure(this, "finaliseCycle");
-                this.runSecondaryQueries(queries, onward);
-            }
+            var onward = edges.objClosure(this, "cyclePart3");
+            this.runSecondaryQueries(onward);
+        };
 
+        this.cyclePart3 = function() {
             this.synchronise();
 
             // pre-render trigger
@@ -286,7 +283,7 @@ var edges = {
         };
 
         ////////////////////////////////////////////////////
-        // functions to handle the query lifecycle
+        //  functions for working with the queries
 
         this.cloneQuery = function() {
             if (this.currentQuery) {
@@ -316,7 +313,11 @@ var edges = {
             return es.newQuery();
         };
 
+        ////////////////////////////////////////////////////
+        // functions to handle the query lifecycle
+
         // execute the query and all the associated workflow
+        // FIXME: could replace this with an async group for neatness
         this.doPrimaryQuery = function(callback) {
             var context = {"callback" : callback};
 
@@ -326,45 +327,9 @@ var edges = {
                 queryobj: this.currentQuery.objectify(),
                 datatype: this.datatype,
                 success: edges.objClosure(this, "querySuccess", ["result"], context),
-                error: edges.objClosure(this, "queryFail", context) //,
-                // complete: edges.objClosure(this, "queryComplete", context)
+                error: edges.objClosure(this, "queryFail", context)
             })
         };
-        /*
-        this.doPrimaryQuery = function() {
-            // we only want to trigger ES queries if there's a query url
-            if (!this.search_url) {
-                return;
-            }
-
-            // if a search is currently executing, don't do anything, else turn it on
-            // FIXME: should we queue them up?
-            if (this.searching) {
-                return;
-            }
-            this.searching = true;
-
-            // invalidate the short url
-            this.shortUrl = false;
-
-            // pre query event
-            this.context.trigger("edges:pre-query");
-
-            // if we are managing the url space, use pushState to set it
-            if (this.manageUrl) {
-                this.updateUrl();
-            }
-
-            // issue the query to elasticsearch
-            es.doQuery({
-                search_url: this.search_url,
-                queryobj: this.currentQuery.objectify(),
-                datatype: this.datatype,
-                success: edges.objClosure(this, "querySuccess", ["result"]),
-                error: edges.objClosure(this, "queryFail"),
-                complete: edges.objClosure(this, "queryComplete")
-            })
-        };*/
 
         this.queryFail = function(params) {
             var callback = params.context;
@@ -380,24 +345,6 @@ var edges = {
             this.context.trigger("edges:query-success");
             callback();
         };
-
-        /*
-        this.queryComplete = function() {
-            // pre-render trigger
-            this.context.trigger("edges:pre-render");
-
-            for (var i = 0; i < this.components.length; i++) {
-                var component = this.components[i];
-                component.draw();
-            }
-
-            // post render trigger
-            this.context.trigger("edges:post-render");
-
-            // searching has completed, so flip the switch back
-            this.searching = false;
-        };
-        */
 
         this.runPreflightQueries = function(callback) {
             if (!this.preflightQueries || Object.keys(this.preflightQueries).length == 0) {
@@ -449,10 +396,26 @@ var edges = {
             pg.process();
         };
 
-        this.runSecondaryQueries = function(queries, callback) {
+        this.runSecondaryQueries = function(callback) {
+            this.realisedSecondaryQueries = {};
+            if (!this.secondaryQueries || Object.keys(this.secondaryQueries).length == 0) {
+                callback();
+                return;
+            }
+
+            // generate the query objects to be executed
+            var entries = [];
+            for (var key in this.secondaryQueries) {
+                var entry = {};
+                entry["query"] = this.secondaryQueries[key](this);
+                entry["id"] = key;
+                entries.push(entry);
+                this.realisedSecondaryQueries[key] = entry.query;
+            }
+
             var that = this;
             var pg = edges.newAsyncGroup({
-                list: queries,
+                list: entries,
                 action: function(params) {
                     var entry = params.entry;
                     var success = params.success_callback;
@@ -460,7 +423,7 @@ var edges = {
 
                     es.doQuery({
                         search_url: that.search_url,
-                        queryobj: entry,
+                        queryobj: entry.query.objectify(),
                         datatype: that.datatype,
                         success: success,
                         complete: false
@@ -470,15 +433,13 @@ var edges = {
                 success: function(params) {
                     var result = params.result;
                     var entry = params.entry;
-                    // FIXME: carry on ...
+                    that.secondaryResults[entry.id] = result;
                 },
                 errorCallbackArgs : ["result"],
                 error:  function(params) {
-                    that.errorLoadingStatic.push(params.entry.id);
-                    that.context.trigger("edges:error-load-static");
+                    // FIXME: not really sure what to do about this
                 },
                 carryOn: function() {
-                    that.context.trigger("edges:post-load-static");
                     callback();
                 }
             });
@@ -672,75 +633,6 @@ var edges = {
 
             pg.process();
         };
-
-        /*
-        this.loadStaticFiles = function(callback) {
-            this.context.trigger("edges:pre-load-static");
-
-            if (this.staticFiles.length == 0) {
-                this.staticLoaded = true;
-                this.context.trigger("edges:post-load-static");
-                callback();
-            }
-            for (var i = 0; i < this.staticFiles.length; i++) {
-                var id = this.staticFiles[i].id;
-                var url = this.staticFiles[i].url;
-                var datatype = edges.getParam(this.staticFiles[i].datatype, "text");
-                var context = {id: id, callback: callback};
-
-                $.ajax({
-                    type: "get",
-                    url: url,
-                    dataType: datatype,
-                    success: edges.objClosure(this, "staticFileLoaded", ["data"], context),
-                    error: edges.objClosure(this, "staticFileError", ["data"], context)
-                })
-            }
-        };
-
-        this.staticFileLoaded = function(params) {
-            var id = params.id;
-            for (var i = 0; i < this.staticFiles.length; i++) {
-                var sfRecord = this.staticFiles[i];
-                if (sfRecord.processor) {
-                    var processed = sfRecord.processor({data : params.data});
-                    this.resources[id] = processed;
-                    break;
-                }
-            }
-            this.static[id] = params.data;
-            if (this.allStaticsResolved()) {
-                this.finishStaticLoad(params.callback);
-            }
-        };
-
-        this.staticFileError = function(params) {
-            this.errorLoadingStatic.push(params.id);
-            this.staticError = true;
-            this.context.trigger("edges:error-load-static");
-        };
-
-        this.allStaticsResolved = function() {
-            for (var i = 0; i < this.staticFiles.length; i++) {
-                var id = this.staticFiles[i].id;
-                var loaded = id in this.static;
-                var errored = $.inArray(id, this.errorLoadingStatic) > -1;
-                if (!loaded && !errored) {
-                    return false;
-                }
-            }
-            return true;
-        };
-
-        this.finishStaticLoad = function(callback) {
-            // just in case there's a race condition, rely on the actual object state to stop us
-            if (this.staticLoaded) {
-                return;
-            }
-            this.staticLoaded = true;
-            this.context.trigger("edges:post-load-static");
-            callback();
-        };*/
 
         /////////////////////////////////////////////
         // final bits of construction
