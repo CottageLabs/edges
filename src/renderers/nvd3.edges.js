@@ -137,6 +137,7 @@ $.extend(edges, {
             this.showValues = params.showValues || true;
             this.toolTips = params.toolTips || true;
             this.controls = params.controls || false;
+            this.legend = edges.getParam(params.legend, true);
             this.noDataMessage = edges.getParam(params.noDataMessage, false);
             this.yTickFormat = edges.getParam(params.yTickFormat, ",.0f");
             this.xTickFormat = edges.getParam(params.xTickFormat, false);
@@ -172,7 +173,8 @@ $.extend(edges, {
                         .margin({top: that.marginTop, right: that.marginRight, bottom: that.marginBottom, left: that.marginLeft})
                         .showValues(that.showValues)
                         .tooltips(that.toolTips)
-                        .showControls(that.controls);
+                        .showControls(that.controls)
+                        .showLegend(that.legend);
 
                     if (that.yTickFormat) {
                         chart.yAxis
