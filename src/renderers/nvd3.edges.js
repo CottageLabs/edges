@@ -137,6 +137,7 @@ $.extend(edges, {
             this.showValues = params.showValues || true;
             this.toolTips = params.toolTips || true;
             this.controls = params.controls || false;
+            this.stacked = edges.getParam(params.stacked, false);
             this.legend = edges.getParam(params.legend, true);
             this.color = edges.getParam(params.color, false);
             this.noDataMessage = edges.getParam(params.noDataMessage, false);
@@ -176,6 +177,10 @@ $.extend(edges, {
                         .tooltips(that.toolTips)
                         .showControls(that.controls)
                         .showLegend(that.legend);
+
+                    if (that.stacked) {
+                        chart.multibar.stacked(that.stacked)
+                    }
 
                     if (that.yTickFormat) {
                         chart.yAxis

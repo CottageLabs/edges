@@ -447,6 +447,11 @@ var es = {
             return q;
         };
 
+        // When a query is requested as a string, dump via JSON.
+        es.Query.prototype.toString = function queryToString() {
+            return JSON.stringify(this.objectify())
+        };
+
         this.parse = function(obj) {
 
             function parseBool(bool, target) {
