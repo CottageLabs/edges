@@ -138,6 +138,7 @@ $.extend(edges, {
             this.toolTips = params.toolTips || true;
             this.controls = params.controls || false;
             this.legend = edges.getParam(params.legend, true);
+            this.color = edges.getParam(params.color, false);
             this.noDataMessage = edges.getParam(params.noDataMessage, false);
             this.yTickFormat = edges.getParam(params.yTickFormat, ",.0f");
             this.xTickFormat = edges.getParam(params.xTickFormat, false);
@@ -188,6 +189,10 @@ $.extend(edges, {
 
                     if (that.noDataMessage) {
                         chart.noData(that.noDataMessage);
+                    }
+
+                    if (that.color) {
+                        chart.color(that.color);
                     }
 
                     d3.select(svgSelector)
