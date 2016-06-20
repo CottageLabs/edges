@@ -6,8 +6,7 @@ $.extend(true, edges, {
             return new edges.bs3.NSeparateORTermSelectorRenderer(params);
         },
         NSeparateORTermSelectorRenderer: function (params) {
-            // whether the facet should be open or closed
-            // can be initialised and is then used to track internal state
+            // number of pull down elements to be rendered
             this.n = edges.getParam(params.n, 1);
 
             // for each of the N elements, you can specify properties here
@@ -23,6 +22,9 @@ $.extend(true, edges, {
 
             // whether counts of 0 should prevent the value being rendered
             this.hideEmpty = edges.getParam(params.hideEmpty, false);
+
+            // whether to apply select2 to the elements
+            this.select2 = edges.getParam(params.select2, false);
 
             // namespace to use in the page
             this.namespace = "edges-bs3-n-separate-or-term-selector";
@@ -81,10 +83,17 @@ $.extend(true, edges, {
 
                 // now render it into the page
                 ts.context.html(frag);
-                this._setSelectors();
 
                 // sort out the selectors we're going to be needing
                 var selectSelector = edges.css_class_selector(this.namespace, "select", this);
+
+                // apply select2 where needed
+                if (this.select2) {
+                    var jq = this.component.jq(selectSelector);
+                    jq.select2();
+                }
+
+                this._setSelectors();
 
                 // for when a value in the facet is selected
                 edges.on(selectSelector, "change", this, "selectorChanged");
@@ -96,7 +105,9 @@ $.extend(true, edges, {
                 var vals = [];
                 for (var i = 0; i < this.n; i++) {
                     var idSelector = edges.css_id_selector(this.namespace, "select-" + i, this);
-                    var val = this.component.jq(idSelector).val();
+                    var element = this.component.jq(idSelector);
+                    var val = this._getVal({element: element});
+                    // var val = this.component.jq(idSelector).val();
                     if (val && val != "") {
                         vals.push(val);
                     }
@@ -116,7 +127,8 @@ $.extend(true, edges, {
 
                     if (terms.length > i) {
                         selected = terms[i];
-                        element.val(selected);
+                        this._setVal({element: element, value: selected});
+                        // element.val(selected);
                     }
 
                     for (var j = 0; j < terms.length; j++) {
@@ -124,6 +136,27 @@ $.extend(true, edges, {
                             element.find("option[value='" + terms[j] + "']").remove();
                         }
                     }
+                }
+            };
+
+            this._setVal = function(params) {
+                var el = params.element;
+                var value = params.value;
+
+                if (!this.select2) {
+                    el.val(value);
+                } else {
+                    el.select2("val", value);
+                }
+            };
+
+            this._getVal = function(params) {
+                var el = params.element;
+
+                if (!this.select2) {
+                    return el.val();
+                } else {
+                    return el.select2("val");
                 }
             };
         }
