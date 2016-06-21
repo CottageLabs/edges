@@ -56,14 +56,14 @@ $.extend(edges, {
             return new edges.nvd3.PieChartRenderer(params);
         },
         PieChartRenderer : function(params) {
-            this.showLabels = params.showLabels || true;
-            this.donut = params.donut || false;
+            this.showLabels = edges.getParam(params.showLabels, true);
+            this.donut = edges.getParam(params.donut, false);
             this.labelThreshold = params.labelThreshold || 0.05;
             this.transitionDuration = params.transitionDuration || 500;
             this.noDataMessage = params.noDataMessage || false;
             this.color = params.color || false;
             this.legendPosition = params.legendPosition || "top";
-            this.labelsOutside = params.labelsOutside !== undefined ? params.labelsOutside : false;
+            this.labelsOutside = edges.getParam(params.labelsOutside, false);
             this.valueFormat = params.valueFormat || false;
             this.marginTop = params.marginTop || 30;
             this.marginRight = params.marginRight || 30;
@@ -134,12 +134,12 @@ $.extend(edges, {
         },
         HorizontalMultibarRenderer : function(params) {
 
-            this.showValues = params.showValues || true;
-            this.toolTips = params.toolTips || true;
-            this.controls = params.controls || false;
+            this.showValues = edges.getParam(params.showValues, true);
+            this.toolTips = edges.getParam(params.toolTips, true);
+            this.controls = edges.getParam(params.controls, false);
             this.stacked = edges.getParam(params.stacked, false);
             this.legend = edges.getParam(params.legend, true);
-            this.color = edges.getParam(params.color, false);
+            this.color = params.color || false;
             this.noDataMessage = edges.getParam(params.noDataMessage, false);
             this.yTickFormat = edges.getParam(params.yTickFormat, ",.0f");
             this.xTickFormat = edges.getParam(params.xTickFormat, false);
@@ -221,9 +221,9 @@ $.extend(edges, {
             this.xTickFormat = params.xTickFormat || ",.2f";
             this.yTickFormat = params.yTickFormat || ",.2f";
             this.transitionDuration = params.transitionDuration || 500;
-            this.controls = params.controls || false;
+            this.controls = edges.getParam(params.controls, false);
             this.barColor = params.barColor || false;
-            this.showLegend = params.showLegend !== undefined ? params.showLegend : true;
+            this.showLegend = edges.getParam(params.showLegend, true);
             this.xAxisLabel = params.xAxisLabel || "";
             this.yAxisLabel = params.yAxisLabel || "";
 
@@ -288,7 +288,7 @@ $.extend(edges, {
             this.transitionDuration = params.transitionDuration || 500;
             this.lineColor = params.lineColor || false;
             this.includeOnY = params.includeOnY || false;
-            this.showLegend = params.showLegend !== undefined ? params.showLegend : true;
+            this.showLegend = edges.getParam(params.showLegend, true);
             this.xAxisLabel = params.xAxisLabel || "";
             this.yAxisLabel = params.yAxisLabel || "";
 
@@ -343,8 +343,6 @@ $.extend(edges, {
 
                     return chart;
                 });
-
-
             }
         }
     }
