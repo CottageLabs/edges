@@ -173,7 +173,6 @@ $.extend(edges, {
 
         this.init = function(edge) {
             Object.getPrototypeOf(this).init.call(this, edge);
-            // this.__proto__.init.call(this, edge);
 
             // set the initial field
             this.currentField = this.fields[0].field;
@@ -182,23 +181,10 @@ $.extend(edges, {
             this.lastField = false;
 
             // if required, load the dates once at init
-            if (!this.autoLookupRange)
-            {
+            if (!this.autoLookupRange) {
                 this.loadDates();
-            }
-        };
-
-        this.contrib = function(query) {
-            if (!this.autoLookupRange) { return }
-
-            for (var i = 0; i < this.fields.length; i++) {
-                var field = this.fields[i].field;
-                query.addAggregation(
-                    es.newStatsAggregation({
-                        name: field,
-                        field : field
-                    })
-                );
+            } else {
+                edge.secondaryQueries["multidaterange_" + this.id] = this.getSecondaryQueryFunction();
             }
         };
 
@@ -207,9 +193,17 @@ $.extend(edges, {
 
             for (var i = 0; i < this.fields.length; i++) {
                 var field = this.fields[i].field;
-                var agg = this.edge.result.aggregation(field);
-                var min = new Date(agg.min);
-                var max = new Date(agg.max);
+                // var agg = this.edge.result.aggregation(field);
+                var agg = this.edge.secondaryResults["multidaterange_" + this.id].aggregation(field);
+
+                var min = this.defaultEarliest;
+                var max = this.defaultLatest;
+                if (agg.min !== null) {
+                    min = new Date(agg.min);
+                }
+                if (agg.max !== null) {
+                    max = new Date(agg.max);
+                }
 
                 this.dateOptions[field] = {
                     earliest: min,
@@ -329,5 +323,40 @@ $.extend(edges, {
                 }
             }
         };
+
+        this.getSecondaryQueryFunction = function() {
+            var that = this;
+            return function(edge) {
+                // clone the current query, which will be the basis for the averages query
+                var query = edge.cloneQuery();
+
+                // remove any range constraints
+                for (var i = 0; i < that.fields.length; i++) {
+                    var field = that.fields[i];
+                    query.removeMust(es.newRangeFilter({field: field.field}));
+                }
+
+                // remove any existing aggregations, we don't need them
+                query.clearAggregations();
+
+                // add the new aggregation(s) which will actually get the data
+                for (var i = 0; i < that.fields.length; i++) {
+                    var field = that.fields[i].field;
+                    query.addAggregation(
+                        es.newStatsAggregation({
+                            name: field,
+                            field : field
+                        })
+                    );
+                }
+
+                // finally set the size and from parameters
+                query.size = 0;
+                query.from = 0;
+
+                // return the secondary query
+                return query;
+            }
+        }
     }
 });

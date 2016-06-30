@@ -49,6 +49,7 @@ cat $SRC/es.js <(echo) \
     $SRC/templates/bs3.Facetview.js <(echo) \
     $SRC/templates/bs3.Tabbed.js <(echo) \
     $SRC/renderers/bs3.BasicRangeSelectorRenderer.js <(echo) \
+    $SRC/renderers/bs3.BSMultiDateRange.js <(echo) \
     $SRC/renderers/bs3.FacetFilterSetterRenderer.js <(echo) \
     $SRC/renderers/bs3.FullSearchControllerRenderer.js <(echo) \
     $SRC/renderers/bs3.MultiDateRangeRenderer.js <(echo) \
@@ -73,6 +74,7 @@ cat $CSS/d3.edges.css <(echo) \
     $CSS/bs3.Facetview.css <(echo) \
     $CSS/bs3.Tabbed.css <(echo) \
     $CSS/bs3.BasicRangeSelectorRenderer.css <(echo) \
+    $CSS/bs3.BSMultiDateRange.css <(echo) \
     $CSS/bs3.FacetFilterSetterRenderer.css <(echo) \
     $CSS/bs3.MultiDateRangeRenderer.css <(echo) \
     $CSS/bs3.NSeparateORTermSelectorRenderer.css <(echo) \
