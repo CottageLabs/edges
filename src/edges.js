@@ -1024,5 +1024,50 @@ var edges = {
                 .replace(/\./gi,'_')
                 .replace(/\:/gi,'_')
                 .replace(/\s/gi,"_");
+    },
+
+    numFormat : function(params) {
+        var prefix = edges.getParam(params.prefix, "");
+        var zeroPadding = edges.getParam(params.zeroPadding, false);
+        var decimalPlaces = edges.getParam(params.decimalPlaces, false);
+        var thousandsSeparator = edges.getParam(params.thousandsSeparator, false);
+        var decimalSeparator = edges.getParam(params.decimalSeparator, ".");
+        var suffix = edges.getParam(params.suffix, "");
+
+        return function(num) {
+            // ensure this is really a number
+            num = parseFloat(num);
+
+            // first off we need to convert the number to a string, which we can do directly, or using toFixed if that
+            // is suitable here
+            if (decimalPlaces) {
+                num = num.toFixed(decimalPlaces);
+            } else {
+                num  = num.toString();
+            }
+
+            // now "num" is a string containing the formatted number that we can work on
+
+            var bits = num.split(".");
+
+            if (zeroPadding) {
+                var zeros = zeroPadding - bits[0].length;
+                var pad = "";
+                for (var i = 0; i < zeros; i++) {
+                    pad += "0";
+                }
+                bits[0] = pad + bits[0];
+            }
+
+            if (thousandsSeparator) {
+                bits[0] = bits[0].replace(/\B(?=(\d{3})+(?!\d))/g, thousandsSeparator);
+            }
+
+            if (bits.length == 1) {
+                return prefix + bits[0] + suffix;
+            } else {
+                return prefix + bits[0] + decimalSeparator + bits[1] + suffix;
+            }
+        }
     }
 };
