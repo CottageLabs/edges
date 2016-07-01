@@ -139,15 +139,23 @@ $.extend(edges, {
             this.controls = edges.getParam(params.controls, false);
             this.stacked = edges.getParam(params.stacked, false);
             this.legend = edges.getParam(params.legend, true);
+
             this.color = params.color || false;
             this.noDataMessage = edges.getParam(params.noDataMessage, false);
-            this.yTickFormat = edges.getParam(params.yTickFormat, ",.0f");
-            this.xTickFormat = edges.getParam(params.xTickFormat, false);
+
             this.transitionDuration = params.transitionDuration || 500;
+
             this.marginTop = params.marginTop || 30;
             this.marginRight = params.marginRight || 50;
-            this.marginBottom = params.marginBottom || 30;
+            this.marginBottom = params.marginBottom || 50;
             this.marginLeft = params.marginLeft || 200;
+
+            this.yTickFormat = edges.getParam(params.yTickFormat, ",.0f");
+            this.xTickFormat = edges.getParam(params.xTickFormat, false);
+            this.valueFormat = edges.getParam(params.valueFormat, false);
+
+            this.xAxisLabel = edges.getParam(params.xAxisLabel, false);
+            this.yAxisLabel = edges.getParam(params.yAxisLabel, false);
 
             this.namespace = "edges-nvd3-horizontal-multibar";
 
@@ -183,13 +191,35 @@ $.extend(edges, {
                     }
 
                     if (that.yTickFormat) {
-                        chart.yAxis
-                            .tickFormat(d3.format(that.yTickFormat));
+                        var fn = that.yTickFormat;
+                        if (typeof that.yTickFormat === "string") {
+                            fn = d3.format(that.yTickFormat);
+                        }
+                        chart.yAxis.tickFormat(fn);
+                    }
+
+                    if (that.yAxisLabel) {
+                        chart.yAxis.axisLabel(that.yAxisLabel)
                     }
 
                     if (that.xTickFormat) {
-                        chart.xAxis
-                            .tickFormat(d3.format(that.xTickFormat));
+                        var fn = that.xTickFormat;
+                        if (typeof that.xTickFormat === "string") {
+                            fn = d3.format(that.xTickFormat);
+                        }
+                        chart.xAxis.tickFormat(fn);
+                    }
+
+                    if (that.xAxisLabel) {
+                        chart.xAxis.axisLabel(that.xAxisLabel)
+                    }
+
+                    if (that.valueFormat) {
+                        var fn = that.valueFormat;
+                        if (typeof that.valueFormat === "string") {
+                            fn = d3.format(that.xTickFormat);
+                        }
+                        chart.valueFormat(fn);
                     }
 
                     if (that.noDataMessage) {

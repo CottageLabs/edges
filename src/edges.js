@@ -1040,7 +1040,7 @@ var edges = {
 
             // first off we need to convert the number to a string, which we can do directly, or using toFixed if that
             // is suitable here
-            if (decimalPlaces) {
+            if (decimalPlaces !== false) {
                 num = num.toFixed(decimalPlaces);
             } else {
                 num  = num.toString();
@@ -1050,7 +1050,7 @@ var edges = {
 
             var bits = num.split(".");
 
-            if (zeroPadding) {
+            if (zeroPadding !== false) {
                 var zeros = zeroPadding - bits[0].length;
                 var pad = "";
                 for (var i = 0; i < zeros; i++) {
@@ -1059,7 +1059,7 @@ var edges = {
                 bits[0] = pad + bits[0];
             }
 
-            if (thousandsSeparator) {
+            if (thousandsSeparator !== false) {
                 bits[0] = bits[0].replace(/\B(?=(\d{3})+(?!\d))/g, thousandsSeparator);
             }
 
