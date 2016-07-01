@@ -184,6 +184,9 @@ $.extend(edges, {
             if (!this.autoLookupRange) {
                 this.loadDates();
             } else {
+                if (edge.secondaryQueries === false) {
+                    edge.secondaryQueries = {};
+                }
                 edge.secondaryQueries["multidaterange_" + this.id] = this.getSecondaryQueryFunction();
             }
         };
