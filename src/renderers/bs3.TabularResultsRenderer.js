@@ -103,7 +103,7 @@ $.extend(true, edges, {
                                 def = fd.default;
                             }
                             var val = edges.objVal(key, res, def);
-                            var fieldClasses = edges.css_classes(this.namespace, "cell-" + edges.escapeHtml(key), this);
+                            var fieldClasses = edges.css_classes(this.namespace, "cell-" + edges.safeId(key), this);
                             frag += '<td class="' + cellClasses + ' ' + fieldClasses + '">' + edges.escapeHtml(val) + '</td>';
                         }
                         frag += "</tr>";

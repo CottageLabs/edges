@@ -162,6 +162,10 @@ $.extend(edges, {
             this.draw = function() {
                 // no need for data conversion on this graph type
 
+                // nvd3 tooltips appear outside the div where the actual edge is focussed, and it's possible for those
+                // tooltips to be left behind when the page is redrawn, so we have to hack around that
+                $(".nvtooltip").remove();
+
                 var svgId = edges.css_id(this.namespace, "svg", this);
                 var svgSelector = edges.css_id_selector(this.namespace, "svg", this);
                 this.component.context.html('<svg id="' + svgId + '"></svg>');
