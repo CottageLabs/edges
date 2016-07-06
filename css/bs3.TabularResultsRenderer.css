@@ -8,6 +8,7 @@
 
 .edges-bs3-tabular-results-header {
     padding: 5px;
+    white-space: nowrap;
 }
 
 .edges-bs3-tabular-results-cell {
