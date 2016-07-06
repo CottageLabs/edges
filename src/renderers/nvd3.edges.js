@@ -157,6 +157,8 @@ $.extend(edges, {
             this.xAxisLabel = edges.getParam(params.xAxisLabel, false);
             this.yAxisLabel = edges.getParam(params.yAxisLabel, false);
 
+            this.tooltipGenerator = edges.getParam(params.tooltipGenerator, false);
+
             this.namespace = "edges-nvd3-horizontal-multibar";
 
             this.draw = function() {
@@ -232,6 +234,10 @@ $.extend(edges, {
 
                     if (that.color) {
                         chart.color(that.color);
+                    }
+
+                    if (that.tooltipGenerator) {
+                        chart.tooltip.contentGenerator(that.tooltipGenerator);
                     }
 
                     d3.select(svgSelector)
