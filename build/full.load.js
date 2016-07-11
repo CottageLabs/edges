@@ -27,6 +27,7 @@ requirejs.config({
 
         "edges.bs3.basicrangeselector" : "src/renderers/bs3.BasicRangeSelectorRenderer",
         "edges.bs3.bsmultidaterange" : "src/renderers/bs3.BSMultiDateRange",
+        "edges.bs3.compactselectedfilters" : "src/renderers/bs3.CompactSelectedFiltersRenderer",
         "edges.bs3.facetfiltersetter" : "src/renderers/bs3.FacetFilterSetterRenderer",
         "edges.bs3.fullsearchcontroller" : "src/renderers/bs3.FullSearchControllerRenderer",
         "edges.bs3.multidaterange" : "src/renderers/bs3.MultiDateRangeRenderer",
@@ -36,6 +37,7 @@ requirejs.config({
         "edges.bs3.pager" : "src/renderers/bs3.PagerRenderer",
         "edges.bs3.refiningandtermselector" : "src/renderers/bs3.RefiningANDTermSelectorRenderer",
         "edges.bs3.resultsdisplay" : "src/renderers/bs3.ResultsDisplayRenderer",
+        "edges.bs3.searchbox" : "src/renderers/bs3.SearchBoxRenderer",
         "edges.bs3.searchingnotification" : "src/renderers/bs3.SearchingNotificationRenderer",
         "edges.bs3.selectedfilters" : "src/renderers/bs3.SelectedFiltersRenderer",
         "edges.bs3.tabularresults" : "src/renderers/bs3.TabularResultsRenderer",
@@ -65,6 +67,7 @@ requirejs(["jquery", "moment"], function() {
 
                 "edges.bs3.basicrangeselector",
                 "edges.bs3.bsmultidaterange",
+                "edges.bs3.compactselectedfilters",
                 "edges.bs3.facetfiltersetter",
                 "edges.bs3.fullsearchcontroller",
                 "edges.bs3.multidaterange",
@@ -74,6 +77,7 @@ requirejs(["jquery", "moment"], function() {
                 "edges.bs3.pager",
                 "edges.bs3.refiningandtermselector",
                 "edges.bs3.resultsdisplay",
+                "edges.bs3.searchbox",
                 "edges.bs3.searchingnotification",
                 "edges.bs3.selectedfilters",
                 "edges.bs3.tabularresults",

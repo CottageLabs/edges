@@ -18,7 +18,8 @@ nodejs r.js -o appDir=$IN_JS baseDir=. dir=$SRC
 # these commands individually minify the CSS
 # nodejs r.js -o cssIn=$IN_CSS/bs3.edges.css out=$CSS/bs3.edges.css baseUrl=.
 nodejs r.js -o cssIn=$IN_CSS/bs3.BasicRangeSelectorRenderer.css out=$CSS/bs3.BasicRangeSelectorRenderer.css baseUrl=.
-nodejs r.js -o cssIn=$IN_CSS/bs3.FacetFilterSetterRenderer.css out=$CSS/bs3.BasicRangeSelectorRenderer.css baseUrl=.
+nodejs r.js -o cssIn=$IN_CSS/bs3.CompactSelectedFiltersRenderer.css out=$CSS/bs3.CompactSelectedFiltersRenderer.css baseUrl=.
+nodejs r.js -o cssIn=$IN_CSS/bs3.FacetFilterSetterRenderer.css out=$CSS/bs3.FacetFilterSetterRenderer.css baseUrl=.
 nodejs r.js -o cssIn=$IN_CSS/bs3.Facetview.css out=$CSS/bs3.Facetview.css baseUrl=.
 nodejs r.js -o cssIn=$IN_CSS/bs3.MultiDateRangeRenderer.css out=$CSS/bs3.MultiDateRangeRenderer.css baseUrl=.
 nodejs r.js -o cssIn=$IN_CSS/bs3.MultiDateRangeRenderer.css out=$CSS/bs3.NSeparateORTermSelectorRenderer.css baseUrl=.
@@ -27,6 +28,7 @@ nodejs r.js -o cssIn=$IN_CSS/bs3.ORTermSelectorRenderer.css out=$CSS/bs3.ORTermS
 nodejs r.js -o cssIn=$IN_CSS/bs3.PagerRenderer.css out=$CSS/bs3.PagerRenderer.css baseUrl=.
 nodejs r.js -o cssIn=$IN_CSS/bs3.RefiningANDTermSelectorRenderer.css out=$CSS/bs3.RefiningANDTermSelectorRenderer.css baseUrl=.
 nodejs r.js -o cssIn=$IN_CSS/bs3.ResultsDisplayRenderer.css out=$CSS/bs3.ResultsDisplayRenderer.css baseUrl=.
+nodejs r.js -o cssIn=$IN_CSS/bs3.SearchBoxRenderer.css out=$CSS/bs3.SearchBoxRenderer.css baseUrl=.
 nodejs r.js -o cssIn=$IN_CSS/bs3.SearchingNotificationRenderer.css out=$CSS/bs3.SearchingNotificationRenderer.css baseUrl=.
 nodejs r.js -o cssIn=$IN_CSS/bs3.SelectedFiltersRenderer.css out=$CSS/bs3.SelectedFiltersRenderer.css baseUrl=.
 nodejs r.js -o cssIn=$IN_CSS/bs3.Tabbed.css out=$CSS/bs3.Tabbed.css baseUrl=.
@@ -50,6 +52,7 @@ cat $SRC/es.js <(echo) \
     $SRC/templates/bs3.Tabbed.js <(echo) \
     $SRC/renderers/bs3.BasicRangeSelectorRenderer.js <(echo) \
     $SRC/renderers/bs3.BSMultiDateRange.js <(echo) \
+    $SRC/renderers/bs3.CompactSelectedFiltersRenderer.js <(echo) \
     $SRC/renderers/bs3.FacetFilterSetterRenderer.js <(echo) \
     $SRC/renderers/bs3.FullSearchControllerRenderer.js <(echo) \
     $SRC/renderers/bs3.MultiDateRangeRenderer.js <(echo) \
@@ -59,6 +62,7 @@ cat $SRC/es.js <(echo) \
     $SRC/renderers/bs3.PagerRenderer.js <(echo) \
     $SRC/renderers/bs3.RefiningANDTermSelectorRenderer.js <(echo) \
     $SRC/renderers/bs3.ResultsDisplayRenderer.js <(echo) \
+    $SRC/renderers/bs3.SearchBoxRenderer.js <(echo) \
     $SRC/renderers/bs3.SearchingNotificationRenderer.js <(echo) \
     $SRC/renderers/bs3.SelectedFiltersRenderer.js <(echo) \
     $SRC/renderers/bs3.TabularResultsRenderer.js <(echo) \
@@ -75,6 +79,7 @@ cat $CSS/d3.edges.css <(echo) \
     $CSS/bs3.Tabbed.css <(echo) \
     $CSS/bs3.BasicRangeSelectorRenderer.css <(echo) \
     $CSS/bs3.BSMultiDateRange.css <(echo) \
+    $CSS/bs3.CompactSelectedFiltersRenderer.css <(echo) \
     $CSS/bs3.FacetFilterSetterRenderer.css <(echo) \
     $CSS/bs3.MultiDateRangeRenderer.css <(echo) \
     $CSS/bs3.NSeparateORTermSelectorRenderer.css <(echo) \
@@ -83,6 +88,7 @@ cat $CSS/d3.edges.css <(echo) \
     $CSS/bs3.PagerRenderer.css <(echo) \
     $CSS/bs3.RefiningANDTermSelectorRenderer.css <(echo) \
     $CSS/bs3.ResultsDisplayRenderer.css <(echo) \
+    $CSS/bs3.SearchBoxRenderer.css <(echo) \
     $CSS/bs3.SearchingNotificationRenderer.css <(echo) \
     $CSS/bs3.SelectedFiltersRenderer.css <(echo) \
     $CSS/bs3.TabularResultsRenderer.css <(echo) \

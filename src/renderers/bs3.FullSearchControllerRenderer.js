@@ -1,24 +1,28 @@
 $.extend(true, edges, {
     bs3 : {
         newFullSearchControllerRenderer: function (params) {
-            if (!params) {
-                params = {}
-            }
+            if (!params) {params = {}}
             edges.bs3.FullSearchControllerRenderer.prototype = edges.newRenderer(params);
             return new edges.bs3.FullSearchControllerRenderer(params);
         },
         FullSearchControllerRenderer: function (params) {
             // enable the search button
-            this.searchButton = params.searchButton || false;
+            this.searchButton = edges.getParam(params.searchButton, false);
+
+            // text to include on the search button.  If not provided, will just be the magnifying glass
+            this.searchButtonText = edges.getParam(params.searchButtonText, false);
+
+            // should the clear button be rendered
+            this.clearButton = edges.getParam(params.clearButton, true);
+
+            // set the placeholder text for the search box
+            this.searchPlaceholder = edges.getParam(params.searchPlaceholder, "Search");
 
             // amount of time between finishing typing and when a query is executed from the search box
             this.freetextSubmitDelay = edges.getParam(params.freetextSubmitDelay, 500);
 
-            // after search, the results will fade in over this number of milliseconds
-            this.fadeIn = params.fadeIn || 800;
-
             // enable the share/save link feature
-            this.shareLink = params.shareLink || false;
+            this.shareLink = edges.getParam(params.shareLink, false);
 
             ////////////////////////////////////////
             // state variables
@@ -82,20 +86,34 @@ $.extend(true, edges, {
                 // text search box id
                 var textId = edges.css_id(this.namespace, "text", this);
 
+                var clearFrag = "";
+                if (this.clearButton) {
+                    clearFrag = '<span class="input-group-btn"> \
+                        <button type="button" class="btn btn-danger btn-sm ' + resetClass + '" title="Clear all search parameters and start again"> \
+                            <span class="glyphicon glyphicon-remove"></span> \
+                        </button> \
+                    </span>';
+                }
+
+                var searchFrag = "";
+                if (this.searchButton) {
+                    var text = '<span class="glyphicon glyphicon-white glyphicon-search"></span>';
+                    if (this.searchButtonText !== false) {
+                        text = this.searchButtonText;
+                    }
+                    searchFrag = '<span class="input-group-btn"> \
+                        <button type="button" class="btn btn-info btn-sm ' + searchClass + '"> \
+                            ' + text + ' \
+                        </button> \
+                    </span>';
+                }
+
                 var searchBox = '<div class="form-inline pull-right"> \
                         <div class="form-group"> \
                             <div class="input-group"> \
-                                <span class="input-group-btn"> \
-                                    <button type="button" class="btn btn-danger btn-sm ' + resetClass + '" title="Clear all search parameters and start again"> \
-                                        <span class="glyphicon glyphicon-remove"></span> \
-                                    </button> \
-                                </span> ' + field_select + '\
-                                <input type="text" id="' + textId + '" class="form-control input-sm ' + textClass + '" name="q" value="" placeholder="Search" style="width: 200px" /> \
-                                <span class="input-group-btn"> \
-                                    <button type="button" class="btn btn-info btn-sm ' + searchClass + '"> \
-                                        <span class="glyphicon glyphicon-white glyphicon-search"></span> \
-                                    </button> \
-                                </span> \
+                                ' + clearFrag + field_select + '\
+                                <input type="text" id="' + textId + '" class="form-control input-sm ' + textClass + '" name="q" value="" placeholder="' + this.searchPlaceholder + '"/> \
+                                ' + searchFrag + ' \
                             </div> \
                         </div> \
                     </div>';
