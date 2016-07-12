@@ -10,16 +10,22 @@ $.extend(true, edges, {
         ORTermSelectorRenderer: function (params) {
             // whether the facet should be open or closed
             // can be initialised and is then used to track internal state
-            this.open = params.open !== undefined ? params.open : false;
+            this.open = edges.getParam(params.open, false);
 
-            this.togglable = params.togglable !== undefined ? params.togglable : true;
+            this.togglable = edges.getParam(params.togglable, true);
 
             // whether the count should be displayed along with the term
             // defaults to false because count may be confusing to the user in an OR selector
-            this.showCount = params.showCount || false;
+            this.showCount = edges.getParam(params.showCount, false);
 
             // whether counts of 0 should prevent the value being rendered
-            this.hideEmpty = params.hideEmpty || false;
+            this.hideEmpty = edges.getParam(params.hideEmpty, false);
+
+            this.openIcon = edges.getParam(params.openIcon, "glyphicon glyphicon-plus");
+
+            this.closeIcon = edges.getParam(params.closeIcon, "glyphicon glyphicon-minus");
+
+            this.layout = edges.getParam(params.layout, "left");
 
             // namespace to use in the page
             this.namespace = "edges-bs3-or-term-selector";
@@ -36,6 +42,8 @@ $.extend(true, edges, {
                 var facetClass = edges.css_classes(namespace, "facet", this);
                 var headerClass = edges.css_classes(namespace, "header", this);
                 var selectionsClass = edges.css_classes(namespace, "selections", this);
+                var bodyClass = edges.css_classes(namespace, "body", this);
+                var countClass = edges.css_classes(namespace, "count", this);
 
                 var toggleId = edges.css_id(namespace, "toggle", this);
                 var resultsId = edges.css_id(namespace, "results", this);
@@ -59,7 +67,7 @@ $.extend(true, edges, {
                             results += '<div class="' + resultClass + '"><a href="#" class="' + valClass + '" data-key="' + edges.escapeHtml(val.term) + '">' +
                                 edges.escapeHtml(val.display) + "</a>";
                             if (this.showCount) {
-                                results += " (" + val.count + ")";
+                                results += ' <span class="' + countClass + '">(' + val.count + ')</span>';
                             }
                             results += "</div>";
                         }
@@ -84,26 +92,25 @@ $.extend(true, edges, {
                     }
                 }
 
-                // render the toggle capability
-                var tog = ts.display;
-                if (this.togglable) {
-                    tog = '<a href="#" id="' + toggleId + '"><i class="glyphicon glyphicon-plus"></i>&nbsp;' + tog + "</a>";
-                }
+                var header = this.headerLayout({toggleId: toggleId});
 
                 // render the overall facet
                 var frag = '<div class="' + facetClass + '">\
                         <div class="' + headerClass + '"><div class="row"> \
                             <div class="col-md-12">\
-                                ' + tog + '\
+                                ' + header + '\
                             </div>\
                         </div></div>\
-                        <div class="row" style="display:none" id="' + resultsId + '">\
-                            <div class="col-md-12">\
-                                {{SELECTED}}\
+                        <div class="' + bodyClass + '">\
+                            <div class="row" style="display:none" id="' + resultsId + '">\
+                                <div class="col-md-12">\
+                                    {{SELECTED}}\
+                                </div>\
+                                <div class="col-md-12"><div class="' + selectionsClass + '">\
+                                    {{RESULTS}}\
+                                </div>\
                             </div>\
-                            <div class="col-md-12"><div class="' + selectionsClass + '">\
-                                {{RESULTS}}\
-                            </div></div>\
+                        </div>\
                         </div></div>';
 
                 // substitute in the component parts
@@ -129,6 +136,28 @@ $.extend(true, edges, {
                 edges.on(filterRemoveSelector, "click", this, "removeFilter");
             };
 
+            this.headerLayout = function(params) {
+                var toggleId = params.toggleId;
+                var iconClass = edges.css_classes(this.namespace, "icon", this);
+
+                if (this.layout === "left") {
+                    var tog = this.component.display;
+                    if (this.togglable) {
+                        tog = '<a href="#" id="' + toggleId + '"><i class="' + this.openIcon + '"></i>&nbsp;' + tog + "</a>";
+                    }
+                    return tog;
+                } else if (this.layout === "right") {
+                    var tog = "";
+                    if (this.togglable) {
+                        tog = '<a href="#" id="' + toggleId + '">' + this.component.display + '&nbsp;<i class="' + this.openIcon + ' ' + iconClass + '"></i></a>';
+                    } else {
+                        tog = this.component.display;
+                    }
+
+                    return tog;
+                }
+            };
+
             this.setUIOpen = function () {
                 // the selectors that we're going to use
                 var resultsSelector = edges.css_id_selector(this.namespace, "results", this);
@@ -137,11 +166,26 @@ $.extend(true, edges, {
                 var results = this.component.jq(resultsSelector);
                 var toggle = this.component.jq(toggleSelector);
 
+                var openBits = this.openIcon.split(" ");
+                var closeBits = this.closeIcon.split(" ");
+
                 if (this.open) {
-                    toggle.find("i").removeClass("glyphicon-plus").addClass("glyphicon-minus");
+                    var i = toggle.find("i");
+                    for (var j = 0; j < openBits.length; j++) {
+                        i.removeClass(openBits[j]);
+                    }
+                    for (var j = 0; j < closeBits.length; j++) {
+                        i.addClass(closeBits[j]);
+                    }
                     results.show();
                 } else {
-                    toggle.find("i").removeClass("glyphicon-minus").addClass("glyphicon-plus");
+                    var i = toggle.find("i");
+                    for (var j = 0; j < closeBits.length; j++) {
+                        i.removeClass(closeBits[j]);
+                    }
+                    for (var j = 0; j < openBits.length; j++) {
+                        i.addClass(openBits[j]);
+                    }
                     results.hide();
                 }
             };

@@ -37,7 +37,6 @@ $.extend(true, edges, {
                 var filterBoxClass = edges.css_classes(ns, "filter-box", this);
                 var valClass = edges.css_classes(ns, "value", this);
                 var removeClass = edges.css_classes(ns, "remove", this);
-                var relClass = edges.css_classes(ns, "rel", this);
                 var filtersClass = edges.css_classes(ns, "filters", this);
                 var searchTextClass = edges.css_classes(ns, "search-text", this);
                 var bodyClass = edges.css_classes(ns, "body", this);
