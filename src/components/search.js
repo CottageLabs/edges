@@ -367,9 +367,18 @@ $.extend(edges, {
          */
         this.mustFilters = {};
 
+        this.searchString = false;
+        this.searchField = false;
+
         this.synchronise = function () {
             // reset the state of the internal variables
             this.mustFilters = {};
+            this.searchString = false;
+            this.searchField = false;
+
+            if (!this.edge.currentQuery) {
+                return;
+            }
 
             var musts = this.edge.currentQuery.listMust();
             for (var i = 0; i < musts.length; i++) {
@@ -383,6 +392,12 @@ $.extend(edges, {
                 } else if (f.type_name === "geo_distance_range") {
 
                 }
+            }
+
+            var qs = this.edge.currentQuery.getQueryString();
+            if (qs) {
+                this.searchString = qs.queryString;
+                this.searchField = qs.defaultField;
             }
         };
 
@@ -435,6 +450,20 @@ $.extend(edges, {
             nq.from = 0;
             this.edge.pushQuery(nq);
             this.edge.doQuery();
+        };
+
+        this.clearQueryString = function () {
+            var nq = this.edge.cloneQuery();
+            nq.removeQueryString();
+
+            // reset the search page to the start and then trigger the next query
+            nq.from = 0;
+            this.edge.pushQuery(nq);
+            this.edge.doQuery();
+        };
+
+        this.clearSearch = function () {
+            this.edge.reset();
         };
 
         this._synchronise_term = function (filter) {

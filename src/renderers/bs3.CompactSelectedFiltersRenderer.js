@@ -21,6 +21,8 @@ $.extend(true, edges, {
 
             this.layout = edges.getParam(params.layout, "left");
 
+            this.truncateSearchDisplay = edges.getParam(params.truncateSearchDisplay, 100);
+
             this.namespace = "edges-bs3-compact-selected-filters";
 
             this.draw = function () {
@@ -32,11 +34,17 @@ $.extend(true, edges, {
                 var facetClass = edges.css_classes(ns, "facet", this);
                 var headerClass = edges.css_classes(ns, "header", this);
                 var fieldClass = edges.css_classes(ns, "field", this);
-                var fieldNameClass = edges.css_classes(ns, "fieldname", this);
+                var filterBoxClass = edges.css_classes(ns, "filter-box", this);
                 var valClass = edges.css_classes(ns, "value", this);
                 var removeClass = edges.css_classes(ns, "remove", this);
                 var relClass = edges.css_classes(ns, "rel", this);
                 var filtersClass = edges.css_classes(ns, "filters", this);
+                var searchTextClass = edges.css_classes(ns, "search-text", this);
+                var bodyClass = edges.css_classes(ns, "body", this);
+                var highlightedText = edges.css_classes(ns, "text", this);
+                var labelClass = edges.css_classes(ns, "label", this);
+                var searchClearClass = edges.css_classes(ns, "search-clear", this);
+                var clearAllClass = edges.css_classes(ns, "clear-all", this);
 
                 var toggleId = edges.css_id(ns, "toggle", this);
                 var bodyId = edges.css_id(ns, "body", this);
@@ -48,14 +56,14 @@ $.extend(true, edges, {
                     var field = fields[i];
                     var def = sf.mustFilters[field];
 
-                    filters += '<span class="' + fieldClass + '">';
+                    filters += '<div class="' + fieldClass + '">';
                     if (this.showFilterField) {
-                        filters += '<span class="' + fieldNameClass + '">' + def.display + ':</span>';
+                        filters += '<span class="' + labelClass + '">' + def.display + ':</span><br>';
                     }
 
                     for (var j = 0; j < def.values.length; j++) {
                         var val = def.values[j];
-                        filters += '<span class="' + valClass + '">' + val.display + '</span>';
+                        filters += '<div class="' + filterBoxClass + '"><span class="' + valClass + '">' + val.display + '</span>';
 
                         // the remove block looks different, depending on the kind of filter to remove
                         if (def.filter == "term" || def.filter === "terms") {
@@ -70,22 +78,41 @@ $.extend(true, edges, {
                             filters += "</a>";
                         }
 
-                        if (def.rel) {
-                            if (j + 1 < def.values.length) {
-                                filters += '<span class="' + relClass + '">' + def.rel + '</span>';
-                            }
-                        }
+                        filters += "</div>";
                     }
-                    filters += "</span>";
+                    filters += "</div>";
                 }
 
                 var header = this.headerLayout({toggleId: toggleId});
 
-                if (filters === "") {
-                    filters = "No filters set";
+                var filterFrag = "";
+                if (filters !== "") {
+                    filterFrag = '<div class="' + filtersClass + '">{{FILTERS}}</div>';
+                    filterFrag = filterFrag.replace(/{{FILTERS}}/g, filters);
                 }
-                var filterFrag = '<div class="' + filtersClass + '">{{FILTERS}}</div>';
-                filterFrag = filterFrag.replace(/{{FILTERS}}/g, filters);
+
+                var searchTextFrag = "";
+                if (this.component.searchString !== false) {
+                    var display = this.component.searchString;
+                    if (display.length > this.truncateSearchDisplay + 3) {
+                        display = display.substring(0, this.truncateSearchDisplay) + "...";
+                    }
+                    searchTextFrag = '<div class="' + searchTextClass + '">\
+                        <span class="' + labelClass + '">Search:</span><br>\
+                        <div class="' + highlightedText + '"><div class="row">\
+                            <div class="col-md-10">' + display + '</div>\
+                            <div class="col-md-2"><a href="#" class="' + searchClearClass + '"><i class="glyphicon glyphicon-black glyphicon-remove"></i></a></div>\
+                        </div></div>\
+                    </div>';
+                }
+
+                var clearAllFrag = '<div class="row"><div class="col-md-12"><a href="#" class="' + clearAllClass + '">clear all</a></div></div>';
+
+                // make some placeholder text
+                if (searchTextFrag === "" && filterFrag === "") {
+                    searchTextFrag = "No filters set";
+                    clearAllFrag = "";
+                }
 
                 // render the overall facet
                 var frag = '<div class="' + facetClass + '">\
@@ -94,9 +121,13 @@ $.extend(true, edges, {
                             ' + header + '\
                         </div>\
                     </div></div>\
-                    <div class="row" style="display:none" id="' + bodyId + '">\
-                        <div class="col-md-12">\
-                        ' + filterFrag + '\
+                    <div class="' + bodyClass + '">\
+                        <div class="row" style="display:none" id="' + bodyId + '">\
+                            <div class="col-md-12">\
+                                ' + searchTextFrag + '\
+                                ' + filterFrag + '\
+                                ' + clearAllFrag + '\
+                            </div>\
                         </div>\
                     </div>\
                 </div>';
@@ -112,6 +143,14 @@ $.extend(true, edges, {
                 // for when the open button is clicked
                 var toggleSelector = edges.css_id_selector(ns, "toggle", this);
                 edges.on(toggleSelector, "click", this, "toggleOpen");
+
+                // for when the search is cleared
+                var clearSelector = edges.css_class_selector(ns, "search-clear", this);
+                edges.on(clearSelector, "click", this, "clearSearch");
+
+                // for when everything is cleared
+                var allSelector = edges.css_class_selector(ns, "clear-all", this);
+                edges.on(allSelector, "click", this, "clearAll");
             };
 
             this.headerLayout = function(params) {
@@ -201,6 +240,14 @@ $.extend(true, edges, {
             this.toggleOpen = function (element) {
                 this.open = !this.open;
                 this.setUIOpen();
+            };
+
+            this.clearSearch = function (element) {
+                this.component.clearQueryString();
+            };
+
+            this.clearAll = function (element) {
+                this.component.clearSearch();
             };
         }
     }
