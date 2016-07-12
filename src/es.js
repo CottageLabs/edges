@@ -1142,8 +1142,9 @@ var es = {
     },
     RangeFilter : function(params) {
         // this.field handled by superclass
-        this.lt = params.lt || false;
-        this.gte = params.gte || false;
+        this.lt = es.getParam(params.lt, false);
+        this.lte = es.getParam(params.lte, false);
+        this.gte = es.getParam(params.gte, false);
 
         this.matches = function(other) {
             // ask the parent object first
@@ -1159,6 +1160,11 @@ var es = {
                     return false;
                 }
             }
+            if (other.lte) {
+                if (other.lte !== this.lte) {
+                    return false;
+                }
+            }
             if (other.gte) {
                 if (other.gte !== this.gte) {
                     return false;
@@ -1171,7 +1177,10 @@ var es = {
         this.objectify = function() {
             var obj = {range: {}};
             obj.range[this.field] = {};
-            if (this.lt) {
+            if (this.lte) {
+                obj.range[this.field]["lte"] = this.lte;
+            }
+            if (this.lt && !this.lte) {
                 obj.range[this.field]["lt"] = this.lt;
             }
             if (this.gte) {
@@ -1185,6 +1194,9 @@ var es = {
                 obj = obj.range;
             }
             this.field = Object.keys(obj)[0];
+            if (obj[this.field].lte) {
+                this.lte = obj[this.field].lte;
+            }
             if (obj[this.field].lt) {
                 this.lt = obj[this.field].lt;
             }
