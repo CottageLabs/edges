@@ -9,8 +9,14 @@ $.extend(true, edges, {
         },
         NumericRangeEntryRenderer: function (params) {
 
-            this.fromText = "From";
-            this.toText = "To";
+            this.fromText = edges.getParam(params.fromText, "From");
+            this.toText = edges.getParam(params.toText, "To");
+
+            this.openIcon = edges.getParam(params.openIcon, "glyphicon glyphicon-plus");
+
+            this.closeIcon = edges.getParam(params.closeIcon, "glyphicon glyphicon-minus");
+
+            this.layout = edges.getParam(params.layout, "left");
 
             this.namespace = "edges-bs3-numeric-range-entry";
 
@@ -20,6 +26,7 @@ $.extend(true, edges, {
                 var headerClass = edges.css_classes(this.namespace, "header", this);
                 var labelClass = edges.css_classes(this.namespace, "label", this);
                 var selectClass = edges.css_classes(this.namespace, "select", this);
+                var bodyClass = edges.css_classes(this.namespace, "body", this);
 
                 var toggleId = edges.css_id(this.namespace, "toggle", this);
                 var formId = edges.css_id(this.namespace, "form", this);
@@ -51,18 +58,23 @@ $.extend(true, edges, {
                 theform += '<div class="col-md-8"><select name="' + toName + '" id="' + toName + '" class="form-control ' + selectClass + '">' + options + '</select></div>';
                 theform += '</div></div>';
 
+                var header = this.headerLayout({toggleId: toggleId});
+
                 // render the overall facet
                 var frag = '<div class="' + facetClass + '">\
-                        <div class="' + headerClass + '"><div class="row"> \
-                            <div class="col-md-12">\
-                                <a href="#" id="' + toggleId + '"><i class="glyphicon glyphicon-plus"></i>&nbsp;' + this.component.display + '</a>\
-                            </div>\
-                        </div></div>\
+                    <div class="' + headerClass + '"><div class="row"> \
+                        <div class="col-md-12">\
+                            ' + header + '\
+                        </div>\
+                    </div></div>\
+                    <div class="' + bodyClass + '">\
                         <div class="row" style="display:none" id="' + formId + '">\
                             <div class="col-md-12">\
                                 <form>{{THEFORM}}</form>\
                             </div>\
-                        </div></div>';
+                        </div>\
+                    </div>\
+                </div>';
 
                 // substitute in the component parts
                 frag = frag.replace(/{{THEFORM}}/g, theform);
@@ -90,6 +102,19 @@ $.extend(true, edges, {
                 edges.on(toggleSelector, "click", this, "toggleOpen");
             };
 
+            this.headerLayout = function(params) {
+                var toggleId = params.toggleId;
+                var iconClass = edges.css_classes(this.namespace, "icon", this);
+
+                if (this.layout === "left") {
+                    var tog = '<a href="#" id="' + toggleId + '"><i class="' + this.openIcon + '"></i>&nbsp;' + this.component.display + "</a>";
+                    return tog;
+                } else if (this.layout === "right") {
+                    var tog = '<a href="#" id="' + toggleId + '">' + this.component.display + '&nbsp;<i class="' + this.openIcon + ' ' + iconClass + '"></i></a>';
+                    return tog;
+                }
+            };
+
             this.setUIOpen = function () {
                 // the selectors that we're going to use
                 var formSelector = edges.css_id_selector(this.namespace, "form", this);
@@ -98,11 +123,26 @@ $.extend(true, edges, {
                 var form = this.component.jq(formSelector);
                 var toggle = this.component.jq(toggleSelector);
 
+                var openBits = this.openIcon.split(" ");
+                var closeBits = this.closeIcon.split(" ");
+
                 if (this.open) {
-                    toggle.find("i").removeClass("glyphicon-plus").addClass("glyphicon-minus");
+                    var i = toggle.find("i");
+                    for (var j = 0; j < openBits.length; j++) {
+                        i.removeClass(openBits[j]);
+                    }
+                    for (var j = 0; j < closeBits.length; j++) {
+                        i.addClass(closeBits[j]);
+                    }
                     form.show();
                 } else {
-                    toggle.find("i").removeClass("glyphicon-minus").addClass("glyphicon-plus");
+                    var i = toggle.find("i");
+                    for (var j = 0; j < closeBits.length; j++) {
+                        i.removeClass(closeBits[j]);
+                    }
+                    for (var j = 0; j < openBits.length; j++) {
+                        i.addClass(openBits[j]);
+                    }
                     form.hide();
                 }
             };

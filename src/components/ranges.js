@@ -60,7 +60,7 @@ $.extend(edges, {
             if (this.edge.currentQuery) {
                 var filters = this.edge.currentQuery.listMust(es.newRangeFilter({field: this.field}));
                 for (var i = 0; i < filters.length; i++) {
-                    this.to = filters[i].lt;
+                    this.to = filters[i].lte;
                     this.from = filters[i].gte;
                 }
             }
@@ -110,7 +110,7 @@ $.extend(edges, {
                 nq.addMust(es.newRangeFilter({
                     field: this.field,
                     gte: from,
-                    lt: to
+                    lte: to
                 }))
             }
 
