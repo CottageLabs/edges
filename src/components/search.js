@@ -174,7 +174,7 @@ $.extend(edges, {
         this.fuzzify = params.fuzzify || false;
 
         // list of options by which the search results can be sorted
-        // of the form of a list, thus: [{ field: '<field to sort by>', display: '<display name>'}],
+        // of the form of a list, thus: [{ field: '<field to sort by>', dir: "<sort dir>", display: '<display name>'}],
         this.sortOptions = params.sortOptions || false;
 
         // list of options for fields to which free text search can be constrained
@@ -225,6 +225,28 @@ $.extend(edges, {
                     this.sortDir = sorts[0].order;
                 }
             }
+        };
+
+        this.setSort = function(params) {
+            var dir = params.dir;
+            var field = params.field;
+
+            if (dir === undefined || dir === false) {
+                dir = "desc";
+            }
+
+            var nq = this.edge.cloneQuery();
+
+            // replace the existing sort criteria
+            nq.setSortBy(es.newSort({
+                field: field,
+                order: dir
+            }));
+
+            // reset the search page to the start and then trigger the next query
+            nq.from = 0;
+            this.edge.pushQuery(nq);
+            this.edge.doQuery();
         };
 
         this.changeSortDir = function () {

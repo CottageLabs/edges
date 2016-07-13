@@ -61,10 +61,12 @@ cat $SRC/es.js <(echo) \
     $SRC/renderers/bs3.ORTermSelectorRenderer.js <(echo) \
     $SRC/renderers/bs3.PagerRenderer.js <(echo) \
     $SRC/renderers/bs3.RefiningANDTermSelectorRenderer.js <(echo) \
+    $SRC/renderers/bs3.ResultCountRenderer.js <(echo) \
     $SRC/renderers/bs3.ResultsDisplayRenderer.js <(echo) \
     $SRC/renderers/bs3.SearchBoxRenderer.js <(echo) \
     $SRC/renderers/bs3.SearchingNotificationRenderer.js <(echo) \
     $SRC/renderers/bs3.SelectedFiltersRenderer.js <(echo) \
+    $SRC/renderers/bs3.SortRenderer.js <(echo) \
     $SRC/renderers/bs3.TabularResultsRenderer.js <(echo) \
     $SRC/renderers/d3.edges.js <(echo) \
     $SRC/renderers/google.edges.js <(echo) \
