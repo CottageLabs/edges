@@ -15,6 +15,12 @@ $.extend(true, edges, {
 
             this.sizeOptions = params.sizeOptions || [10, 25, 50, 100];
 
+            this.sizePrefix = edges.getParam(params.sizePrefix, "");
+
+            this.sizeSuffix = edges.getParam(params.sizeSuffix, " per page");
+
+            this.showRecordCount = edges.getParam(params.showRecordCount, true);
+
             this.namespace = "edges-bs3-pager";
 
             this.draw = function () {
@@ -34,10 +40,13 @@ $.extend(true, edges, {
                 var sizeSelectClass = edges.css_classes(this.namespace, "size", this);
 
                 // the total number of records found
-                var recordCount = '<span class="' + totalClass + '">' + this.component.total + '</span> results found';
+                var recordCount = "";
+                if (this.showRecordCount) {
+                    recordCount = '<span class="' + totalClass + '">' + this.component.total + '</span> results found';
+                }
 
                 // the number of records per page
-                var sizer = '<div class="form-inline">' + recordCount + '<div class="form-group"><select class="form-control input-sm ' + sizeSelectClass + '" name="' + this.component.id + '-page-size">{{SIZES}}</select></div> per page</div>';
+                var sizer = '<div class="form-inline">' + recordCount + this.sizePrefix + '<div class="form-group"><select class="form-control input-sm ' + sizeSelectClass + '" name="' + this.component.id + '-page-size">{{SIZES}}</select></div>' + this.sizeSuffix + '</div>';
                 var sizeopts = "";
                 var optarr = this.sizeOptions.slice(0);
                 if ($.inArray(this.component.pageSize, optarr) === -1) {
