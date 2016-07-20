@@ -9,6 +9,8 @@ $.extend(edges, {
             if (!params) { params = {} }
             return new edges.csv.ObjectByRow(params);
         },
+
+        /** @class */
         ObjectByRow : function(params) {
 
             this.sheet = false;

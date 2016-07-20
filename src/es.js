@@ -1,3 +1,4 @@
+/** @namespace */
 var es = {
 
     /////////////////////////////////////////////////////
@@ -58,12 +59,30 @@ var es = {
     },
 
     ////////////////////////////////////////////////////
-    // Query objects for standard query structure
+    /** @namespace */
+    /** Query objects for standard query structure */
+    /**
+     *
+     * @param filtered {Boolean} Is this an ES filtered query?
+     * @param size=10 {Number} What amount of results are required. ES defaults to 10.
+     * @param from {Number} Beginning point for results.
+     * @param fields {String[]} Required fields.
+     * @param aggs {String[]} ES aggregations.
+     * @param must {String[]} ES must query.
+     * @param source {String} ES source.
+     * @param should {String[]} ES should.
+     * @param mustNot {String[]} ES must not.
+     * @param partialFields ???
+     * @param scriptFields ???
+     * @param minimumShouldMatch ???
+     * @param facets {String[]} for older versions of ES
+     */
 
     newQuery : function(params) {
         if (!params) { params = {} }
         return new es.Query(params);
     },
+    /** @class */
     Query : function(params) {
         // properties that can be set directly (thought note that they may need to be read via their getters)
         this.filtered = params.filtered || true;

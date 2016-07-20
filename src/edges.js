@@ -1,12 +1,38 @@
+/** @namespace */
 var edges = {
 
     //////////////////////////////////////////////////////
-    // main function to run to start a new Edge
-
+    /** @namespace */
+    /** function to run to start a new Edge */
+    /** * @param selector="body" {String} The jquery selector for the element where the edge will be deployed.
+     * @param search_url {String} The base search url which will respond to elasticsearch queries.  Generally ends with _search
+     * @param datatype="jsonp" {String} Datatype for ajax requests to use - overall recommend using jsonp
+     * @param preflightQueries {Dictionary} Dictionary of queries to be run before the primary query is executed: preflight id : es.newQuery(....). Results will appear with the same ids in this.preflightResults.
+     Preflight queries are /not/ subject to the base query
+     * @param baseQuery {String} Query that forms the basis of all queries that are assembled and run. Note that baseQuery is inviolable - it's requirements will always be enforced
+     * @param openingQuery {String} Query to use to initialise the search.  Use this to set your opening values for things like page size, initial search terms, etc.  Any request to
+     reset the interface will return to this query.
+     * @param secondaryQueries {?} Dictionary of functions that will generate secondary queries which also need to be run at the point that cycle() is called.
+     These functions and their resulting queries will be run /after/ the primary query (so can take advantage of the results).
+     Their results will be stored in this.secondaryResults. Secondary queries are not subject the base query, although the functions may of course apply the base query too if they wish.
+     secondary id : function()
+     * @param initialSearch {Boolean} Should the init process do a search
+     * @param  staticFiles {Object} List of static files (e.g. data files) to be loaded at startup, and made available
+     on the object for use by components.
+     {"id" : internal id to give the file, "url" : file url, "processor" : edges.csv.newObjectByRow, "datatype" : "text", "opening" : function to be run after processing for initial state}
+     * @param manageUrl {Boolean} Should the search url be synchronised with the browser's url bar after search
+     and should queries be retrieved from the url on init
+     * @param urlQuerySource="source" {String} Query parameter in which the query for this edge instance will be stored.
+     * @param template {Object} Template object that will be used to draw the frame for the edge.  May be left
+     blank, in which case the edge will assume that the elements are already rendered on the page by the caller
+     * @param components {Array} List of all the components that are involved in this edge
+     * @param renderPacks=[edges.bs3, edges.nvd3, edges.highcharts, edges.google, edges.d3] {Array} Render packs to use to source automatically assigned rendering objects.
+     Defaults to [edges.bs3, edges.nvd3, edges.highcharts, edges.google, edges.d3] */
     newEdge : function(params) {
         if (!params) { params = {} }
         return new edges.Edge(params);
     },
+    /** @class */
     Edge : function(params) {
 
         /////////////////////////////////////////////
