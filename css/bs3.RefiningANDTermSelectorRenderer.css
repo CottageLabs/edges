@@ -58,3 +58,27 @@
 .edges-bs3-refiningand-term-selector-filter-remove:hover {
     color: #000000;
 }
+
+.edges-bs3-refiningand-term-selector-results-list::-webkit-scrollbar {
+    -webkit-appearance: none;
+}
+
+.edges-bs3-refiningand-term-selector-results-list::-webkit-scrollbar:vertical {
+    width: 8px;
+}
+
+.edges-bs3-refiningand-term-selector-results-list::-webkit-scrollbar:horizontal {
+    height: 8px;
+}
+
+.edges-bs3-refiningand-term-selector-results-list::-webkit-scrollbar-thumb {
+    border-radius: 8px;
+    border: 1px solid #c4d0d7;
+    background-color: rgba(0, 0, 0, .4);
+}
+
+.edges-bs3-refiningand-term-selector-results-list::-webkit-scrollbar-track {
+    background-color: #c4d0d7;
+    border-radius: 8px;
+}
+
