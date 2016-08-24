@@ -12,11 +12,11 @@ $.extend(edges, {
     NumericRangeEntry: function (params) {
         ///////////////////////////////////////
         // parameters that can be passed in
-        this.lower = params.lower === undefined ? false : params.lower;
-        this.upper = params.upper === undefined ? false : params.upper;
-        this.increment = params.increment || 1;
+        this.lower = edges.getParam(params.lower, false);
+        this.upper = edges.getParam(params.upper, false);
+        this.increment = edges.getParam(params.increment, 1);
 
-        this.defaultRenderer = params.defaultRenderer || "newNumericRangeEntryRenderer";
+        this.defaultRenderer = edges.getParam(params.defaultRenderer, "newNumericRangeEntryRenderer");
 
         ///////////////////////////////////////
         // state parameters

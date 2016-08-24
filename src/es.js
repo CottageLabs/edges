@@ -1196,13 +1196,13 @@ var es = {
         this.objectify = function() {
             var obj = {range: {}};
             obj.range[this.field] = {};
-            if (this.lte) {
+            if (this.lte !== false) {
                 obj.range[this.field]["lte"] = this.lte;
             }
-            if (this.lt && !this.lte) {
+            if (this.lt !== false && this.lte === false) {
                 obj.range[this.field]["lt"] = this.lt;
             }
-            if (this.gte) {
+            if (this.gte !== false) {
                 obj.range[this.field]["gte"] = this.gte;
             }
             return obj;
@@ -1213,13 +1213,13 @@ var es = {
                 obj = obj.range;
             }
             this.field = Object.keys(obj)[0];
-            if (obj[this.field].lte) {
+            if (obj[this.field].lte !== undefined && obj[this.field].lte !== false) {
                 this.lte = obj[this.field].lte;
             }
-            if (obj[this.field].lt) {
+            if (obj[this.field].lt !== undefined && obj[this.field].lt !== false) {
                 this.lt = obj[this.field].lt;
             }
-            if (obj[this.field].gte) {
+            if (obj[this.field].gte !== undefined && obj[this.field].gte !== false) {
                 this.gte = obj[this.field].gte;
             }
         };

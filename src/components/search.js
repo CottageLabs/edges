@@ -532,6 +532,9 @@ $.extend(edges, {
         this._synchronise_range = function (filter) {
             var display = this.fieldDisplays[filter.field] || filter.field;
             var to = filter.lt;
+            if (to === false) {
+                to = filter.lte;
+            }
             var from = filter.gte;
             var r = this._getRangeDef(filter.field, from, to);
             var values = [];
@@ -602,7 +605,7 @@ $.extend(edges, {
                 return this.formatUnknownRange(from, to)
             } else {
                 // if they're the same just return one of them
-                if (from || to) {
+                if (from !== false || to !== false) {
                     if (from === to) {
                         return from;
                     }
@@ -610,19 +613,19 @@ $.extend(edges, {
 
                 // otherwise calculate the display for the range
                 var frag = "";
-                if (from) {
+                if (from !== false) {
                     frag += from;
                 } else {
                     frag += "< ";
                 }
-                if (to) {
-                    if (from) {
+                if (to !== false) {
+                    if (from !== false) {
                         frag += " - " + to;
                     } else {
                         frag += to;
                     }
                 } else {
-                    if (from) {
+                    if (from !== false) {
                         frag += "+";
                     } else {
                         frag = "unknown";
