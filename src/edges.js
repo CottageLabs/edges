@@ -476,6 +476,17 @@ var edges = {
         ////////////////////////////////////////////////
         // various utility functions
 
+        this.getComponent = function(params) {
+            var id = params.id;
+            for (var i = 0; i < this.components.length; i++) {
+                var component = this.components[i];
+                if (component.id === id) {
+                    return component;
+                }
+            }
+            return false;
+        };
+
         // return components in the requested category
         this.category = function(cat) {
             var comps = [];
