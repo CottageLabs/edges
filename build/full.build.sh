@@ -25,6 +25,7 @@ nodejs r.js -o cssIn=$IN_CSS/bs3.FacetFilterSetterRenderer.css out=$CSS/bs3.Face
 nodejs r.js -o cssIn=$IN_CSS/bs3.Facetview.css out=$CSS/bs3.Facetview.css baseUrl=.
 nodejs r.js -o cssIn=$IN_CSS/bs3.MultiDateRangeRenderer.css out=$CSS/bs3.MultiDateRangeRenderer.css baseUrl=.
 nodejs r.js -o cssIn=$IN_CSS/bs3.NSeparateORTermSelectorRenderer.css out=$CSS/bs3.NSeparateORTermSelectorRenderer.css baseUrl=.
+nodejs r.js -o cssIn=$IN_CSS/bs3.NumberedPager.css out=$CSS/bs3.NumberedPager.css baseUrl=.
 nodejs r.js -o cssIn=$IN_CSS/bs3.NumericRangeEntryRenderer.css out=$CSS/bs3.NumericRangeEntryRenderer.css baseUrl=.
 nodejs r.js -o cssIn=$IN_CSS/bs3.ORTermSelectorRenderer.css out=$CSS/bs3.ORTermSelectorRenderer.css baseUrl=.
 nodejs r.js -o cssIn=$IN_CSS/bs3.PagerRenderer.css out=$CSS/bs3.PagerRenderer.css baseUrl=.
@@ -60,6 +61,7 @@ cat $SRC/es.js <(echo) \
     $SRC/renderers/bs3.FullSearchControllerRenderer.js <(echo) \
     $SRC/renderers/bs3.MultiDateRangeRenderer.js <(echo) \
     $SRC/renderers/bs3.NSeparateORTermSelectorRenderer.js <(echo) \
+    $SRC/renderers/bs3.NumberedPager.js <(echo) \
     $SRC/renderers/bs3.NumericRangeEntryRenderer.js <(echo) \
     $SRC/renderers/bs3.ORTermSelectorRenderer.js <(echo) \
     $SRC/renderers/bs3.PagerRenderer.js <(echo) \
@@ -89,6 +91,7 @@ cat $CSS/d3.edges.css <(echo) \
     $CSS/bs3.FacetFilterSetterRenderer.css <(echo) \
     $CSS/bs3.MultiDateRangeRenderer.css <(echo) \
     $CSS/bs3.NSeparateORTermSelectorRenderer.css <(echo) \
+    $CSS/bs3.NumberedPager.css <(echo) \
     $CSS/bs3.NumericRangeEntryRenderer.css <(echo) \
     $CSS/bs3.ORTermSelectorRenderer.css <(echo) \
     $CSS/bs3.PagerRenderer.css <(echo) \

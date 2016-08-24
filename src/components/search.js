@@ -707,6 +707,12 @@ $.extend(edges, {
             var from = this.from + this.pageSize;
             this.setFrom(from);
         };
+
+        this.goToPage = function(params) {
+            var page = params.page;
+            var nf = ((page - 1) * this.pageSize) + 1;  // we're working with the human notion of from, here, so is indexed from 1
+            this.setFrom(nf);
+        }
     },
 
     newSearchingNotification: function (params) {

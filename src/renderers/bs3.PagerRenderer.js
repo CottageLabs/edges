@@ -9,17 +9,21 @@ $.extend(true, edges, {
         },
         PagerRenderer: function (params) {
 
-            this.scroll = params.scroll || true;
+            this.scroll = edges.getParam(params.scroll, true);
 
-            this.scrollSelector = params.scrollSelector || "body";
+            this.scrollSelector = edges.getParam(params.scrollSelector, "body");
 
-            this.sizeOptions = params.sizeOptions || [10, 25, 50, 100];
+            this.showSizeSelector = edges.getParam(params.showSizeSelector, true);
+
+            this.sizeOptions = edges.getParam(params.sizeOptions, [10, 25, 50, 100]);
 
             this.sizePrefix = edges.getParam(params.sizePrefix, "");
 
             this.sizeSuffix = edges.getParam(params.sizeSuffix, " per page");
 
             this.showRecordCount = edges.getParam(params.showRecordCount, true);
+
+            this.showPageNavigation = edges.getParam(params.showPageNavigation, true);
 
             this.namespace = "edges-bs3-pager";
 
@@ -46,61 +50,79 @@ $.extend(true, edges, {
                 }
 
                 // the number of records per page
-                var sizer = '<div class="form-inline">' + recordCount + this.sizePrefix + '<div class="form-group"><select class="form-control input-sm ' + sizeSelectClass + '" name="' + this.component.id + '-page-size">{{SIZES}}</select></div>' + this.sizeSuffix + '</div>';
-                var sizeopts = "";
-                var optarr = this.sizeOptions.slice(0);
-                if ($.inArray(this.component.pageSize, optarr) === -1) {
-                    optarr.push(this.component.pageSize)
-                }
-                optarr.sort(function (a, b) {
-                    return a - b
-                });  // sort numerically
-                for (var i = 0; i < optarr.length; i++) {
-                    var so = optarr[i];
-                    var selected = "";
-                    if (so === this.component.pageSize) {
-                        selected = "selected='selected'";
+                var sizer = "";
+                if (this.showSizeSelector) {
+                    var sizer = '<div class="form-inline">' + recordCount + this.sizePrefix + '<div class="form-group"><select class="form-control input-sm ' + sizeSelectClass + '" name="' + this.component.id + '-page-size">{{SIZES}}</select></div>' + this.sizeSuffix + '</div>';
+                    var sizeopts = "";
+                    var optarr = this.sizeOptions.slice(0);
+                    if ($.inArray(this.component.pageSize, optarr) === -1) {
+                        optarr.push(this.component.pageSize)
                     }
-                    sizeopts += '<option name="' + so + '" ' + selected + '>' + so + '</option>';
-                }
-                sizer = sizer.replace(/{{SIZES}}/g, sizeopts);
-
-                var first = '<a href="#" class="' + firstClass + '">First</a>';
-                var prev = '<a href="#" class="' + prevClass + '">Prev</a>';
-                if (this.component.page === 1) {
-                    first = '<span class="' + firstClass + ' disabled">First</span>';
-                    prev = '<span class="' + prevClass + ' disabled">Prev</span>';
-                }
-
-                var next = '<a href="#" class="' + nextClass + '">Next</a>';
-                if (this.component.page === this.component.totalPages) {
-                    next = '<span class="' + nextClass + ' disabled">Next</a>';
+                    optarr.sort(function (a, b) {
+                        return a - b
+                    });  // sort numerically
+                    for (var i = 0; i < optarr.length; i++) {
+                        var so = optarr[i];
+                        var selected = "";
+                        if (so === this.component.pageSize) {
+                            selected = "selected='selected'";
+                        }
+                        sizeopts += '<option name="' + so + '" ' + selected + '>' + so + '</option>';
+                    }
+                    sizer = sizer.replace(/{{SIZES}}/g, sizeopts);
                 }
 
-                var nav = '<div class="' + navClass + '">' + first + prev +
-                    '<span class="' + pageClass + '">Page ' + this.component.page + ' of ' + this.component.totalPages + '</span>' +
-                    next + "</div>";
+                var nav = "";
+                if (this.showPageNavigation) {
+                    var first = '<a href="#" class="' + firstClass + '">First</a>';
+                    var prev = '<a href="#" class="' + prevClass + '">Prev</a>';
+                    if (this.component.page === 1) {
+                        first = '<span class="' + firstClass + ' disabled">First</span>';
+                        prev = '<span class="' + prevClass + ' disabled">Prev</span>';
+                    }
 
-                var frag = '<div class="' + containerClass + '"><div class="row"><div class="col-md-6">{{COUNT}}</div><div class="col-md-6">{{NAV}}</div></div></div>';
+                    var next = '<a href="#" class="' + nextClass + '">Next</a>';
+                    if (this.component.page === this.component.totalPages) {
+                        next = '<span class="' + nextClass + ' disabled">Next</a>';
+                    }
+
+                    nav = '<div class="' + navClass + '">' + first + prev +
+                        '<span class="' + pageClass + '">Page ' + this.component.page + ' of ' + this.component.totalPages + '</span>' +
+                        next + "</div>";
+                }
+
+                var frag = "";
+                if (this.showSizeSelector && !this.showPageNavigation) {
+                    frag = '<div class="' + containerClass + '"><div class="row"><div class="col-md-12">{{COUNT}}</div></div></div>';
+                } else if (!this.showSizeSelector && this.showPageNavigation) {
+                    frag = '<div class="' + containerClass + '"><div class="row"><div class="col-md-12">{{NAV}}</div></div></div>';
+                } else {
+                    frag = '<div class="' + containerClass + '"><div class="row"><div class="col-md-6">{{COUNT}}</div><div class="col-md-6">{{NAV}}</div></div></div>';
+                }
                 frag = frag.replace(/{{COUNT}}/g, sizer).replace(/{{NAV}}/g, nav);
 
                 this.component.context.html(frag);
 
                 // now create the selectors for the functions
-                var firstSelector = edges.css_class_selector(this.namespace, "first", this);
-                var prevSelector = edges.css_class_selector(this.namespace, "prev", this);
-                var nextSelector = edges.css_class_selector(this.namespace, "next", this);
-                var sizeSelector = edges.css_class_selector(this.namespace, "size", this);
+                if (this.showPageNavigation) {
+                    var firstSelector = edges.css_class_selector(this.namespace, "first", this);
+                    var prevSelector = edges.css_class_selector(this.namespace, "prev", this);
+                    var nextSelector = edges.css_class_selector(this.namespace, "next", this);
 
-                // bind the event handlers
-                if (this.component.page !== 1) {
-                    edges.on(firstSelector, "click", this, "goToFirst");
-                    edges.on(prevSelector, "click", this, "goToPrev");
+                    // bind the event handlers
+                    if (this.component.page !== 1) {
+                        edges.on(firstSelector, "click", this, "goToFirst");
+                        edges.on(prevSelector, "click", this, "goToPrev");
+                    }
+                    if (this.component.page !== this.component.totalPages) {
+                        edges.on(nextSelector, "click", this, "goToNext");
+                    }
                 }
-                if (this.component.page !== this.component.totalPages) {
-                    edges.on(nextSelector, "click", this, "goToNext");
+
+                if (this.showSizeSelector) {
+                    var sizeSelector = edges.css_class_selector(this.namespace, "size", this);
+                    edges.on(sizeSelector, "change", this, "changeSize");
                 }
-                edges.on(sizeSelector, "change", this, "changeSize");
             };
 
             this.doScroll = function () {
