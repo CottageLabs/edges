@@ -9,6 +9,8 @@ $.extend(true, edges, {
             // number of pull down elements to be rendered
             this.n = edges.getParam(params.n, 1);
 
+            this.colMdWidth = edges.getParam(params.colMdWidth, 3);
+
             // for each of the N elements, you can specify properties here
             // {
             //      "label" : "<label to appear with the selector>",
@@ -37,7 +39,7 @@ $.extend(true, edges, {
                 var labelClass = edges.css_classes(this.namespace, "label", this);
                 var containerClass = edges.css_classes(this.namespace, "container", this);
 
-                var selectorFrag = "";
+                var selectorFrag = '<div class="row">';
                 for (var j = 0; j < this.n; j++) {
                     var label = false;
                     var unselected = "Select an option";
@@ -73,11 +75,12 @@ $.extend(true, edges, {
                         options = '<option>Loading...</option>';
                     }
 
-                    selectorFrag += '<div class="form-group"> \
-                        <label class="' + labelClass + '" for="' + selectId + '">' + edges.escapeHtml(label) + '</label>\
+                    selectorFrag += '<div class="col-md-' + this.colMdWidth + '"><div class="form-group"> \
+                        <label class="' + labelClass + '" for="' + selectId + '">' + edges.escapeHtml(label) + '</label><br>\
                         <select id="' + selectId + '" name="' + selectId + '" class="'+ selectClass +' form-control">' + options + '</select> \
-                    </div>';
+                    </div></div>';
                 }
+                selectorFrag += "</div>";
 
                 var frag = '<div class="' + containerClass + '"><div class="form-inline">' + selectorFrag + '</div></div>';
 
