@@ -8,6 +8,7 @@ $.extend(true, edges, {
             return new edges.bs3.NumericRangeEntryRenderer(params);
         },
         NumericRangeEntryRenderer: function (params) {
+            this.open = edges.getParam(params.open, false);
 
             this.fromText = edges.getParam(params.fromText, "From");
             this.toText = edges.getParam(params.toText, "To");
