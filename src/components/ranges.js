@@ -192,26 +192,44 @@ $.extend(edges, {
         };
 
         this.synchronise = function() {
-            if (!this.autoLookupRange) { return }
+            this.currentField = false;
+            this.fromDate = false;
+            this.toDate = false;
+
+            if (this.autoLookupRange) {
+                for (var i = 0; i < this.fields.length; i++) {
+                    var field = this.fields[i].field;
+                    var agg = this.edge.secondaryResults["multidaterange_" + this.id].aggregation(field);
+
+                    var min = this.defaultEarliest;
+                    var max = this.defaultLatest;
+                    if (agg.min !== null) {
+                        min = new Date(agg.min);
+                    }
+                    if (agg.max !== null) {
+                        max = new Date(agg.max);
+                    }
+
+                    this.dateOptions[field] = {
+                        earliest: min,
+                        latest: max
+                    }
+                }
+            }
 
             for (var i = 0; i < this.fields.length; i++) {
                 var field = this.fields[i].field;
-                // var agg = this.edge.result.aggregation(field);
-                var agg = this.edge.secondaryResults["multidaterange_" + this.id].aggregation(field);
+                var filters = this.edge.currentQuery.listMust(es.newRangeFilter({field: field}));
+                if (filters.length > 0) {
+                    this.currentField = field;
+                    var filter = filters[0];
+                    this.fromDate = filter.gte;
+                    this.toDate = filter.lt;
+                }
+            }
 
-                var min = this.defaultEarliest;
-                var max = this.defaultLatest;
-                if (agg.min !== null) {
-                    min = new Date(agg.min);
-                }
-                if (agg.max !== null) {
-                    max = new Date(agg.max);
-                }
-
-                this.dateOptions[field] = {
-                    earliest: min,
-                    latest: max
-                }
+            if (!this.currentField && this.fields.length > 0) {
+                this.currentField = this.fields[0].field;
             }
         };
 

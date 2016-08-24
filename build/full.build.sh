@@ -18,11 +18,13 @@ nodejs r.js -o appDir=$IN_JS baseDir=. dir=$SRC
 # these commands individually minify the CSS
 # nodejs r.js -o cssIn=$IN_CSS/bs3.edges.css out=$CSS/bs3.edges.css baseUrl=.
 nodejs r.js -o cssIn=$IN_CSS/bs3.BasicRangeSelectorRenderer.css out=$CSS/bs3.BasicRangeSelectorRenderer.css baseUrl=.
+nodejs r.js -o cssIn=$IN_CSS/bs3.BSMultiDateRange.css out=$CSS/bs3.BSMultiDateRange.css baseUrl=.
+nodejs r.js -o cssIn=$IN_CSS/bs3.BSMultiDateRangeFacet.css out=$CSS/bs3.BSMultiDateRangeFacet.css baseUrl=.
 nodejs r.js -o cssIn=$IN_CSS/bs3.CompactSelectedFiltersRenderer.css out=$CSS/bs3.CompactSelectedFiltersRenderer.css baseUrl=.
 nodejs r.js -o cssIn=$IN_CSS/bs3.FacetFilterSetterRenderer.css out=$CSS/bs3.FacetFilterSetterRenderer.css baseUrl=.
 nodejs r.js -o cssIn=$IN_CSS/bs3.Facetview.css out=$CSS/bs3.Facetview.css baseUrl=.
 nodejs r.js -o cssIn=$IN_CSS/bs3.MultiDateRangeRenderer.css out=$CSS/bs3.MultiDateRangeRenderer.css baseUrl=.
-nodejs r.js -o cssIn=$IN_CSS/bs3.MultiDateRangeRenderer.css out=$CSS/bs3.NSeparateORTermSelectorRenderer.css baseUrl=.
+nodejs r.js -o cssIn=$IN_CSS/bs3.NSeparateORTermSelectorRenderer.css out=$CSS/bs3.NSeparateORTermSelectorRenderer.css baseUrl=.
 nodejs r.js -o cssIn=$IN_CSS/bs3.NumericRangeEntryRenderer.css out=$CSS/bs3.NumericRangeEntryRenderer.css baseUrl=.
 nodejs r.js -o cssIn=$IN_CSS/bs3.ORTermSelectorRenderer.css out=$CSS/bs3.ORTermSelectorRenderer.css baseUrl=.
 nodejs r.js -o cssIn=$IN_CSS/bs3.PagerRenderer.css out=$CSS/bs3.PagerRenderer.css baseUrl=.
@@ -52,6 +54,7 @@ cat $SRC/es.js <(echo) \
     $SRC/templates/bs3.Tabbed.js <(echo) \
     $SRC/renderers/bs3.BasicRangeSelectorRenderer.js <(echo) \
     $SRC/renderers/bs3.BSMultiDateRange.js <(echo) \
+    $SRC/renderers/bs3.BSMultiDateRangeFacet.js <(echo) \
     $SRC/renderers/bs3.CompactSelectedFiltersRenderer.js <(echo) \
     $SRC/renderers/bs3.FacetFilterSetterRenderer.js <(echo) \
     $SRC/renderers/bs3.FullSearchControllerRenderer.js <(echo) \
@@ -81,6 +84,7 @@ cat $CSS/d3.edges.css <(echo) \
     $CSS/bs3.Tabbed.css <(echo) \
     $CSS/bs3.BasicRangeSelectorRenderer.css <(echo) \
     $CSS/bs3.BSMultiDateRange.css <(echo) \
+    $CSS/bs3.BSMultiDateRangeFacet.css <(echo) \
     $CSS/bs3.CompactSelectedFiltersRenderer.css <(echo) \
     $CSS/bs3.FacetFilterSetterRenderer.css <(echo) \
     $CSS/bs3.MultiDateRangeRenderer.css <(echo) \

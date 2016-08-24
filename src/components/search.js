@@ -349,28 +349,34 @@ $.extend(edges, {
 
         // mapping from fields to names to display them as
         // if these come from a facet/selector, they should probably line up
-        this.fieldDisplays = params.fieldDisplays || {};
+        this.fieldDisplays = edges.getParam(params.fieldDisplays, {});
 
         // value maps on a per-field basis for Term(s) filters, to apply to values before display.
         // if these come from a facet/selector, they should probably be the same maps
         // {"<field>" : {"<value>" : "<display>"}}
-        this.valueMaps = params.valueMaps || {};
+        this.valueMaps = edges.getParam(params.valueMaps, {});
 
         // value functions on a per-field basis for Term(s) filters, to apply to values before display.
         // if these come from a facet/selector, they should probably be the same functions
         // {"<field>" : <function>}
-        this.valueFunctions = params.valueFunctions || {};
+        this.valueFunctions = edges.getParam(params.valueFunctions, {});
 
         // range display maps on a per-field basis for Range filters
         // if these come from a facet/selector, they should probably be the same maps
         // {"<field>" : [{"from" : "<from>", "to" : "<to>", "display" : "<display>"}]}
-        this.rangeMaps = params.rangeMaps || {};
+        this.rangeMaps = edges.getParam(params.rangeMaps, {});
+
+        // range display functions on a per-field basis for Range filters
+        // useful if you have a range selector which allows arbitrary ranges
+        // {"<field>" : <function (receives field name, from and to as params dict)>}
+        // must return {to: to, from: from, display: display}
+        this.rangeFunctions = edges.getParam(params.rangeFunctions, {});
 
         // function to use to format any range that does not appear in the range maps
-        this.formatUnknownRange = params.formatUnknownRange || false;
+        this.formatUnknownRange = edges.getParam(params.formatUnknownRange, false);
 
         // override the parent's default renderer
-        this.defaultRenderer = params.defaultRenderer || "newSelectedFiltersRenderer";
+        this.defaultRenderer = edges.getParam(params.defaultRenderer, "newSelectedFiltersRenderer");
 
         //////////////////////////////////////////
         // properties used to store internal state
@@ -458,7 +464,7 @@ $.extend(edges, {
                 if (value.from) {
                     params["gte"] = value.from;
                 }
-                var template = es.newRangeFilter(params)
+                var template = es.newRangeFilter(params);
 
                 if (boolType === "must") {
                     nq.removeMust(template);
@@ -554,34 +560,40 @@ $.extend(edges, {
         };
 
         this._getRangeDef = function (field, from, to) {
-            if (!this.rangeMaps[field]) {
+            if (!this.rangeMaps[field] && !this.rangeFunctions[field]) {
                 return false;
             }
-            for (var i = 0; i < this.rangeMaps[field].length; i++) {
-                var r = this.rangeMaps[field][i];
-                var frMatch = true;
-                var toMatch = true;
-                // if one is set and the other not, no match
-                if ((from && !r.from) || (!from && r.from)) {
-                    frMatch = false;
-                }
-                if ((to && !r.to) || (!to && r.to)) {
-                    toMatch = false;
-                }
+            if (this.rangeMaps[field]) {
+                for (var i = 0; i < this.rangeMaps[field].length; i++) {
+                    var r = this.rangeMaps[field][i];
+                    var frMatch = true;
+                    var toMatch = true;
+                    // if one is set and the other not, no match
+                    if ((from && !r.from) || (!from && r.from)) {
+                        frMatch = false;
+                    }
+                    if ((to && !r.to) || (!to && r.to)) {
+                        toMatch = false;
+                    }
 
-                // if both set, and they don't match, no match
-                if (from && r.from && from !== r.from) {
-                    frMatch = false;
-                }
-                if (to && r.to && to !== r.to) {
-                    toMatch = false;
-                }
+                    // if both set, and they don't match, no match
+                    if (from && r.from && from !== r.from) {
+                        frMatch = false;
+                    }
+                    if (to && r.to && to !== r.to) {
+                        toMatch = false;
+                    }
 
-                // both have to match for a match
-                if (frMatch && toMatch) {
-                    return r
+                    // both have to match for a match
+                    if (frMatch && toMatch) {
+                        return r
+                    }
                 }
+            } else if (this.rangeFunctions[field]) {
+                var fn = this.rangeFunctions[field];
+                return fn({field: field, from: from, to: to});
             }
+
             return false;
         };
 
