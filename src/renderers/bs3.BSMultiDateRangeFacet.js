@@ -59,6 +59,7 @@ $.extend(true, edges, {
                 var toggleId = edges.css_id(this.namespace, "toggle", this);
                 var formId = edges.css_id(this.namespace, "form", this);
                 var rangeDisplayId = edges.css_id(this.namespace, "range", this);
+                var pluginId = edges.css_id(this.namespace, dre.id + "_plugin", this);
 
                 this.selectId = edges.css_id(this.namespace, dre.id + "_date-type", this);
                 this.rangeId = edges.css_id(this.namespace, dre.id + "_range", this);
@@ -134,9 +135,14 @@ $.extend(true, edges, {
                     props["ranges"] = this.ranges;
                 }
 
+                // clear out any old version of the plugin, as these are appended to the document
+                // and not kept within the div controlled by this renderer
+                var pluginSelector = edges.css_id_selector(this.namespace, dre.id + "_plugin", this);
+                $(pluginSelector).remove();
+
                 this.rangeJq.daterangepicker(props, cb);
                 this.drp = this.rangeJq.data("daterangepicker");
-
+                this.drp.container.attr("id", pluginId).addClass("show-calendar");
 
                 this.prepDates();
 
