@@ -53,6 +53,8 @@ $.extend(true, edges, {
                     var headerClasses = edges.css_classes(this.namespace, "header", this);
                     var cellClasses = edges.css_classes(this.namespace, "cell", this);
                     var downloadClasses = edges.css_classes(this.namespace, "download", this);
+                    var tableDivClasses = edges.css_classes(this.namespace, "tablediv", this);
+
                     var downloadId = edges.css_id(this.namespace, "download", this);
 
                     var down = "";
@@ -61,7 +63,7 @@ $.extend(true, edges, {
                             '">' + edges.escapeHtml(this.downloadText) + '</a></div></div></div>';
                     }
 
-                    var frag = down + '<div class="table-responsive">';
+                    var frag = '<div class="table-responsive ' + tableDivClasses + '">';
 
                     // render the table header
                     frag += '<table class="' + tableClasses + '"><thead><tr>_HEADERS_</tr></thead><tbody>';
@@ -87,7 +89,7 @@ $.extend(true, edges, {
                     var headers = "";
                     for (var i = 0; i < headerDisplay.length; i++) {
                         var header = headerDisplay[i];
-                        headers += '<td class="' + headerClasses + '">' + header + '</td>';
+                        headers += '<th class="' + headerClasses + '">' + header + '</th>';
                     }
                     frag = frag.replace(/_HEADERS_/g, headers);
 
@@ -110,7 +112,7 @@ $.extend(true, edges, {
                     }
 
                     // close off the table
-                    frag += "</tbody></table></div>";
+                    frag += "</tbody></table></div>" + down;
                 }
 
                 // and render into the page
