@@ -5,11 +5,15 @@
 /** @namespace  parent*/
 var parent = {
     /**
-     * A function in the parent object, where the object is explicitly declared.
+     * <p>A function in the parent object, where the object is explicitly declared.</p>
      *
-     * Notice how it is different to how we declare a function where we have used $.extend() later on.  No @memberof is required here.
+     * <p>Notice how it is different to how we declare a function where we have used $.extend() later on.  No @memberof is required here.</p>
+     *
+     * <p>See <em>also</em> how very basic HTML markup is permitted</p>
      *
      * @param {Object} params some parameter
+     * @params {String} params.aString  A string parameter
+     * @params {Boolean} params.aBool   A boolean parameter
      * @returns {Object} a set of ranges of the form {range : [start, end]}
      */
     parentFn : function(params) {
@@ -20,7 +24,6 @@ var parent = {
 /** @namespace  parent*/
 $.extend(parent, {
 
-
     /** @namespace parent.child */
     child: {
         /**
@@ -28,12 +31,14 @@ $.extend(parent, {
          *
          * @type {Function}
          * @memberof parent.child
+         * @params {Object} [params={}]  the object containing the parameters for this request (which is option, and defaults to {}, which is what [params={}] means)
+         * @params {String} params.aString  A string parameter
+         * @params {Boolean} params.aBool   A boolean parameter
          * @returns {parent.child.Class}
          */
         newClass: function (params) {
-            if (!params) {
-                params = {}
-            }
+            if (!params) {  params = {} }
+            parent.child.Class.prototype = some.newOther(params);
             return new parent.child.Class(params);
         },
         /**
@@ -41,7 +46,10 @@ $.extend(parent, {
          *
          * @constructor
          * @memberof parent.child
-         * @params
+         * @extends some.Other
+         * @params {Object} params  the object containing the parameters for this class
+         * @params {String} params.aString  A string parameter
+         * @params {Boolean} params.aBool   A boolean parameter
          */
         Class: function (params) {
             /**
@@ -57,10 +65,9 @@ $.extend(parent, {
              * This is a member function
              *
              * @type {Function}
-             * @param params {Object} Some parameters
              * @returns {Boolean} whether it's true or not
              */
-            this.memberFn = function (params) {
+            this.memberFn = function () {
                 return true;
             };
 
