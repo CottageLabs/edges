@@ -23,9 +23,14 @@ $.extend(true, edges, {
                 var prefixClass = edges.css_classes(this.namespace, "prefix", this);
                 var suffixClass = edges.css_classes(this.namespace, "suffix", this);
 
+                var total = this.component.total;
+                if (!total) {
+                    total = 0;
+                }
+
                 // the total number of records found
                 var recordCount = '<span class="' + prefixClass + '">' + this.prefix +
-                    '</span><span class="' + totalClass + '">' + this.component.total +
+                    '</span><span class="' + totalClass + '">' + total +
                     '</span><span class="' + suffixClass + '">' + this.suffix + '</span>';
 
                 var frag = '<div class="' + containerClass + '"><div class="row"><div class="col-md-12">{{COUNT}}</div></div></div>';
