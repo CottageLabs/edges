@@ -9,7 +9,7 @@ jQuery(document).ready(function($) {
         staticFiles : [
             {
                 id: "mycsv",
-                url: "http://localhost:5029/static/vendor/edges_build/docs/static.csv",
+                url: "http://localhost:5029/static/vendor/edges/docs/static.csv",
                 datatype: "text"
             }
         ],
