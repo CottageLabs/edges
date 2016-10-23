@@ -33,7 +33,8 @@ var es = {
             range: es.newRangeAggregation,
             geo_distance: es.newGeoDistanceAggregation,
             date_histogram: es.newDateHistogramAggregation,
-            stats: es.StatsAggregation
+            stats: es.StatsAggregation,
+            cardinality: es.CardinalityAggregation
         };
 
         if (constructors[type]) {
@@ -92,7 +93,7 @@ var es = {
         this.facets = params.facets || [];
 
         this.getSize = function() {
-            if (this.size !== undefined) {
+            if (this.size !== undefined && this.size !== false) {
                 return this.size;
             }
             return 10;
@@ -254,6 +255,8 @@ var es = {
             for (var i = 0; i < removes.length; i++) {
                 this.must.splice(removes[i], 1);
             }
+            // return the count of filters that were removed
+            return removes.length;
         };
         this.clearMust = function() {};
 
@@ -442,6 +445,11 @@ var es = {
             }
 
             return q;
+        };
+
+        // When a query is requested as a string, dump via JSON.
+        es.Query.prototype.toString = function queryToString() {
+            return JSON.stringify(this.objectify())
         };
 
         this.parse = function(obj) {
@@ -800,6 +808,29 @@ var es = {
         }
     },
 
+    newCardinalityAggregation : function(params) {
+        if (!params) { params = {} }
+        es.CardinalityAggregation.prototype = es.newAggregation(params);
+        return new es.CardinalityAggregation(params);
+    },
+    CardinalityAggregation : function(params) {
+        this.field = es.getParam(params.field, false);
+
+        this.objectify = function() {
+            var body = {field: this.field};
+            return this._make_aggregation("cardinality", body);
+        };
+
+        this.parse = function(obj) {
+            var body = this._parse_wrapper(obj, "cardinality");
+            this.field = body.field;
+        };
+
+        if (params.raw) {
+            this.parse(params.raw);
+        }
+    },
+
     newRangeAggregation : function(params) {
         if (!params) { params = {} }
         es.RangeAggregation.prototype = es.newAggregation(params);
@@ -1092,7 +1123,11 @@ var es = {
 
         this.term_count = function() {
             return this.values === false ? 0 : this.values.length;
-        }
+        };
+
+        this.clear_terms = function() {
+            this.values = false;
+        };
 
         if (params.raw) {
             this.parse(params.raw);
@@ -1107,8 +1142,9 @@ var es = {
     },
     RangeFilter : function(params) {
         // this.field handled by superclass
-        this.lt = params.lt || false;
-        this.gte = params.gte || false;
+        this.lt = es.getParam(params.lt, false);
+        this.lte = es.getParam(params.lte, false);
+        this.gte = es.getParam(params.gte, false);
 
         this.matches = function(other) {
             // ask the parent object first
@@ -1124,6 +1160,11 @@ var es = {
                     return false;
                 }
             }
+            if (other.lte) {
+                if (other.lte !== this.lte) {
+                    return false;
+                }
+            }
             if (other.gte) {
                 if (other.gte !== this.gte) {
                     return false;
@@ -1136,10 +1177,13 @@ var es = {
         this.objectify = function() {
             var obj = {range: {}};
             obj.range[this.field] = {};
-            if (this.lt) {
+            if (this.lte !== false) {
+                obj.range[this.field]["lte"] = this.lte;
+            }
+            if (this.lt !== false && this.lte === false) {
                 obj.range[this.field]["lt"] = this.lt;
             }
-            if (this.gte) {
+            if (this.gte !== false) {
                 obj.range[this.field]["gte"] = this.gte;
             }
             return obj;
@@ -1150,10 +1194,13 @@ var es = {
                 obj = obj.range;
             }
             this.field = Object.keys(obj)[0];
-            if (obj[this.field].lt) {
+            if (obj[this.field].lte !== undefined && obj[this.field].lte !== false) {
+                this.lte = obj[this.field].lte;
+            }
+            if (obj[this.field].lt !== undefined && obj[this.field].lt !== false) {
                 this.lt = obj[this.field].lt;
             }
-            if (obj[this.field].gte) {
+            if (obj[this.field].gte !== undefined && obj[this.field].gte !== false) {
                 this.gte = obj[this.field].gte;
             }
         };
@@ -1309,7 +1356,11 @@ var es = {
             var result = es.newResult({raw: data});
             callback(result);
         }
-    }
+    },
 
     /////////////////////////////////////////////////////
+
+    getParam : function(value, def) {
+        return value !== undefined ? value : def;
+    }
 };

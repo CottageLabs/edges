@@ -1366,7 +1366,7 @@ var edges = {
                 nq.addMust(es.newRangeFilter({
                     field: this.field,
                     gte : from,
-                    lt : to
+                    lte : to
                 }))
             }
 
