@@ -1316,7 +1316,7 @@ var edges = {
             if (this.edge.currentQuery) {
                 var filters = this.edge.currentQuery.listMust(es.newRangeFilter({field: this.field}));
                 for (var i = 0; i < filters.length; i++) {
-                    this.to = filters[i].lt;
+                    this.to = filters[i].lte;
                     this.from = filters[i].gte;
                 }
             }
@@ -1857,6 +1857,10 @@ var edges = {
         this._synchronise_range = function(filter) {
             var display = this.fieldDisplays[filter.field] || filter.field;
             var to = filter.lt;
+            if (to === false) {
+                to = filter.lte;
+            }
+            
             var from = filter.gte;
             var r = this._getRangeDef(filter.field, from, to);
             var values = [];
