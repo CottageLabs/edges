@@ -34,8 +34,8 @@ var es = {
             range: es.newRangeAggregation,
             geo_distance: es.newGeoDistanceAggregation,
             date_histogram: es.newDateHistogramAggregation,
-            stats: es.StatsAggregation,
-            cardinality: es.CardinalityAggregation
+            stats: es.newStatsAggregation,
+            cardinality: es.newCardinalityAggregation
         };
 
         if (constructors[type]) {
