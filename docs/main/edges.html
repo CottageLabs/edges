@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Namespace: edges</title>
+
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+
+    <h1 class="page-title">Namespace: edges</h1>
+
+    
+
+
+
+
+<section>
+
+<header>
+    
+        <h2>edges</h2>
+        
+    
+</header>
+
+<article>
+    <div class="container-overview">
+    
+        
+
+        
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="edges.js.html">edges.js</a>, <a href="edges.js.html#line2">line 2</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+        
+    
+    </div>
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Classes</h3>
+
+        <dl>
+            <dt><a href="edges.Edge.html">Edge</a></dt>
+            <dd></dd>
+        </dl>
+    
+
+     
+
+    
+
+    
+
+    
+        <h3 class="subsection-title">Methods</h3>
+
+        
+            
+
+    
+
+    <h4 class="name" id=".newEdge"><span class="type-signature">(static) </span>newEdge<span class="signature">(selector, search_url, datatype, preflightQueries, baseQuery, openingQuery, secondaryQueries, initialSearch, staticFiles, manageUrl, urlQuerySource, template, components, renderPacks)</span><span class="type-signature"></span></h4>
+
+    
+
+
+
+
+
+
+
+
+
+
+
+    <h5>Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+        <th>Default</th>
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>selector</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                    "body"
+                
+                </td>
+            
+
+            <td class="description last">The jquery selector for the element where the edge will be deployed.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>search_url</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">The base search url which will respond to elasticsearch queries.  Generally ends with _search</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>datatype</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                    "jsonp"
+                
+                </td>
+            
+
+            <td class="description last">Datatype for ajax requests to use - overall recommend using jsonp</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>preflightQueries</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Dictionary</span>
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">Dictionary of queries to be run before the primary query is executed: preflight id : es.newQuery(....). Results will appear with the same ids in this.preflightResults.
+     Preflight queries are /not/ subject to the base query</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>baseQuery</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">Query that forms the basis of all queries that are assembled and run. Note that baseQuery is inviolable - it's requirements will always be enforced</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>openingQuery</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">Query to use to initialise the search.  Use this to set your opening values for things like page size, initial search terms, etc.  Any request to
+     reset the interface will return to this query.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>secondaryQueries</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">?</span>
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">Dictionary of functions that will generate secondary queries which also need to be run at the point that cycle() is called.
+     These functions and their resulting queries will be run /after/ the primary query (so can take advantage of the results).
+     Their results will be stored in this.secondaryResults. Secondary queries are not subject the base query, although the functions may of course apply the base query too if they wish.
+     secondary id : function()</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>initialSearch</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Boolean</span>
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">Should the init process do a search</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>staticFiles</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">List of static files (e.g. data files) to be loaded at startup, and made available
+     on the object for use by components.
+     {"id" : internal id to give the file, "url" : file url, "processor" : edges.csv.newObjectByRow, "datatype" : "text", "opening" : function to be run after processing for initial state}</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>manageUrl</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Boolean</span>
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">Should the search url be synchronised with the browser's url bar after search
+     and should queries be retrieved from the url on init</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>urlQuerySource</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">String</span>
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                    "source"
+                
+                </td>
+            
+
+            <td class="description last">Query parameter in which the query for this edge instance will be stored.</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>template</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Object</span>
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">Template object that will be used to draw the frame for the edge.  May be left
+     blank, in which case the edge will assume that the elements are already rendered on the page by the caller</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>components</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array</span>
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                </td>
+            
+
+            <td class="description last">List of all the components that are involved in this edge</td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>renderPacks</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">Array</span>
+
+
+            
+            </td>
+
+            
+
+            
+                <td class="default">
+                
+                    [edges.bs3,
+                
+                </td>
+            
+
+            <td class="description last">edges.nvd3, edges.highcharts, edges.google, edges.d3]  Render packs to use to source automatically assigned rendering objects.
+     Defaults to [edges.bs3, edges.nvd3, edges.highcharts, edges.google, edges.d3]</td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+<dl class="details">
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="edges.js.html">edges.js</a>, <a href="edges.js.html#line31">line 31</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        
+    
+
+    
+
+    
+</article>
+
+</section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Home</a></h2><h3>Classes</h3><ul><li><a href="edges.Edge.html">Edge</a></li></ul><h3>Namespaces</h3><ul><li><a href="edges.html">edges</a></li></ul>
+</nav>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.4.0</a> on Wed Jul 20 2016 16:47:18 GMT+0100 (BST)
+</footer>
+
+<script> prettyPrint(); </script>
+<script src="scripts/linenumber.js"> </script>
+</body>
+</html>
