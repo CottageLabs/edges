@@ -413,6 +413,22 @@ var es = {
                 }
             }
 
+            var qpl = Object.keys(query_part).length;
+            var bpl = Object.keys(bool).length;
+            var query_portion = {};
+            if (qpl === 0 && bpl === 0) {
+                query_portion["match_all"] = {};
+            } else if (qpl === 0 && bpl > 0) {
+                query_portion["bool"] = bool;
+            } else if (qpl > 0 && bpl === 0) {
+                query_portion = query_part;
+            } else if (qpl > 0 && bpl > 0) {
+                query_portion["bool"] = bool;
+                query_portion["bool"]["must"].push(query_part);
+            }
+            q["query"] = query_portion;
+
+            /*
             // add the bool to the query in the correct place (depending on filtering)
             if (this.filtered && this.hasFilters()) {
                 if (Object.keys(query_part).length == 0) {
@@ -427,7 +443,7 @@ var es = {
                     query_part["match_all"] = {};
                 }
                 q["query"] = query_part;
-            }
+            }*/
 
             if (include_paging) {
                 // page size
@@ -478,8 +494,11 @@ var es = {
                     for (var i = 0; i < bool.must.length; i++) {
                         var type = Object.keys(bool.must[i])[0];
                         var fil = es.filterFactory(type, {raw: bool.must[i]});
-                        if (fil) {
+                        if (fil && type !== "query_string") {
                             target.addMust(fil);
+                        } else if (fil && type === "query_string") {
+                            // FIXME: this will work fine as long as there are no nested bools
+                            target.setQueryString(fil);
                         }
                     }
                 }
