@@ -96,6 +96,28 @@ $.extend(edges, {
                 return [];
             };
 
+            this.applyAggregations = function(params) {
+                var aggs = params.aggs;
+                var filtered = edges.getParam(params.filtered, true);
+
+                var result = [];
+                for (var i = 0; i < aggs.length; i++) {
+                    result.push({name: aggs[i].name});
+                }
+
+                var iter = this.iterator({filtered: filtered});
+                var doc = iter.next();
+                while (doc) {
+                    for (var i = 0; i < aggs.length; i++) {
+                        var context = result[i];
+                        aggs[i].consume({doc: doc, context: context});
+                    }
+                    doc = iter.next();
+                }
+
+                return result;
+            };
+
             this._termsAggregation = function(params) {
                 var field = params.field;
                 var filtered = edges.getParam(params.filtered, true);
@@ -158,6 +180,90 @@ $.extend(edges, {
             // call the constructor
 
             this.parse(params);
+        },
+
+        newAggregation : function(params) {
+            return edges.instantiate(edges.csv.Aggregation, params);
+        },
+        Aggregation : function(params) {
+            this.name = params.name;
+            this.nested = edges.getParam(params.nested, []);
+
+            this.consume = function(params) {
+                var current = this.aggregate(params);
+                if (current !== false) {
+                    if (this.nested.length > 0) {
+                        if (!("aggs" in current)) {
+                            current["aggs"] = [];
+                            for (var i = 0; i < this.nested.length; i++) {
+                                current.aggs.push({name: this.nested[i].name});
+                            }
+                        }
+                        for (var i = 0; i < this.nested.length; i++) {
+                            var subcontext = current.aggs[i];
+                            this.nested[i].consume({doc: params.doc, context: subcontext});
+                        }
+                    }
+                }
+            };
+
+            this.aggregate = function(params) {};
+        },
+
+        newTermsAggregation : function(params) {
+            return edges.instantiate(edges.csv.TermsAggregation, params, edges.csv.newAggregation)
+        },
+        TermsAggregation : function(params) {
+            this.field = params.field;
+
+            this.aggregate = function(params) {
+                var doc = params.doc;
+                var context = params.context;
+
+                if (!("posMap" in context)) {
+                    context["posMap"] = {};
+                }
+                if (!("terms"  in context)) {
+                    context["terms"] = [];
+                }
+
+                if (doc.hasOwnProperty(this.field)) {
+                    var val = doc[this.field];
+                    if (val in context.posMap) {
+                        context.terms[context.posMap[val]].count++;
+                    } else {
+                        var i = context.terms.length;
+                        context.terms.push({term: val, count: 1});
+                        context.posMap[val] = i;
+                    }
+
+                    return context.terms[context.posMap[val]];
+                }
+                return false;
+            }
+        },
+
+        newSumAggregation : function(params) {
+            return edges.instantiate(edges.csv.SumAggregation, params, edges.csv.newAggregation)
+        },
+        SumAggregation : function(params) {
+            this.field = params.field;
+
+            this.aggregate = function(params) {
+                var doc = params.doc;
+                var context = params.context;
+
+                if (!("sum"  in context)) {
+                    context["sum"] = 0.0;
+                }
+
+                if (doc.hasOwnProperty(this.field)) {
+                    var val = doc[this.field];
+                    context["sum"] += parseFloat(val);
+                }
+
+                return false;
+            }
         }
     }
 });
