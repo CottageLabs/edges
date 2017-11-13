@@ -60,7 +60,7 @@ var edges = {
         // query to use to initialise the search.  Use this to set your opening
         // values for things like page size, initial search terms, etc.  Any request to
         // reset the interface will return to this query
-        this.openingQuery = params.openingQuery || es.newQuery();
+        this.openingQuery = params.openingQuery || typeof es !== 'undefined' ? es.newQuery() : false;
 
         // dictionary of functions that will generate secondary queries which also need to be
         // run at the point that cycle() is called.  These functions and their resulting
