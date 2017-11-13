@@ -859,6 +859,29 @@ var edges = {
         this.draw = function(edge) {}
     },
 
+    ///////////////////////////////////////////////////////////
+    // Object construction tools
+
+    // instantiate an object with the parameters and the (optional)
+    // prototype
+    instantiate : function(clazz, params, protoConstructor) {
+        if (!params) { params = {} }
+        if (protoConstructor) {
+            clazz.prototype = protoConstructor(params);
+        }
+        var inst = new clazz(params);
+        if (protoConstructor) {
+            inst.__proto_constructor__ = protoConstructor;
+        }
+        return inst;
+    },
+
+    // call a method on the parent class
+    up : function(inst, fn, args) {
+        var parent = new inst.__proto_constructor__();
+        parent[fn].apply(inst, args);
+    },
+
     //////////////////////////////////////////////////////////////////
     // Closures for integrating the object with other modules
 
