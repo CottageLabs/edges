@@ -1129,5 +1129,15 @@ var edges = {
                 return prefix + bits[0] + decimalSeparator + bits[1] + suffix;
             }
         }
+    },
+
+    numParse : function(params) {
+        var commaRx = new RegExp(",", "g");
+
+        return function(num) {
+            num = num.trim();
+            num = num.replace(commaRx, num);
+            return parseFloat(num);
+        }
     }
 };

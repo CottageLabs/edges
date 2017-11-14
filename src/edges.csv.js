@@ -248,6 +248,8 @@ $.extend(edges, {
         },
         SumAggregation : function(params) {
             this.field = params.field;
+            
+            this.numParse = edges.numParse();
 
             this.aggregate = function(params) {
                 var doc = params.doc;
@@ -259,7 +261,7 @@ $.extend(edges, {
 
                 if (doc.hasOwnProperty(this.field)) {
                     var val = doc[this.field];
-                    context["sum"] += parseFloat(val);
+                    context["sum"] += this.numParse(val);
                 }
 
                 return false;
