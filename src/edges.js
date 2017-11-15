@@ -652,7 +652,7 @@ var edges = {
                         var processed = entry.processor({data : data});
                         that.resources[entry.id] = processed;
                         if (entry.opening) {
-                            entry.opening({resource : processed});
+                            entry.opening({resource : processed, edge: that});
                         }
                     }
                     that.static[entry.id] = data;
@@ -1136,7 +1136,7 @@ var edges = {
 
         return function(num) {
             num = num.trim();
-            num = num.replace(commaRx, num);
+            num = num.replace(commaRx, "");
             return parseFloat(num);
         }
     }
