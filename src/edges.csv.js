@@ -238,7 +238,8 @@ $.extend(edges, {
         },
         TermsAggregation : function(params) {
             this.field = params.field;
-            // this.order = edges.getParam(params.order, false);
+            this.order = edges.getParam(params.order, false);
+            this.orderDir = edges.getParam(params.orderDir, "asc");
 
             this.aggregate = function(params) {
                 var doc = params.doc;
@@ -270,6 +271,18 @@ $.extend(edges, {
                 var context = params.context;
                 if ("posMap" in context) {
                     delete context["posMap"];
+                }
+                context.buckets.sort(this._sortBucketsFunction);
+            };
+
+            this._sortBucketsFunction = function(a, b) {
+                if (this.order === "term") {
+                    if (a === b) { return 0 }
+                    if (a.term < b.term) {  // a.term is earlier in the alphabet than b.term
+                        return this.orderDir === "asc" ? 1 : -1;    // if ascending (a - z) then return 1 to promote a, otherwise -1 to demote a
+                    } else {    // a.term is later in the alphabet than b.term
+                        return this.orderDir === "asc" ? -1 : 1;    // if ascending (a - z) then return -1 to demote a, otherwise 1 to promote a
+                    }
                 }
             };
         },
