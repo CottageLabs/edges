@@ -100,19 +100,40 @@ $.extend(edges, {
                 var aggs = params.aggs;
                 var filtered = edges.getParam(params.filtered, true);
 
-                var result = [];
+                var result = {};
                 for (var i = 0; i < aggs.length; i++) {
-                    result.push({name: aggs[i].name});
+                    result[aggs[i].name] = {name: aggs[i].name};
                 }
 
                 var iter = this.iterator({filtered: filtered});
                 var doc = iter.next();
                 while (doc) {
                     for (var i = 0; i < aggs.length; i++) {
-                        var context = result[i];
+                        var context = result[aggs[i].name];
                         aggs[i].consume({doc: doc, context: context});
                     }
                     doc = iter.next();
+                }
+
+                function intoNested(agg, context) {
+                    agg.finalise({context: context});
+                    for (var i = 0; i < agg.nested.length; i++) {
+                        var nest = agg.nested[i];
+                        if ("buckets" in context) {
+                            for (var j = 0; j < context["buckets"].length; j++) {
+                                var bucket = context["buckets"][j];
+                                if ("aggs" in bucket) {
+                                    var subcontext = context["buckets"][j]["aggs"][nest.name];
+                                    intoNested(nest, context);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                for (var i = 0; i < aggs.length; i++) {
+                    var context = result[aggs[i].name];
+                    intoNested(aggs[i], context);
                 }
 
                 return result;
@@ -194,13 +215,13 @@ $.extend(edges, {
                 if (current !== false) {
                     if (this.nested.length > 0) {
                         if (!("aggs" in current)) {
-                            current["aggs"] = [];
+                            current["aggs"] = {};
                             for (var i = 0; i < this.nested.length; i++) {
-                                current.aggs.push({name: this.nested[i].name});
+                                current.aggs[this.nested[i].name] = {name: this.nested[i].name};
                             }
                         }
                         for (var i = 0; i < this.nested.length; i++) {
-                            var subcontext = current.aggs[i];
+                            var subcontext = current.aggs[this.nested[i].name];
                             this.nested[i].consume({doc: params.doc, context: subcontext});
                         }
                     }
@@ -208,6 +229,8 @@ $.extend(edges, {
             };
 
             this.aggregate = function(params) {};
+
+            this.finalise = function(params) {};
         },
 
         newTermsAggregation : function(params) {
@@ -215,6 +238,7 @@ $.extend(edges, {
         },
         TermsAggregation : function(params) {
             this.field = params.field;
+            // this.order = edges.getParam(params.order, false);
 
             this.aggregate = function(params) {
                 var doc = params.doc;
@@ -223,24 +247,31 @@ $.extend(edges, {
                 if (!("posMap" in context)) {
                     context["posMap"] = {};
                 }
-                if (!("terms"  in context)) {
-                    context["terms"] = [];
+                if (!("buckets"  in context)) {
+                    context["buckets"] = [];
                 }
 
                 if (doc.hasOwnProperty(this.field)) {
                     var val = doc[this.field];
                     if (val in context.posMap) {
-                        context.terms[context.posMap[val]].count++;
+                        context.buckets[context.posMap[val]].count++;
                     } else {
-                        var i = context.terms.length;
-                        context.terms.push({term: val, count: 1});
+                        var i = context.buckets.length;
+                        context.buckets.push({term: val, count: 1});
                         context.posMap[val] = i;
                     }
 
-                    return context.terms[context.posMap[val]];
+                    return context.buckets[context.posMap[val]];
                 }
                 return false;
-            }
+            };
+
+            this.finalise = function(params) {
+                var context = params.context;
+                if ("posMap" in context) {
+                    delete context["posMap"];
+                }
+            };
         },
 
         newSumAggregation : function(params) {
