@@ -159,6 +159,11 @@ $.extend(edges, {
 
             this.tooltipGenerator = edges.getParam(params.tooltipGenerator, false);
 
+            this.dynamicHeight = edges.getParam(params.dynamicHeight, false);
+            this.barHeight = edges.getParam(params.barHeight, 0);
+            this.reserveAbove = edges.getParam(params.reserveAbove, 0);
+            this.reserveBelow = edges.getParam(params.reserveBelow, 0);
+
             this.namespace = "edges-nvd3-horizontal-multibar";
 
             this.draw = function() {
@@ -168,14 +173,28 @@ $.extend(edges, {
                 // tooltips to be left behind when the page is redrawn, so we have to hack around that
                 $(".nvtooltip").remove();
 
-                var svgId = edges.css_id(this.namespace, "svg", this);
-                var svgSelector = edges.css_id_selector(this.namespace, "svg", this);
-                this.component.context.html('<svg id="' + svgId + '"></svg>');
-
                 var data_series = this.component.dataSeries;
                 if (!data_series) {
                     data_series = [];
                 }
+
+                var customAttributes = "";
+                if (this.dynamicHeight) {
+                    var seriesCount = 0;
+                    for (var i = 0; i < data_series.length; i++) {
+                        var series = data_series[i];
+                        if (series.values.length > seriesCount) {
+                            seriesCount = series.values.length;
+                        }
+                    }
+
+                    var height = this.reserveAbove + this.reserveBelow + (seriesCount * this.barHeight);
+                    customAttributes = 'style="height:' + height + 'px"';
+                }
+                
+                var svgId = edges.css_id(this.namespace, "svg", this);
+                var svgSelector = edges.css_id_selector(this.namespace, "svg", this);
+                this.component.context.html('<div ' + customAttributes + '><svg id="' + svgId + '"></svg></div>');
 
                 var that = this;
                 nv.addGraph(function () {
