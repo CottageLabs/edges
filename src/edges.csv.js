@@ -272,7 +272,9 @@ $.extend(edges, {
                 if ("posMap" in context) {
                     delete context["posMap"];
                 }
-                context.buckets.sort(this._sortBucketsFunction);
+                if ("buckets" in context) {
+                    context.buckets.sort(this._sortBucketsFunction);
+                }
             };
 
             this._sortBucketsFunction = function(a, b) {
