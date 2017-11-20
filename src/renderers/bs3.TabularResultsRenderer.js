@@ -20,7 +20,7 @@ $.extend(true, edges, {
             this.defaultCellContent = params.defaultCellContent || "-";
 
             // list of fields and column headers to display
-            // [{field : "field", display : "Column header", default: "default cell content"}]
+            // [{field : "field", display : "Column header", default: "default cell content", valueFunction: <fn>}]
             this.fieldDisplay = params.fieldDisplay || [];
 
             // should the table display only render the fields listed in fieldDisplay, or should
@@ -89,7 +89,8 @@ $.extend(true, edges, {
                     var headers = "";
                     for (var i = 0; i < headerDisplay.length; i++) {
                         var header = headerDisplay[i];
-                        headers += '<th class="' + headerClasses + '">' + header + '</th>';
+                        var headerFieldClasses = edges.css_classes(this.namespace, "header-" + edges.safeId(header), this);
+                        headers += '<th class="' + headerClasses + ' ' + headerFieldClasses + '">' + header + '</th>';
                     }
                     frag = frag.replace(/_HEADERS_/g, headers);
 
@@ -105,8 +106,13 @@ $.extend(true, edges, {
                                 def = fd.default;
                             }
                             var val = edges.objVal(key, res, def);
+                            if (fd.valueFunction) {
+                                val = fd.valueFunction(val);
+                            } else {
+                                val = edges.escapeHtml(val);
+                            }
                             var fieldClasses = edges.css_classes(this.namespace, "cell-" + edges.safeId(key), this);
-                            frag += '<td class="' + cellClasses + ' ' + fieldClasses + '">' + edges.escapeHtml(val) + '</td>';
+                            frag += '<td class="' + cellClasses + ' ' + fieldClasses + '">' + val + '</td>';
                         }
                         frag += "</tr>";
                     }
