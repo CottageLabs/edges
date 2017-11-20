@@ -273,17 +273,19 @@ $.extend(edges, {
                     delete context["posMap"];
                 }
                 if ("buckets" in context) {
-                    context.buckets.sort(this._sortBucketsFunction);
+                    context.buckets.sort(this._getSortFunction());
                 }
             };
 
-            this._sortBucketsFunction = function(a, b) {
+            this._getSortFunction = function(params) {
                 if (this.order === "term") {
-                    if (a === b) { return 0 }
-                    if (a.term < b.term) {  // a.term is earlier in the alphabet than b.term
-                        return this.orderDir === "asc" ? 1 : -1;    // if ascending (a - z) then return 1 to promote a, otherwise -1 to demote a
-                    } else {    // a.term is later in the alphabet than b.term
-                        return this.orderDir === "asc" ? -1 : 1;    // if ascending (a - z) then return -1 to demote a, otherwise 1 to promote a
+                    return function(a, b) {
+                        if (a === b) { return 0 }
+                        if (a.term < b.term) {  // a.term is earlier in the alphabet than b.term
+                            return this.orderDir === "asc" ? 1 : -1;    // if ascending (a - z) then return 1 to promote a, otherwise -1 to demote a
+                        } else {    // a.term is later in the alphabet than b.term
+                            return this.orderDir === "asc" ? -1 : 1;    // if ascending (a - z) then return -1 to demote a, otherwise 1 to promote a
+                        }
                     }
                 }
             };
