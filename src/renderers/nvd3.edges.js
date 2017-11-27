@@ -163,6 +163,7 @@ $.extend(edges, {
             this.barHeight = edges.getParam(params.barHeight, 0);
             this.reserveAbove = edges.getParam(params.reserveAbove, 0);
             this.reserveBelow = edges.getParam(params.reserveBelow, 0);
+            this.groupSpacing = edges.getParam(params.groupSpacing, false);
 
             this.namespace = "edges-nvd3-horizontal-multibar";
 
@@ -257,6 +258,10 @@ $.extend(edges, {
 
                     if (that.tooltipGenerator) {
                         chart.tooltip.contentGenerator(that.tooltipGenerator);
+                    }
+
+                    if (that.groupSpacing) {
+                        chart.groupSpacing(that.groupSpacing);
                     }
 
                     d3.select(svgSelector)
