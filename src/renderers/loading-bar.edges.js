@@ -12,6 +12,13 @@ $.extend(edges, {
             this.xOfYForm = edges.getParam(params.xOfYForm, "{x} of {y}");
             this.xyNumFormat = edges.getParam(params.xyNumFormat, false);
 
+            this.stroke = edges.getParam(params.stroke, false);
+            this.strokeWidth = edges.getParam(params.strokeWidth, false);
+            this.strokeTrail = edges.getParam(params.strokeTrail, false);
+            this.strokeTrailWidth = edges.getParam(params.strokeTrailWidth, false);
+
+            this.fill = edges.getParam(params.fill, false);
+
             this.namespace = "edges-loading_io-renderer";
 
             this.barRef = false;
@@ -23,7 +30,27 @@ $.extend(edges, {
 
                 var dataPreset = "";
                 if (this.preset !== false) {
-                    dataPreset = "data-preset=" + this.preset;
+                    dataPreset = " data-preset=" + this.preset + " ";
+                }
+
+                var dataStroke = "";
+                if (this.stroke !== false) {
+                    dataStroke = " data-stroke=" + this.stroke + " ";
+                }
+
+                var dataStrokeWidth = "";
+                if (this.strokeWidth !== false) {
+                    dataStrokeWidth = " data-stroke-width=" + this.strokeWidth + " ";
+                }
+
+                var dataStrokeTrail = "";
+                if (this.strokeTrail !== false) {
+                    dataStrokeTrail = " data-stroke-trail=" + this.strokeTrail + " ";
+                }
+
+                var dataStrokeTrailWidth = "";
+                if (this.strokeTrailWidth !== false) {
+                    dataStrokeTrailWidth = " data-stroke-trail-width=" + this.strokeTrailWidth + " ";
                 }
 
                 var additionalClasses = "";
@@ -40,7 +67,7 @@ $.extend(edges, {
                 var barFrag = '<div id="' + barId + '" \
                     class="' + barClass + ' ' + additionalClasses + '" \
                     data-value="' + this.component.percent + '" \
-                    ' + dataPreset + '></div>';
+                    ' + dataPreset + dataStroke + dataStrokeWidth + dataStrokeTrail + dataStrokeTrailWidth + '></div>';
 
                 var xofyFrag = "";
                 if (this.showXofY === true) {
@@ -62,6 +89,10 @@ $.extend(edges, {
 
                 var barIdSelector = edges.css_id_selector(this.namespace, "bar", this);
                 this.barRef = new ldBar(barIdSelector);
+
+                if (this.fill) {
+                    this.component.jq(barIdSelector).find("path.baseline").attr("fill", this.fill);
+                }
             }
         }
     }
