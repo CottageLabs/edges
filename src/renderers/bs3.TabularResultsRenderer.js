@@ -39,7 +39,11 @@ $.extend(true, edges, {
             this.namespace = "edges-bs3-tabular-results";
 
             this.draw = function () {
-                var frag = this.noResultsText;
+                // first set up our no-results situation, which will be the default if no results
+                // are actually available
+                var noResultsClass = edges.css_classes(this.namespace, "no-results", this);
+                var frag = '<div class="row"><div class="col-md-12"><div class="' + noResultsClass + '">' + this.noResultsText + '</div></div></div>';
+
                 if (this.component.results === false) {
                     frag = "";
                 }
