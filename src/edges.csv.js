@@ -274,6 +274,8 @@ $.extend(edges, {
                 }
                 if ("buckets" in context) {
                     context.buckets.sort(this._getSortFunction());
+                } else {
+                    context["buckets"] = [];
                 }
             };
 
@@ -313,7 +315,14 @@ $.extend(edges, {
                 }
 
                 return false;
-            }
+            };
+
+            this.finalise = function(params) {
+                var context = params.context;
+                if (!("sum" in context)) {
+                    context["sum"] = 0;
+                }
+            };
         }
     }
 });
