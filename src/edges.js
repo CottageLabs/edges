@@ -1137,6 +1137,9 @@ var edges = {
         return function(num) {
             num = num.trim();
             num = num.replace(commaRx, "");
+            if (num === "") {
+                return 0.0;
+            }
             return parseFloat(num);
         }
     }
