@@ -39,13 +39,13 @@ var edges = {
         // parameters that can be set via params arg
 
         // the jquery selector for the element where the edge will be deployed
-        this.selector = params.selector || "body";
+        this.selector = edges.getParam(params.selector, "body");
 
         // the base search url which will respond to elasticsearch queries.  Generally ends with _search
         this.search_url = edges.getParam(params.search_url, false);
 
         // datatype for ajax requests to use - overall recommend using jsonp
-        this.datatype = params.datatype || "jsonp";
+        this.datatype = edges.getParam(params.datatype, "jsonp");
 
         // dictionary of queries to be run before the primary query is executed
         // {"<preflight id>" : es.newQuery(....)}
@@ -55,12 +55,12 @@ var edges = {
 
         // query that forms the basis of all queries that are assembled and run
         // Note that baseQuery is inviolable - it's requirements will always be enforced
-        this.baseQuery = params.baseQuery || false;
+        this.baseQuery = edges.getParam(params.baseQuery, false);
 
         // query to use to initialise the search.  Use this to set your opening
         // values for things like page size, initial search terms, etc.  Any request to
         // reset the interface will return to this query
-        this.openingQuery = params.openingQuery || typeof es !== 'undefined' ? es.newQuery() : false;
+        this.openingQuery = edges.getParam(params.openingQuery, typeof es !== 'undefined' ? es.newQuery() : false);
 
         // dictionary of functions that will generate secondary queries which also need to be
         // run at the point that cycle() is called.  These functions and their resulting
@@ -81,21 +81,21 @@ var edges = {
 
         // should the search url be synchronised with the browser's url bar after search
         // and should queries be retrieved from the url on init
-        this.manageUrl = params.manageUrl || false;
+        this.manageUrl = edges.getParam(params.manageUrl, false);
 
         // query parameter in which the query for this edge instance will be stored
-        this.urlQuerySource = params.urlQuerySource || "source";
+        this.urlQuerySource = edges.getParam(params.urlQuerySource, "source");
 
         // template object that will be used to draw the frame for the edge.  May be left
         // blank, in which case the edge will assume that the elements are already rendered
         // on the page by the caller
-        this.template = params.template || false;
+        this.template = edges.getParam(params.template, false);
 
         // list of all the components that are involved in this edge
-        this.components = params.components || [];
+        this.components = edges.getParam(params.components, []);
 
         // render packs to use to source automatically assigned rendering objects
-        this.renderPacks = params.renderPacks || [edges.bs3, edges.nvd3, edges.highcharts, edges.google, edges.d3];
+        this.renderPacks = edges.getParam(params.renderPacks, [edges.bs3, edges.nvd3, edges.highcharts, edges.google, edges.d3]);
 
         /////////////////////////////////////////////
         // operational properties
