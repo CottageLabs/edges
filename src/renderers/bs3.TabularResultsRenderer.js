@@ -106,7 +106,7 @@ $.extend(true, edges, {
                             var key = headerKeys[j];
                             var def = this.defaultCellContent;
                             var fd = this._getFieldDisplay(key);
-                            if (fd) {
+                            if (fd && fd.default) {
                                 def = fd.default;
                             }
                             var val = edges.objVal(key, res, def);
