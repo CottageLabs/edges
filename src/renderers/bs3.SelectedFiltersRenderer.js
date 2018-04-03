@@ -48,8 +48,8 @@ $.extend(true, edges, {
                             filters += '<i class="glyphicon glyphicon-black glyphicon-remove"></i>';
                             filters += "</a>";
                         } else if (def.filter === "range") {
-                            var from = val.from ? ' data-from="' + val.from + '" ' : "";
-                            var to = val.to ? ' data-to="' + val.to + '" ' : "";
+                            var from = val.from ? ' data-' + val.fromType + '="' + val.from + '" ' : "";
+                            var to = val.to ? ' data-' + val.toType + '="' + val.to + '" ' : "";
                             filters += '<a class="' + removeClass + '" data-bool="must" data-filter="' + def.filter + '" data-field="' + field + '" ' + from + to + ' alt="Remove" title="Remove" href="#">';
                             filters += '<i class="glyphicon glyphicon-black glyphicon-remove"></i>';
                             filters += "</a>";
@@ -91,13 +91,28 @@ $.extend(true, edges, {
                     value = el.attr("data-value");
                 } else if (ft === "range") {
                     value = {};
-                    var from = el.attr("data-from");
-                    var to = el.attr("data-to");
+
+                    var from = el.attr("data-gte");
+                    var fromType = "gte";
+                    if (!from) {
+                        from = el.attr("data-gt");
+                        fromType = "gt";
+                    }
+
+                    var to = el.attr("data-lt");
+                    var toType = "lt";
+                    if (!to) {
+                        to = el.attr("data-lte");
+                        toType = "lte";
+                    }
+
                     if (from) {
                         value["from"] = parseInt(from);
+                        value["fromType"] = fromType;
                     }
                     if (to) {
                         value["to"] = parseInt(to);
+                        value["toType"] = toType;
                     }
                 }
 

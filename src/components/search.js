@@ -459,10 +459,10 @@ $.extend(edges, {
             } else if (filterType == "range") {
                 var params = {field: field};
                 if (value.to) {
-                    params["lt"] = value.to;
+                    params[value.toType] = value.to;
                 }
                 if (value.from) {
-                    params["gte"] = value.from;
+                    params[value.fromType] = value.from;
                 }
                 var template = es.newRangeFilter(params);
 
@@ -531,15 +531,25 @@ $.extend(edges, {
 
         this._synchronise_range = function (filter) {
             var display = this.fieldDisplays[filter.field] || filter.field;
+
             var to = filter.lt;
+            var toType = "lt";
             if (to === false) {
                 to = filter.lte;
+                toType = "lte";
             }
+
             var from = filter.gte;
+            var fromType = "gte";
+            if (from === false) {
+                from = filter.gt;
+                fromType = "gt";
+            }
+
             var r = this._getRangeDef(filter.field, from, to);
             var values = [];
             if (!r) {
-                values.push({to: to, from: from, display: this._formatUnknown(from, to)});
+                values.push({to: to, toType: toType, from: from, fromType: fromType, display: this._formatUnknown(from, to)});
             } else {
                 values.push(r);
             }
