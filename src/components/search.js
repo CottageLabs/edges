@@ -780,6 +780,9 @@ $.extend(edges, {
         // the category of the component
         this.category = params.category || "results";
 
+        // the secondary results to get the data from, if not using the primary
+        this.secondaryResults = edges.getParam(params.secondaryResults, false);
+
         // the default renderer for the component to use
         this.defaultRenderer = params.defaultRenderer || "newResultsDisplayRenderer";
 
@@ -796,8 +799,13 @@ $.extend(edges, {
             // reset the state of the internal variables
             this.results = [];
 
-            if (this.edge.result) {
-                this.results = this.edge.result.results();
+            var source = this.edge.result;
+            if (this.secondaryResults !== false) {
+                source = this.edge.secondaryResults[this.secondaryResults];
+            }
+
+            if (source) {
+                this.results = source.results();
             }
         }
     }
