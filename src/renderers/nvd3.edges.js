@@ -134,6 +134,8 @@ $.extend(edges, {
         },
         HorizontalMultibarRenderer : function(params) {
 
+            this.title = edges.getParam(params.title, false);
+
             this.showValues = edges.getParam(params.showValues, true);
             this.toolTips = edges.getParam(params.toolTips, true);
             this.controls = edges.getParam(params.controls, false);
@@ -192,10 +194,15 @@ $.extend(edges, {
                     var height = this.reserveAbove + this.reserveBelow + (seriesCount * this.barHeight);
                     customAttributes = 'style="height:' + height + 'px"';
                 }
+
+                var title = "";
+                if (this.title !== false) {
+                    title = this.title;
+                }
                 
                 var svgId = edges.css_id(this.namespace, "svg", this);
                 var svgSelector = edges.css_id_selector(this.namespace, "svg", this);
-                this.component.context.html('<div ' + customAttributes + '><svg id="' + svgId + '"></svg></div>');
+                this.component.context.html(title + '<div ' + customAttributes + '><svg id="' + svgId + '"></svg></div>');
 
                 var that = this;
                 nv.addGraph(function () {
