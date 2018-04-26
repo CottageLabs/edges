@@ -1,0 +1,19 @@
+.edges-bs3-important-numbers-img img {
+    width: 100%;
+}
+
+.edges-bs3-important-numbers-main {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    -webkit-transform: translate(-50%,-50%);
+    transform: translate(-50%,-50%);
+    font-size: 2em;
+    font-weight: bold;
+    color: #ffffff;
+    text-shadow: 0 0 3px #ccc;
+}
+
+.edges-bs3-important-numbers-second {
+    font-size: 1.3em;
+}

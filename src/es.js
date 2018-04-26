@@ -951,6 +951,28 @@ var es = {
         }
     },
 
+    newSumAggregation : function(params) {
+        if (!params) { params = {} }
+        es.SumAggregation.prototype = es.newAggregation(params);
+        return new es.SumAggregation(params);
+    },
+    SumAggregation : function(params) {
+        this.field = params.field || false;
+
+        this.objectify = function() {
+            var body = {field: this.field};
+            return this._make_aggregation("sum", body);
+        };
+
+        this.parse = function(obj) {
+
+        };
+
+        if (params.raw) {
+            this.parse(params.raw);
+        }
+    },
+
     newDateHistogramAggregation : function(params) {
         if (!params) { params = {} }
         es.DateHistogramAggregation.prototype = es.newAggregation(params);
