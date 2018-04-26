@@ -1,3 +1,11 @@
+.edges-bs3-important-numbers-title {
+    text-align: center;
+}
+
+.edges-bs3-important-numbers-graphic {
+    position: relative;
+}
+
 .edges-bs3-important-numbers-img img {
     width: 100%;
 }
@@ -16,4 +24,5 @@
 
 .edges-bs3-important-numbers-second {
     font-size: 1.3em;
+    text-align: center;
 }
