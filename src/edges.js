@@ -71,6 +71,11 @@ var edges = {
         // {"<secondary id>" : function() }
         this.secondaryQueries = edges.getParam(params.secondaryQueries, false);
 
+        // dictionary mapping keys to urls that will be used for search.  These should be
+        // the same keys as used in secondaryQueries, if those secondary queries should be
+        // issued against different urls than the primary search_url.
+        this.secondaryUrls = edges.getParam(params.secondaryUrls, false);
+
         // should the init process do a search
         this.initialSearch = edges.getParam(params.initialSearch, true);
 
@@ -435,6 +440,10 @@ var edges = {
                 var entry = {};
                 entry["query"] = this.secondaryQueries[key](this);
                 entry["id"] = key;
+                entry["search_url"] = this.search_url;
+                if (this.secondaryUrls !== false && this.secondaryUrls.hasOwnProperty(key)) {
+                    entry["search_url"] = this.secondaryUrls[key]
+                }
                 entries.push(entry);
                 this.realisedSecondaryQueries[key] = entry.query;
             }
@@ -448,7 +457,7 @@ var edges = {
                     var error = params.error_callback;
 
                     es.doQuery({
-                        search_url: that.search_url,
+                        search_url: entry.search_url,
                         queryobj: entry.query.objectify(),
                         datatype: that.datatype,
                         success: success,
@@ -1031,6 +1040,43 @@ var edges = {
 
     //////////////////////////////////////////////////////////////////
     // Shared utilities
+
+    getUrlParams : function() {
+        var params = {};
+        var url = window.location.href;
+        var fragment = false;
+
+        // break the anchor off the url
+        if (url.indexOf("#") > -1) {
+            fragment = url.slice(url.indexOf('#'));
+            url = url.substring(0, url.indexOf('#'));
+        }
+
+        // extract and split the query args
+        var args = url.slice(url.indexOf('?') + 1).split('&');
+
+        for (var i = 0; i < args.length; i++) {
+            var kv = args[i].split('=');
+            if (kv.length === 2) {
+                var val = decodeURIComponent(kv[1]);
+                if (val[0] == "[" || val[0] == "{") {
+                    // if it looks like a JSON object in string form...
+                    // remove " (double quotes) at beginning and end of string to make it a valid
+                    // representation of a JSON object, or the parser will complain
+                    val = val.replace(/^"/,"").replace(/"$/,"");
+                    val = JSON.parse(val);
+                }
+                params[kv[0]] = val;
+            }
+        }
+
+        // record the fragment identifier if required
+        if (fragment) {
+            params['#'] = fragment;
+        }
+
+        return params;
+    },
 
     escapeHtml : function(unsafe, def) {
         if (def === undefined) {

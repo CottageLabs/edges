@@ -56,6 +56,8 @@ $.extend(edges, {
             return new edges.nvd3.PieChartRenderer(params);
         },
         PieChartRenderer : function(params) {
+            this.title = edges.getParam(params.title, false);
+            this.showLegend = edges.getParam(params.showLegend, true);
             this.showLabels = edges.getParam(params.showLabels, true);
             this.donut = edges.getParam(params.donut, false);
             this.labelThreshold = params.labelThreshold || 0.05;
@@ -65,14 +67,19 @@ $.extend(edges, {
             this.legendPosition = params.legendPosition || "top";
             this.labelsOutside = edges.getParam(params.labelsOutside, false);
             this.valueFormat = params.valueFormat || false;
-            this.marginTop = params.marginTop || 30;
-            this.marginRight = params.marginRight || 30;
-            this.marginBottom = params.marginBottom || 30;
-            this.marginLeft = params.marginLeft || 30;
+            this.marginTop = edges.getParam(params.marginTop, 30);
+            this.marginRight = edges.getParam(params.marginRight, 30);
+            this.marginBottom = edges.getParam(params.marginBottom, 30);
+            this.marginLeft = edges.getParam(params.marginLeft, 30);
 
             this.namespace = "edges-nvd3-pie";
 
             this.draw = function() {
+
+                var title = "";
+                if (this.title !== false) {
+                    title = this.title;
+                }
 
                 var displayClasses = edges.css_classes(this.namespace, "display", this);
                 var displayFrag = "";
@@ -103,7 +110,8 @@ $.extend(edges, {
                         .showLabels(outer.showLabels)
                         .legendPosition(outer.legendPosition)
                         .labelsOutside(outer.labelsOutside)
-                        .margin({"left":outer.marginLeft,"right":outer.marginRight,"top":outer.marginTop,"bottom":outer.marginBottom});
+                        .margin({"left":outer.marginLeft,"right":outer.marginRight,"top":outer.marginTop,"bottom":outer.marginBottom})
+                        .showLegend(outer.showLegend);
 
                     if (outer.noDataMessage) {
                         chart.noData(outer.noDataMessage);
@@ -147,10 +155,10 @@ $.extend(edges, {
 
             this.transitionDuration = params.transitionDuration || 500;
 
-            this.marginTop = params.marginTop || 30;
-            this.marginRight = params.marginRight || 50;
-            this.marginBottom = params.marginBottom || 50;
-            this.marginLeft = params.marginLeft || 200;
+            this.marginTop = edges.getParam(params.marginTop, 30);
+            this.marginRight = edges.getParam(params.marginRight, 50);
+            this.marginBottom = edges.getParam(params.marginBottom, 50);
+            this.marginLeft = edges.getParam(params.marginLeft, 200);
 
             this.yTickFormat = edges.getParam(params.yTickFormat, ",.0f");
             this.xTickFormat = edges.getParam(params.xTickFormat, false);
@@ -298,6 +306,11 @@ $.extend(edges, {
             this.xAxisLabel = params.xAxisLabel || "";
             this.yAxisLabel = params.yAxisLabel || "";
 
+            this.marginTop = edges.getParam(params.marginTop, 30);
+            this.marginRight = edges.getParam(params.marginRight, 20);
+            this.marginBottom = edges.getParam(params.marginBottom, 50);
+            this.marginLeft = edges.getParam(params.marginLeft, 60);
+
             this.namespace = "edges-nvd3-multibar";
 
             this.draw = function () {
@@ -319,7 +332,9 @@ $.extend(edges, {
                 var outer = this;
 
                 nv.addGraph(function () {
-                    var chart = nv.models.multiBarChart().showControls(outer.controls);
+                    var chart = nv.models.multiBarChart()
+                        .showControls(outer.controls)
+                        .margin({top: outer.marginTop, right: outer.marginRight, bottom: outer.marginBottom, left: outer.marginLeft});
 
                     chart.xAxis
                         .axisLabel(outer.xAxisLabel)

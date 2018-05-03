@@ -18,6 +18,24 @@ $.extend(edges, {
                     this.second = values.second;
                 }
             }
+        },
+
+        newStory : function(params) {
+            return edges.instantiate(edges.numbers.Story, params, edges.newComponent);
+        },
+        Story : function(params) {
+            this.template = edges.getParam(params.template, false);
+            this.values = edges.getParam(params.values, {});
+
+            this.calculate = edges.getParam(params.calculate, false);
+
+            this.synchronise = function() {
+                // note we don't reset the values, as if calculate isn't set, we just stick with the
+                // values provided
+                if (this.calculate !== false) {
+                    this.values = this.calculate(this);
+                }
+            }
         }
     }
 });

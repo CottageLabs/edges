@@ -12,6 +12,8 @@ $.extend(true, edges, {
             //////////////////////////////////////////////
             // parameters that can be passed in
 
+            this.title = edges.getParam(params.title, false);
+
             // what to display when there are no results
             this.noResultsText = params.noResultsText || "No results to display";
 
@@ -67,7 +69,12 @@ $.extend(true, edges, {
                             '">' + edges.escapeHtml(this.downloadText) + '</a></div></div></div>';
                     }
 
-                    var frag = '<div class="table-responsive ' + tableDivClasses + '">';
+                    var title = "";
+                    if (this.title !== false) {
+                        title = this.title;
+                    }
+
+                    frag = title + '<div class="table-responsive ' + tableDivClasses + '">';
 
                     // render the table header
                     frag += '<table class="' + tableClasses + '"><thead><tr>_HEADERS_</tr></thead><tbody>';
