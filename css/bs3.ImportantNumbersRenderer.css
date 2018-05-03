@@ -16,7 +16,7 @@
     left: 50%;
     -webkit-transform: translate(-50%,-50%);
     transform: translate(-50%,-50%);
-    font-size: 2em;
+    font-size: 3em;
     font-weight: bold;
     color: #ffffff;
     text-shadow: 0 0 3px #ccc;

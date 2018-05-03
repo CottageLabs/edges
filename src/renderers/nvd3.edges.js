@@ -56,7 +56,6 @@ $.extend(edges, {
             return new edges.nvd3.PieChartRenderer(params);
         },
         PieChartRenderer : function(params) {
-            this.title = edges.getParam(params.title, false);
             this.showLegend = edges.getParam(params.showLegend, true);
             this.showLabels = edges.getParam(params.showLabels, true);
             this.donut = edges.getParam(params.donut, false);
@@ -75,21 +74,16 @@ $.extend(edges, {
             this.namespace = "edges-nvd3-pie";
 
             this.draw = function() {
-
-                var title = "";
-                if (this.title !== false) {
-                    title = this.title;
-                }
-
+                var containerClass = edges.css_classes(this.namespace, "container", this);
                 var displayClasses = edges.css_classes(this.namespace, "display", this);
                 var displayFrag = "";
                 if (this.component.display) {
-                    displayFrag = '<span class="' + displayClasses + '">' + this.component.display + '</span><br>';
+                    displayFrag = '<span class="' + displayClasses + '">' + this.component.display + '</span>';
                 }
 
                 var svgId = edges.css_id(this.namespace, "svg", this);
                 var svgSelector = edges.css_id_selector(this.namespace, "svg", this);
-                this.component.context.html(displayFrag + '<svg id="' + svgId + '"></svg>');
+                this.component.context.html('<div class="' + containerClass + '">' + displayFrag + '<svg id="' + svgId + '"></svg></div>');
 
                 // pie chart uses the native data series, so just make a ref to it
                 var data_series = this.component.dataSeries;
@@ -299,6 +293,7 @@ $.extend(edges, {
         MultibarRenderer : function(params) {
             this.xTickFormat = params.xTickFormat || ",.2f";
             this.yTickFormat = params.yTickFormat || ",.2f";
+
             this.transitionDuration = params.transitionDuration || 500;
             this.controls = edges.getParam(params.controls, false);
             this.barColor = params.barColor || false;
