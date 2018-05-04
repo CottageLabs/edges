@@ -17,12 +17,15 @@ $.extend(true, edges, {
             // what to display when there are no results
             this.noResultsText = params.noResultsText || "No results to display";
 
+            // should the whole thing not display if there are no results
+            this.hideOnNoResults = edges.getParam(params.hideOnNoResults, false);
+
             // if the field has no value, and no specific default is set, what should
             // the cell contain
             this.defaultCellContent = params.defaultCellContent || "-";
 
             // list of fields and column headers to display
-            // [{field : "field", display : "Column header", default: "default cell content", valueFunction: <fn>}]
+            // [{field : "field|function", display : "Column header", default: "default cell content", valueFunction: <fn>}]
             this.fieldDisplay = params.fieldDisplay || [];
 
             // should the table display only render the fields listed in fieldDisplay, or should
@@ -31,6 +34,9 @@ $.extend(true, edges, {
 
             // a function to explicitly order the header row
             this.headerOrderingFunction = edges.getParam(params.headerOrderingFunction, false);
+
+            // should the table be sortable - if true, tablesorter will be used, and you need to include the dependency
+            this.sortable = edges.getParam(params.sortable, false);
 
             this.download = edges.getParam(params.download, false);
             this.downloadText = edges.getParam(params.downloadText, "download");
@@ -41,17 +47,27 @@ $.extend(true, edges, {
             this.namespace = "edges-bs3-tabular-results";
 
             this.draw = function () {
-                // first set up our no-results situation, which will be the default if no results
-                // are actually available
-                var noResultsClass = edges.css_classes(this.namespace, "no-results", this);
-                var frag = '<div class="row"><div class="col-md-12"><div class="' + noResultsClass + '">' + this.noResultsText + '</div></div></div>';
-
-                if (this.component.results === false) {
-                    frag = "";
+                // have the title in hand for later use
+                var title = "";
+                if (this.title !== false) {
+                    title = this.title;
                 }
 
-                var results = this.component.results;
-                if (results && results.length > 0) {
+                var frag = "";
+                if (this.component.results === false || this.component.results.length === 0) {
+                    if (this.hideOnNoResults) {
+                        return;
+                    } else {
+                        // set up our no-results situation, which will be the default if no results
+                        // are actually available
+                        var noResultsClass = edges.css_classes(this.namespace, "no-results", this);
+                        frag = '<div class="row"><div class="col-md-12">' + title + '<div class="' + noResultsClass + '">' + this.noResultsText + '</div></div></div>';
+
+                        // and render into the page
+                        this.component.context.html(frag);
+                    }
+                } else {
+                    var results = this.component.results;
                     var headerKeys = this._getHeaderRow();
 
                     // list the css classes we'll require
@@ -67,11 +83,6 @@ $.extend(true, edges, {
                     if (this.download) {
                         down = '<div class="row"><div class="col-md-12"><div class="' + downloadClasses + '"><a href="#" id="' + downloadId +
                             '">' + edges.escapeHtml(this.downloadText) + '</a></div></div></div>';
-                    }
-
-                    var title = "";
-                    if (this.title !== false) {
-                        title = this.title;
                     }
 
                     frag = title + '<div class="table-responsive ' + tableDivClasses + '">';
@@ -116,7 +127,14 @@ $.extend(true, edges, {
                             if (fd && fd.default) {
                                 def = fd.default;
                             }
-                            var val = edges.objVal(key, res, def);
+
+                            var val = "";
+                            if (fd.fieldFunction) {
+                                val = fd.fieldFunction({result: res, default: def});
+                            } else {
+                                val = edges.objVal(key, res, def);
+                            }
+
                             if (fd.valueFunction) {
                                 val = fd.valueFunction(val);
                             } else {
@@ -130,15 +148,21 @@ $.extend(true, edges, {
 
                     // close off the table
                     frag += "</tbody></table></div>" + down;
-                }
 
-                // and render into the page
-                this.component.context.html(frag);
+                    // and render into the page
+                    this.component.context.html(frag);
 
-                // bind the download link if necessary
-                if (this.download) {
-                    var downloadIdSelector = edges.css_id_selector(this.namespace, "download", this);
-                    edges.on(downloadIdSelector, "click", this, "doDownload");
+                    if (this.sortable) {
+                        var tableSelector = edges.css_class_selector(this.namespace, "table", this);
+                        var jqTable = this.component.context.find(tableSelector);
+                        jqTable.tablesorter();
+                    }
+
+                    // bind the download link if necessary
+                    if (this.download) {
+                        var downloadIdSelector = edges.css_id_selector(this.namespace, "download", this);
+                        edges.on(downloadIdSelector, "click", this, "doDownload");
+                    }
                 }
             };
 
