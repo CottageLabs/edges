@@ -23,16 +23,18 @@ $.extend(true, edges, {
                 }
 
                 var template = this.component.template;
-                for (var key in this.component.values) {
-                    var val = this.component.values[key];
-                    template = template.replace("{" + key + "}", val);
+                if (!edges.isEmptyObject(this.component.values)) {
+                    for (var key in this.component.values) {
+                        var val = this.component.values[key];
+                        template = template.replace("{" + key + "}", val);
+                    }
+                    var storyFrag = '<div class="' + storyClass + '">' + template + '</div>';
+
+                    var frag = '<div class="' + containerClass + '">' + titleFrag + storyFrag + '</div>';
+
+                    // and render into the page
+                    this.component.context.html(frag);
                 }
-                var storyFrag = '<div class="' + storyClass + '">' + template + '</div>';
-
-                var frag = '<div class="' + containerClass + '">' + titleFrag + storyFrag + '</div>';
-
-                // and render into the page
-                this.component.context.html(frag);
             }
         }
     }
