@@ -783,6 +783,9 @@ $.extend(edges, {
         // the secondary results to get the data from, if not using the primary
         this.secondaryResults = edges.getParam(params.secondaryResults, false);
 
+        // filter function that can be used to trim down the result set
+        this.filter = edges.getParam(params.filter, false);
+
         // the default renderer for the component to use
         this.defaultRenderer = params.defaultRenderer || "newResultsDisplayRenderer";
 
@@ -805,7 +808,11 @@ $.extend(edges, {
             }
 
             if (source) {
-                this.results = source.results();
+                var results = source.results();
+                if (this.filter) {
+                    results = this.filter({results: results});
+                }
+                this.results = results;
             }
         }
     }
