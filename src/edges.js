@@ -1133,6 +1133,7 @@ var edges = {
     },
 
     numFormat : function(params) {
+        var reflectNonNumbers = edges.getParam(params.reflectNonNumbers, false);
         var prefix = edges.getParam(params.prefix, "");
         var zeroPadding = edges.getParam(params.zeroPadding, false);
         var decimalPlaces = edges.getParam(params.decimalPlaces, false);
@@ -1140,9 +1141,16 @@ var edges = {
         var decimalSeparator = edges.getParam(params.decimalSeparator, ".");
         var suffix = edges.getParam(params.suffix, "");
 
-        return function(num) {
+        return function(number) {
             // ensure this is really a number
-            num = parseFloat(num);
+            var num = parseFloat(number);
+            if (isNaN(num)) {
+                if (reflectNonNumbers) {
+                    return number;
+                } else {
+                    return num;
+                }
+            }
 
             // first off we need to convert the number to a string, which we can do directly, or using toFixed if that
             // is suitable here
@@ -1188,5 +1196,13 @@ var edges = {
             }
             return parseFloat(num);
         }
+    },
+
+    isEmptyObject: function(obj) {
+        for(var key in obj) {
+            if(obj.hasOwnProperty(key))
+                return false;
+        }
+        return true;
     }
 };
