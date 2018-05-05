@@ -70,20 +70,24 @@ $.extend(edges, {
             this.marginRight = edges.getParam(params.marginRight, 30);
             this.marginBottom = edges.getParam(params.marginBottom, 30);
             this.marginLeft = edges.getParam(params.marginLeft, 30);
+            this.onResize = edges.getParam(params.onResize, false);
+            this.resizeOnInit = edges.getParam(params.resizeOnInit, false);
 
             this.namespace = "edges-nvd3-pie";
 
             this.draw = function() {
                 var containerClass = edges.css_classes(this.namespace, "container", this);
                 var displayClasses = edges.css_classes(this.namespace, "display", this);
+                var svgContainerClasses = edges.css_classes(this.namespace, "svg-container", this);
+
                 var displayFrag = "";
                 if (this.component.display) {
-                    displayFrag = '<span class="' + displayClasses + '">' + this.component.display + '</span>';
+                    displayFrag = '<div class="' + displayClasses + '">' + this.component.display + '</div>';
                 }
 
                 var svgId = edges.css_id(this.namespace, "svg", this);
                 var svgSelector = edges.css_id_selector(this.namespace, "svg", this);
-                this.component.context.html('<div class="' + containerClass + '">' + displayFrag + '<svg id="' + svgId + '"></svg></div>');
+                this.component.context.html('<div class="' + containerClass + '">' + displayFrag + '<div class="' + svgContainerClasses + '"><svg id="' + svgId + '"></svg></div></div>');
 
                 // pie chart uses the native data series, so just make a ref to it
                 var data_series = this.component.dataSeries;
@@ -123,6 +127,20 @@ $.extend(edges, {
                         .datum(data_series)
                         .transition().duration(outer.transitionDuration)
                         .call(chart);
+
+                    var resizeFn = function() {
+                        outer.onResize();
+                        chart.update();
+                    };
+                    if (outer.resizeOnInit) {
+                        resizeFn();
+                    }
+
+                    if (outer.onResize) {
+                        nv.utils.windowResize(resizeFn)
+                    } else {
+                        nv.utils.windowResize(chart.update);
+                    }
 
                     return chart;
                 });
