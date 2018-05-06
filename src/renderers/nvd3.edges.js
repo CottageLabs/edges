@@ -268,11 +268,15 @@ $.extend(edges, {
                     }
 
                     if (that.valueFormat) {
+                        // set it on the chart
                         var fn = that.valueFormat;
                         if (typeof that.valueFormat === "string") {
                             fn = d3.format(that.xTickFormat);
                         }
                         chart.valueFormat(fn);
+
+                        // set it on the tooltip
+                        chart.tooltip.valueFormatter(fn);
                     }
 
                     if (that.noDataMessage) {
