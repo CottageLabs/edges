@@ -174,6 +174,10 @@ $.extend(edges, {
                         if (!this._exactFilterMatch({filter: filter, record: record})) {
                             return false;
                         }
+                    } else if (filter.type === "case_insensitive") {
+                        if (!this._caseInsensitiveFilterMatch({filter: filter, record: record})) {
+                            return false;
+                        }
                     } else {
                         // Note, this means that if the filter is malformed you won't get any results, which is better than
                         // giving you some so you don't notice it's broken
@@ -190,11 +194,18 @@ $.extend(edges, {
 
                 var field = filter.field;
                 var val = filter.value;
-                if (record[field] !== val) {
-                    return false;
-                }
 
-                return true;
+                return record[field] == val;
+            };
+
+            this._caseInsensitiveFilterMatch = function(params) {
+                var filter = params.filter;
+                var record = params.record;
+
+                var field = filter.field;
+                var val = filter.value;
+
+                return record[field].toLowerCase() === val.toLowerCase();
             };
 
             ////////////////////////////////////////
