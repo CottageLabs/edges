@@ -1,1 +1,0 @@
-!function(n){n.fn.bindWithDelay=function(i,t,u,e,o){function l(){var i=n.extend(!0,{},arguments[0]),t=function(){r=null,u.apply(a,[i])};o||clearTimeout(r),o&&r||(r=setTimeout(t,e))}var r=null,a=this;return n.isFunction(t)&&(o=e,e=u,u=t,t=void 0),this.bind(i,t,l)}}(jQuery);

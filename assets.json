@@ -2,15 +2,15 @@
 	"parameters" : {
 		"uglify" : "/home/richard/node_modules/uglify-js/bin/uglifyjs",
 		"r_file" : "build/r.js",
-		"tmp_dir" : "tmp",
+		"tmp_dir" : "build/tmp",
 		"node" : "/home/richard/.nvm/versions/node/v5.0.0/bin/node",
-		"cleanup" : false
+		"cleanup" : true
 	},
 	"base_paths" : {
 		"vendor" : "vendor",
 		"js" : "src",
 		"css" : "css",
-		"out" : "out"
+		"out" : "build/releases/current"
 	},
 	"assets" : {
 		"jquery" : ["vendor", "jquery-1.11.1/jquery-1.11.1.js"],
@@ -89,6 +89,7 @@
 		"edges.bs3.SearchBoxRenderer.css" : ["css", "bs3.SearchBoxRenderer.css"],
 		"edges.bs3.SearchingNotificationRenderer.css" : ["css", "bs3.SearchingNotificationRenderer.css"],
 		"edges.bs3.SelectedFiltersRenderer.css" : ["css", "bs3.SelectedFiltersRenderer.css"],
+		"edges.bs3.Tabbed.css" : ["css", "bs3.Tabbed.css"],
 		"edges.bs3.TabularResultsRenderer.css" : ["css", "bs3.TabularResultsRenderer.css"],
 		"edges.d3.css" : ["css", "d3.edges.css"],
 		"edges.google.css" : ["css", "google.edges.css"],
@@ -114,6 +115,7 @@
 		"select2" : [],
 		"google.maps" : [],
 		"tablesorter" : [],
+		"loading-bar" : [],
 
 		"edges.csv" : ["edges.core", "jquery", "papaparse"],
 		"edges.core" : ["jquery", "edges.jquery", "es1x"],
@@ -187,6 +189,7 @@
 		"edges.bs3.SearchBoxRenderer.css" : [],
 		"edges.bs3.SearchingNotificationRenderer.css" : [],
 		"edges.bs3.SelectedFiltersRenderer.css" : [],
+		"edges.bs3.Tabbed.css" : [],
 		"edges.bs3.TabularResultsRenderer.css" : [],
 		"edges.d3.css" : [],
 		"edges.google.css" : [],
@@ -257,7 +260,8 @@
 				"daterangepicker",
 				"select2",
 				"google.maps",
-				"loading-bar"
+				"loading-bar",
+				"tablesorter"
 			]
 		},
 		"edges.full.nodeps.css" : {
@@ -289,6 +293,7 @@
 				"edges.bs3.SearchBoxRenderer.css",
 				"edges.bs3.SearchingNotificationRenderer.css",
 				"edges.bs3.SelectedFiltersRenderer.css",
+				"edges.bs3.Tabbed.css",
 				"edges.bs3.TabularResultsRenderer.css",
 				"edges.d3.css",
 				"edges.google.css",
