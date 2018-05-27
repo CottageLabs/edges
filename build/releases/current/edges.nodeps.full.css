@@ -1,3 +1,60 @@
+.edges-google-map-view-canvas {
+    width: 100%;
+    height: 600px;
+    max-width: none !important;
+}
+.edges-loading_io-renderer-container {
+    text-align: center;
+}
+.edges-loading_io-renderer-bar {
+    margin: auto;
+}
+
+.edges-d3-grouped-us-states-map path:hover {
+    fill-opacity: .7;
+}
+.edges-d3-grouped-us-states-tooltip {
+    position: absolute;
+    text-align: center;
+    margin: 10px;
+    font: 12px sans-serif;
+    pointer-events: none;
+    background:rgba(0,0,0,0.9);
+    border:1px solid grey;
+    width:auto;
+    padding:4px;
+    color:white;
+    opacity:0;
+}
+.edges-d3-grouped-us-states-tooltip h4 {
+    font-size: 14px;
+    font-weight: 600;
+}
+.edges-d3-grouped-us-states-legend {
+    font: 11px sans-serif;
+    position:absolute;
+    left:800px;
+    top:350px;
+}
+.edges-d3-generic-vector-map-container path:hover {
+    fill-opacity: .7 !important;
+}
+.edges-d3-generic-vector-map-tooltip {
+    position: absolute;
+    text-align: center;
+    width: 200px;
+    
+    padding: 4px;
+    font: 12px sans-serif;
+    background: white;
+    border: 0px;
+    border-radius: 8px;
+    pointer-events: none;
+}
+.edges-d3-generic-vector-map-pinned {
+    fill-opacity: .5 !important;
+}
+
 
 .edges-bs3-selected-filters-container {
     border: 1px dotted #cccccc;
@@ -79,17 +136,6 @@
     padding-right: 10px;
 }
 
-.edges-google-map-view-canvas {
-    width: 100%;
-    height: 600px;
-    max-width: none !important;
-}
-.edges-loading_io-renderer-container {
-    text-align: center;
-}
-.edges-loading_io-renderer-bar {
-    margin: auto;
-}
 .edges-bs3-search-box-text {
     width: 100%
 }
@@ -288,52 +334,6 @@
     background-color: #c4d0d7;
     border-radius: 8px;
 }
-
-.edges-d3-grouped-us-states-map path:hover {
-    fill-opacity: .7;
-}
-.edges-d3-grouped-us-states-tooltip {
-    position: absolute;
-    text-align: center;
-    margin: 10px;
-    font: 12px sans-serif;
-    pointer-events: none;
-    background:rgba(0,0,0,0.9);
-    border:1px solid grey;
-    width:auto;
-    padding:4px;
-    color:white;
-    opacity:0;
-}
-.edges-d3-grouped-us-states-tooltip h4 {
-    font-size: 14px;
-    font-weight: 600;
-}
-.edges-d3-grouped-us-states-legend {
-    font: 11px sans-serif;
-    position:absolute;
-    left:800px;
-    top:350px;
-}
-.edges-d3-generic-vector-map-container path:hover {
-    fill-opacity: .7 !important;
-}
-.edges-d3-generic-vector-map-tooltip {
-    position: absolute;
-    text-align: center;
-    width: 200px;
-    
-    padding: 4px;
-    font: 12px sans-serif;
-    background: white;
-    border: 0px;
-    border-radius: 8px;
-    pointer-events: none;
-}
-.edges-d3-generic-vector-map-pinned {
-    fill-opacity: .5 !important;
-}
-
 .edges-bs3-important-numbers-title {
     text-align: center;
 }
