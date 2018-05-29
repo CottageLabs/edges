@@ -66,6 +66,7 @@ $.extend(true, edges, {
                     // if the chart exists, just replace the existing data with the new data
                     for (var i = 0; i < data.datasets.length; i++) {
                         this.chart.data.datasets[i].data = data.datasets[i].data;
+                        this.chart.data.datasets[i].label = data.datasets[i].label;
                     }
                     // ask the chart to update itself
                     this.chart.update();
@@ -96,7 +97,7 @@ $.extend(true, edges, {
                 for (var i = 0; i < this.component.dataSeries.length; i++) {
                     var series = this.component.dataSeries[i];
                     var obj = {
-                        label: series.key,
+                        label: edges.getParam(this.component.dataSeriesNameMap[series.key], series.key),
                         data: series.values.map(function(x) { return x.value })
                     };
                     // if there are data series properties, mix them in at this point

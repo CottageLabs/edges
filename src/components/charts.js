@@ -52,6 +52,12 @@ $.extend(edges, {
             // the keys to relate each aggregation name to it's display key
             seriesKeys : {}
         };
+        
+        // a function, which, when called specifies a name map to be stored in this.dataSeriesNameMap
+        this.dataSeriesNameMapFunction = edges.getParam(params.dataSeriesNameMapFunction, false);
+        
+        // a map of supplied data series names to those that will actually be displayed
+        this.dataSeriesNameMap = edges.getParam(params.dataSeriesNameMap, {});
 
         // pick a default renderer that actually exists, so this is the default chart, essentially
         this.defaultRenderer = params.defaultRenderer || "newMultibarRenderer";
@@ -84,6 +90,9 @@ $.extend(edges, {
         this.synchronise = function() {
             if (this.dataFunction) {
                 this.dataSeries = this.dataFunction(this);
+            }
+            if (this.dataSeriesNameMapFunction) {
+                this.dataSeriesNameMap = this.dataSeriesNameMapFunction(this);
             }
         };
     },
