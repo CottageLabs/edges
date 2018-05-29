@@ -24,6 +24,8 @@ $.extend(true, edges, {
          * @param {Object} params.dataSeriesProperties - ChartJS properties to be mixed with the data series.  See the chartjs docs for details of the options available.
          *                                              This is an object where each key is the key of a data series, and the values are the additional display properties to
          *                                              be attached to the resulting data that gets passed into chartjs.
+         * @param {boolean} params.download - should the chart be given a download link for the user to click
+         * @param {String} params.downloadText - the text of the download link
          * @constructor
          */
         Radar : function(params) {
@@ -32,6 +34,11 @@ $.extend(true, edges, {
 
             // the data series properties to be attached to each data series before being passed to chartjs
             this.dataSeriesProperties = edges.getParam(params.dataSeriesProperties, {});
+
+            // whether the chart can be downloaded
+            this.download = edges.getParam(params.download, false);
+            this.downloadText = edges.getParam(params.downloadText, "download");
+            this.downloadName = edges.getParam(params.downloadName, "image");
 
             //////////////////////////////////////////////
             // variables for internal state
@@ -51,17 +58,36 @@ $.extend(true, edges, {
 
                 if (this.chart === false) {
                     // if the chart does not already exist, create it
+                    var containerClass = edges.css_classes(this.namespace, "container", this);
+                    var downloadClass = edges.css_classes(this.namespace, "download-container", this);
+                    var chartClass = edges.css_classes(this.namespace, "chart", this);
                     var canvasId = edges.css_id(this.namespace, "canvas", this);
                     var canvasIdSelector = edges.css_id_selector(this.namespace, "canvas", this);
+                    var downloadId = edges.css_id(this.namespace, "download", this);
 
-                    this.component.context.html('<canvas id="' + canvasId + '" width="400" height="400"></canvas>');
+                    var frag = '<div class="' + containerClass + '">\
+                        <div class="' + chartClass + '">\
+                            <canvas id="' + canvasId + '" width="400" height="400"></canvas>\
+                        </div>';
+
+                    if (this.download) {
+                        frag += '<div class="' + downloadClass + '"><a href="#" id="' + downloadId + '">' + edges.escapeHtml(this.downloadText) + '</a></div>';
+                    }
+
+                    this.component.context.html(frag);
                     var ctx = this.component.context.find(canvasIdSelector);
 
                     this.chart = new Chart(ctx, {
                         type: "radar",
                         data: data,
                         options: this.options
-                    })
+                    });
+
+                    // bind the download link if necessary
+                    if (this.download) {
+                        var downloadIdSelector = edges.css_id_selector(this.namespace, "download", this);
+                        edges.on(downloadIdSelector, "click", this, "doDownload");
+                    }
                 } else {
                     // if the chart exists, just replace the existing data with the new data
                     for (var i = 0; i < data.datasets.length; i++) {
@@ -108,7 +134,26 @@ $.extend(true, edges, {
                 }
 
                 return data;
-            }
+            };
+
+            this.doDownload = function(element) {
+                if (!this.download) {
+                    return;
+                }
+
+                var canvasIdSelector = edges.css_id_selector(this.namespace, "canvas", this);
+                var url = this.component.jq(canvasIdSelector)[0].toDataURL("image/png");
+
+                // Create link.
+                var a = document.createElement("a");
+                document.body.appendChild(a);
+                a.style = "display: none";
+                a.href = url;
+                a.download = this.downloadName + ".png";
+
+                // Trigger click of link.
+                a.click();
+            };
         }
     }
 });
