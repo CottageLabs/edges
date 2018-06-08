@@ -54,6 +54,7 @@
 		"edges.renderers.google" : ["js", "renderers/google.edges.js"],
 		"edges.renderers.loading-bar" : ["js", "renderers/loading-bar.edges.js"],
 		"edges.renderers.nvd3" : ["js", "renderers/nvd3.edges.js"],
+		"edges.renderers.chartjs.Radar" : ["js", "renderers/chartjs.Radar.js"],
 
 		"edges.templates.bs3.Facetview" : ["js", "templates/bs3.Facetview.js"],
 		"edges.templates.bs3.Tabbed" : ["js", "templates/bs3.Tabbed.js"],
@@ -69,6 +70,7 @@
 		"select2" : ["vendor", "select2-3.5.1/select2.min.js"],
 		"loading-bar" : ["vendor", "loading-bar/loading-bar.min.js"],
 		"tablesorter" : ["vendor", "tablesorter-2.17.7/js/jquery.tablesorter.min.js"],
+		"chartjs" : ["vendor", "chartjs-2.7.2/Chart.min.js"],
 
 		"edges.bs3.BasicRangeSelectorRenderer.css" : ["css", "bs3.BasicRangeSelectorRenderer.css"],
 		"edges.bs3.BSMultiDateRange.css" : ["css", "bs3.BSMultiDateRange.css"],
@@ -117,6 +119,7 @@
 		"google.maps" : [],
 		"tablesorter" : [],
 		"loading-bar" : [],
+		"chartjs" : [],
 
 		"edges.csv" : ["edges.core", "jquery", "papaparse"],
 		"edges.core" : ["jquery", "edges.jquery", "es1x"],
@@ -157,6 +160,7 @@
 		"edges.renderers.google" : ["edges.core", "jquery", "google.maps"],
 		"edges.renderers.loading-bar" : ["edges.core", "jquery", "loading-bar"],
 		"edges.renderers.nvd3" : ["edges.core", "jquery", "nvd3", "d3"],
+		"edges.renderers.chartjs.Radar" : ["edges.core", "jquery", "chartjs"],
 
 		"edges.templates.bs3.Facetview" : ["edges.core", "jquery"],
 		"edges.templates.bs3.Tabbed" : ["edges.core", "jquery"],
@@ -246,6 +250,7 @@
 				"edges.renderers.google",
 				"edges.renderers.loading-bar",
 				"edges.renderers.nvd3",
+				"edges.renderers.chartjs.Radar",
 
 				"edges.templates.bs3.Facetview",
 				"edges.templates.bs3.Tabbed",
@@ -262,7 +267,8 @@
 				"select2",
 				"google.maps",
 				"loading-bar",
-				"tablesorter"
+				"tablesorter",
+				"chartjs"
 			]
 		},
 		"edges.full.nodeps.css" : {
