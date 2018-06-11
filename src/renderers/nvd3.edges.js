@@ -74,6 +74,7 @@ $.extend(edges, {
             this.onResize = edges.getParam(params.onResize, false);
             this.resizeOnInit = edges.getParam(params.resizeOnInit, false);
             this.footer = edges.getParam(params.footer, false);
+            this.growOnHover = edges.getParam(params.growOnHover, true);
 
             this.namespace = "edges-nvd3-pie";
 
@@ -128,7 +129,7 @@ $.extend(edges, {
                         .margin({"left":outer.marginLeft,"right":outer.marginRight,"top":outer.marginTop,"bottom":outer.marginBottom})
                         .showLegend(outer.showLegend)
                         .showLabels(outer.showLabels)
-                        .growOnHover(false);
+                        .growOnHover(outer.growOnHover);
 
                     if (outer.noDataMessage) {
                         chart.noData(outer.noDataMessage);
@@ -149,7 +150,7 @@ $.extend(edges, {
 
                     if (outer.onResize) {
                         var resizeFn = function() {
-                            outer.onResize();
+                            outer.onResize(chart);
                             chart.update();
                         };
                         if (outer.resizeOnInit) {
