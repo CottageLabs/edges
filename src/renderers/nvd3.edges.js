@@ -65,6 +65,7 @@ $.extend(edges, {
             this.color = params.color || false;
             this.legendPosition = params.legendPosition || "top";
             this.labelsOutside = edges.getParam(params.labelsOutside, false);
+            this.showLabels = edges.getParam(params.showLabels, true);
             this.valueFormat = params.valueFormat || false;
             this.marginTop = edges.getParam(params.marginTop, 30);
             this.marginRight = edges.getParam(params.marginRight, 30);
@@ -72,6 +73,8 @@ $.extend(edges, {
             this.marginLeft = edges.getParam(params.marginLeft, 30);
             this.onResize = edges.getParam(params.onResize, false);
             this.resizeOnInit = edges.getParam(params.resizeOnInit, false);
+            this.footer = edges.getParam(params.footer, false);
+            this.growOnHover = edges.getParam(params.growOnHover, true);
 
             this.namespace = "edges-nvd3-pie";
 
@@ -85,9 +88,24 @@ $.extend(edges, {
                     displayFrag = '<div class="' + displayClasses + '">' + this.component.display + '</div>';
                 }
 
+                var footerFrag = "";
+                if (this.footer) {
+                    var val = this.footer;
+                    if (typeof(this.footer) === "function") {
+                        val = this.footer(this);
+                    }
+                    var footerClasses = edges.css_classes(this.namespace, "footer", this);
+                    footerFrag = '<div class="' + footerClasses + '">' + val + '</div>';
+                }
+
                 var svgId = edges.css_id(this.namespace, "svg", this);
                 var svgSelector = edges.css_id_selector(this.namespace, "svg", this);
-                this.component.context.html('<div class="' + containerClass + '">' + displayFrag + '<div class="' + svgContainerClasses + '"><svg id="' + svgId + '"></svg></div></div>');
+                var frag = '<div class="' + containerClass + '">\
+                        ' + displayFrag + '\
+                        <div class="' + svgContainerClasses + '"><svg id="' + svgId + '"></svg></div>\
+                        ' + footerFrag + '\
+                    </div>';
+                this.component.context.html(frag);
 
                 // pie chart uses the native data series, so just make a ref to it
                 var data_series = this.component.dataSeries;
@@ -109,7 +127,9 @@ $.extend(edges, {
                         .legendPosition(outer.legendPosition)
                         .labelsOutside(outer.labelsOutside)
                         .margin({"left":outer.marginLeft,"right":outer.marginRight,"top":outer.marginTop,"bottom":outer.marginBottom})
-                        .showLegend(outer.showLegend);
+                        .showLegend(outer.showLegend)
+                        .showLabels(outer.showLabels)
+                        .growOnHover(outer.growOnHover);
 
                     if (outer.noDataMessage) {
                         chart.noData(outer.noDataMessage);
@@ -128,15 +148,14 @@ $.extend(edges, {
                         .transition().duration(outer.transitionDuration)
                         .call(chart);
 
-                    var resizeFn = function() {
-                        outer.onResize();
-                        chart.update();
-                    };
-                    if (outer.resizeOnInit) {
-                        resizeFn();
-                    }
-
                     if (outer.onResize) {
+                        var resizeFn = function() {
+                            outer.onResize(chart);
+                            chart.update();
+                        };
+                        if (outer.resizeOnInit) {
+                            resizeFn();
+                        }
                         nv.utils.windowResize(resizeFn)
                     } else {
                         nv.utils.windowResize(chart.update);

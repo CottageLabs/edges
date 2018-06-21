@@ -804,5 +804,41 @@ $.extend(edges, {
     },
     AutocompleteTermSelector : function(params) {
         this.defaultRenderer = params.defaultRenderer || "newAutocompleteTermSelectorRenderer";
+    },
+
+    newNavigationTermList : function(params) {
+        return edges.instantiate(edges.NavigationTermList, params, edges.newComponent);
+    },
+    NavigationTermList : function(params) {
+        this.urlTemplate = params.urlTemplate;
+        this.placeholder = edges.getParam(params.placeholder, "{term}");
+        this.sourceResults = edges.getParam(params.sourceResults, false);
+        this.sourceAggregation = params.sourceAggregation;
+
+        this.terms = [];
+
+        this.synchronise = function() {
+            this.terms = [];
+
+            var results = this.edge.result;
+            if (this.sourceResults !== false) {
+                if (!this.edge.secondaryResults.hasOwnProperty(this.sourceResults)) {
+                    return;
+                }
+                results = this.edge.secondaryResults[this.sourceResults];
+            }
+            if (!results) {
+                return;
+            }
+
+            var agg = results.aggregation(this.sourceAggregation);
+            this.terms = agg.buckets.map(function(x) { return x.key});
+        };
+
+        this.navigate = function(params) {
+            var term = params.term;
+            var url = this.urlTemplate.replace(this.placeholder, term);
+            window.location.href = url;
+        }
     }
 });
