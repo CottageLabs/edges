@@ -763,6 +763,43 @@ $.extend(edges, {
         };
     },
 
+    newLeaveSearchNavigation : function(params) {
+        return edges.instantiate(edges.LeaveSearchNavigation, params, edges.newComponent)
+    },
+    LeaveSearchNavigation : function(params) {
+        this.include_query_string = edges.getParam(params.include_query_string, true);
+        this.include_filters = edges.getParam(params.include_filters, true);
+        this.include_paging = edges.getParam(params.include_paging, false);
+        this.include_sort = edges.getParam(params.include_sort, false);
+        this.include_fields = edges.getParam(params.include_fields, false);
+        this.include_aggregations = edges.getParam(params.include_aggregations, false);
+
+        this.urlTemplate = edges.getParam(params.urlTemplate, "{query}");
+        this.urlQueryPlaceholder = edges.getParam(params.urlQueryPlaceholder, "{query}");
+
+        this.link = "#";
+
+        this.synchronise = function() {
+            this.link = "#";
+
+            if (this.edge.currentQuery !== false) {
+                var queryobj = this.edge.currentQuery.objectify({
+                    include_query_string : this.include_query_string,
+                    include_filters : this.include_filters,
+                    include_paging : this.include_paging,
+                    include_sort : this.include_sort,
+                    include_fields : this.include_fields,
+                    include_aggregations : this.include_aggregations
+                });
+
+                var j = JSON.stringify(queryobj);
+                var frag = encodeURIComponent(j);
+
+                this.link = this.urlTemplate.replace(this.urlQueryPlaceholder, frag);
+            }
+        };
+    },
+
     ////////////////////////////////////////////////
     // Results list implementation
 

@@ -388,7 +388,6 @@ var es = {
             var include_sort = params.include_sort === undefined ? true : params.include_sort;
             var include_fields = params.include_fields === undefined ? true : params.include_fields;
             var include_aggregations = params.include_aggregations === undefined ? true : params.include_aggregations;
-            var include_facets = params.include_facets === undefined ? true : params.include_facets;
 
             // queries will be separated in queries and bool filters, which may then be
             // combined later
