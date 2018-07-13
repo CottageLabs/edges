@@ -1025,7 +1025,7 @@ var edges = {
             } else if (caller.edge) {
                 caller.edge.jq(selector).bindWithDelay(event, clos, delay);
             } else {
-                console.log("attempt to bindWithDelay on caller which has neither inner component or edge")
+                $(selector).bindWithDelay(event, clos, delay);
             }
         } else {
             if (caller.component) {
@@ -1033,7 +1033,7 @@ var edges = {
             } else if (caller.edge) {
                 caller.edge.jq(selector).on(event, clos)
             } else {
-                console.log("attempt to bindWithDelay on caller which has neither inner component or edge")
+                $(selector).on(event, clos);
             }
         }
     },
