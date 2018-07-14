@@ -47,6 +47,29 @@ $.extend(edges, {
                         return c;
                     }
                 }
+            },
+
+            hasData : function(dataSeries) {
+                if (!dataSeries) {
+                    return false;
+                }
+
+                if (dataSeries.length == 0) {
+                    return false;
+                }
+
+                var emptyCount = 0;
+                for (var i = 0; i < dataSeries.length; i++) {
+                    var series = dataSeries[i];
+                    if (series.values.length == 0) {
+                        emptyCount++;
+                    }
+                }
+                if (emptyCount == dataSeries.length) {
+                    return false;
+                }
+
+                return true;
             }
         },
 
@@ -341,15 +364,45 @@ $.extend(edges, {
             this.showLegend = edges.getParam(params.showLegend, true);
             this.xAxisLabel = params.xAxisLabel || "";
             this.yAxisLabel = params.yAxisLabel || "";
+            this.yAxisLabelDistance = edges.getParam(params.yAxisLabelDistance, 0);
 
             this.marginTop = edges.getParam(params.marginTop, 30);
             this.marginRight = edges.getParam(params.marginRight, 20);
             this.marginBottom = edges.getParam(params.marginBottom, 50);
             this.marginLeft = edges.getParam(params.marginLeft, 60);
 
+            this.hideIfNoData = edges.getParam(params.hideIfNoData, false);
+            this.onHide = edges.getParam(params.onHide, false);
+            this.onShow = edges.getParam(params.onShow, false);
+
             this.namespace = "edges-nvd3-multibar";
 
             this.draw = function () {
+                // first sort out the data series
+                var data_series = this.component.dataSeries;
+                if (!data_series) {
+                    data_series = [];
+                }
+                data_series = edges.nvd3.DataSeriesConversions.toXY(this.component.dataSeries);
+
+                // now decide if we are going to continue
+                if (this.hideIfNoData) {
+                    if (!edges.nvd3.tools.hasData(data_series)) {
+                        this.component.context.html("");
+                        this.component.context.hide();
+
+                        if (this.onHide) {
+                            this.onHide();
+                        }
+
+                        return;
+                    }
+                }
+                this.component.context.show();
+                if (this.onShow) {
+                    this.onShow();
+                }
+
                 var displayClasses = edges.css_classes(this.namespace, "display", this);
                 var displayFrag = "";
                 if (this.component.display) {
@@ -360,13 +413,7 @@ $.extend(edges, {
                 var svgSelector = edges.css_id_selector(this.namespace, "svg", this);
                 this.component.context.html(displayFrag + '<svg id="' + svgId + '"></svg>');
 
-                var data_series = this.component.dataSeries;
-                if (!data_series) {
-                    data_series = [];
-                }
-                data_series = edges.nvd3.DataSeriesConversions.toXY(this.component.dataSeries);
                 var outer = this;
-
                 nv.addGraph(function () {
                     var chart = nv.models.multiBarChart()
                         .showControls(outer.controls)
@@ -378,7 +425,8 @@ $.extend(edges, {
 
                     chart.yAxis
                         .axisLabel(outer.yAxisLabel)
-                        .tickFormat(d3.format(outer.yTickFormat));
+                        .tickFormat(d3.format(outer.yTickFormat))
+                        .axisLabelDistance(outer.yAxisLabelDistance);
 
                     if (outer.barColor) {
                         chart.barColor(outer.barColor);

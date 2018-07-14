@@ -528,40 +528,7 @@ var edges = {
         // URL management functions
 
         this.getUrlParams = function() {
-            var params = {};
-            var url = window.location.href;
-            var fragment = false;
-
-            // break the anchor off the url
-            if (url.indexOf("#") > -1) {
-                fragment = url.slice(url.indexOf('#'));
-                url = url.substring(0, url.indexOf('#'));
-            }
-
-            // extract and split the query args
-            var args = url.slice(url.indexOf('?') + 1).split('&');
-
-            for (var i = 0; i < args.length; i++) {
-                var kv = args[i].split('=');
-                if (kv.length === 2) {
-                    var val = decodeURIComponent(kv[1]);
-                    if (val[0] == "[" || val[0] == "{") {
-                        // if it looks like a JSON object in string form...
-                        // remove " (double quotes) at beginning and end of string to make it a valid
-                        // representation of a JSON object, or the parser will complain
-                        val = val.replace(/^"/,"").replace(/"$/,"");
-                        val = JSON.parse(val);
-                    }
-                    params[kv[0]] = val;
-                }
-            }
-
-            // record the fragment identifier if required
-            if (fragment) {
-                params['#'] = fragment;
-            }
-
-            return params;
+            return edges.getUrlParams();
         };
 
         this.urlQueryArg = function(objectify_options) {
@@ -1058,7 +1025,8 @@ var edges = {
         for (var i = 0; i < args.length; i++) {
             var kv = args[i].split('=');
             if (kv.length === 2) {
-                var val = decodeURIComponent(kv[1]);
+                var fixPlusses = kv[1].replace("+", "%20");
+                var val = decodeURIComponent(fixPlusses);
                 if (val[0] == "[" || val[0] == "{") {
                     // if it looks like a JSON object in string form...
                     // remove " (double quotes) at beginning and end of string to make it a valid
