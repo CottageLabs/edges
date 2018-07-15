@@ -229,6 +229,10 @@ $.extend(edges, {
             this.reserveBelow = edges.getParam(params.reserveBelow, 0);
             this.groupSpacing = edges.getParam(params.groupSpacing, false);
 
+            this.hideIfNoData = edges.getParam(params.hideIfNoData, false);
+            this.onHide = edges.getParam(params.onHide, false);
+            this.onShow = edges.getParam(params.onShow, false);
+
             this.namespace = "edges-nvd3-horizontal-multibar";
 
             this.draw = function() {
@@ -241,6 +245,24 @@ $.extend(edges, {
                 var data_series = this.component.dataSeries;
                 if (!data_series) {
                     data_series = [];
+                }
+
+                // now decide if we are going to continue
+                if (this.hideIfNoData) {
+                    if (!edges.nvd3.tools.hasData(data_series)) {
+                        this.component.context.html("");
+                        this.component.context.hide();
+
+                        if (this.onHide) {
+                            this.onHide();
+                        }
+
+                        return;
+                    }
+                }
+                this.component.context.show();
+                if (this.onShow) {
+                    this.onShow();
                 }
 
                 var customAttributes = "";
