@@ -91,6 +91,9 @@ var edges = {
         // query parameter in which the query for this edge instance will be stored
         this.urlQuerySource = edges.getParam(params.urlQuerySource, "source");
 
+        // options to be passed to es.Query.objectify when prepping the query to be placed in the URL
+        this.urlQueryOptions = edges.getParam(params.urlQueryOptions, false);
+
         // template object that will be used to draw the frame for the edge.  May be left
         // blank, in which case the edge will assume that the elements are already rendered
         // on the page by the caller
@@ -533,14 +536,17 @@ var edges = {
 
         this.urlQueryArg = function(objectify_options) {
             if (!objectify_options) {
-                objectify_options = {
-                    include_query_string : true,
-                    include_filters : true,
-                    include_paging : true,
-                    include_sort : true,
-                    include_fields : false,
-                    include_aggregations : false,
-                    include_facets : false
+                if (this.urlQueryOptions) {
+                    objectify_options = this.urlQueryOptions
+                } else {
+                    objectify_options = {
+                        include_query_string : true,
+                        include_filters : true,
+                        include_paging : true,
+                        include_sort : true,
+                        include_fields : false,
+                        include_aggregations : false
+                    }
                 }
             }
             var q = JSON.stringify(this.currentQuery.objectify(objectify_options));
@@ -1025,8 +1031,10 @@ var edges = {
         for (var i = 0; i < args.length; i++) {
             var kv = args[i].split('=');
             if (kv.length === 2) {
-                var fixPlusses = kv[1].replace("+", "%20");
-                var val = decodeURIComponent(fixPlusses);
+                var key = kv[0].replace(/\+/g, "%20");
+                key = decodeURIComponent(key);
+                var val = kv[1].replace(/\+/g, "%20");
+                val = decodeURIComponent(val);
                 if (val[0] == "[" || val[0] == "{") {
                     // if it looks like a JSON object in string form...
                     // remove " (double quotes) at beginning and end of string to make it a valid
@@ -1034,7 +1042,7 @@ var edges = {
                     val = val.replace(/^"/,"").replace(/"$/,"");
                     val = JSON.parse(val);
                 }
-                params[kv[0]] = val;
+                params[key] = val;
             }
         }
 

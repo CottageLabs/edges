@@ -9,7 +9,9 @@ $.extend(true, edges, {
         },
         SelectedFiltersRenderer: function (params) {
 
-            this.showFilterField = params.showFilterField || true;
+            this.showFilterField = edges.getParam(params.showFilterField, true);
+
+            this.allowRemove = edges.getParam(params.allowRemove, true);
 
             this.namespace = "edges-bs3-selected-filters";
 
@@ -22,7 +24,6 @@ $.extend(true, edges, {
                 var fieldClass = edges.css_classes(ns, "field", this);
                 var fieldNameClass = edges.css_classes(ns, "fieldname", this);
                 var valClass = edges.css_classes(ns, "value", this);
-                var removeClass = edges.css_classes(ns, "remove", this);
                 var relClass = edges.css_classes(ns, "rel", this);
                 var containerClass = edges.css_classes(ns, "container", this);
 
@@ -43,16 +44,19 @@ $.extend(true, edges, {
                         filters += '<span class="' + valClass + '">' + val.display + '</span>';
 
                         // the remove block looks different, depending on the kind of filter to remove
-                        if (def.filter == "term" || def.filter === "terms") {
-                            filters += '<a class="' + removeClass + '" data-bool="must" data-filter="' + def.filter + '" data-field="' + field + '" data-value="' + val.val + '" alt="Remove" title="Remove" href="#">';
-                            filters += '<i class="glyphicon glyphicon-black glyphicon-remove"></i>';
-                            filters += "</a>";
-                        } else if (def.filter === "range") {
-                            var from = val.from ? ' data-' + val.fromType + '="' + val.from + '" ' : "";
-                            var to = val.to ? ' data-' + val.toType + '="' + val.to + '" ' : "";
-                            filters += '<a class="' + removeClass + '" data-bool="must" data-filter="' + def.filter + '" data-field="' + field + '" ' + from + to + ' alt="Remove" title="Remove" href="#">';
-                            filters += '<i class="glyphicon glyphicon-black glyphicon-remove"></i>';
-                            filters += "</a>";
+                        if (this.allowRemove) {
+                            var removeClass = edges.css_classes(ns, "remove", this);
+                            if (def.filter == "term" || def.filter === "terms") {
+                                filters += '<a class="' + removeClass + '" data-bool="must" data-filter="' + def.filter + '" data-field="' + field + '" data-value="' + val.val + '" alt="Remove" title="Remove" href="#">';
+                                filters += '<i class="glyphicon glyphicon-black glyphicon-remove"></i>';
+                                filters += "</a>";
+                            } else if (def.filter === "range") {
+                                var from = val.from ? ' data-' + val.fromType + '="' + val.from + '" ' : "";
+                                var to = val.to ? ' data-' + val.toType + '="' + val.to + '" ' : "";
+                                filters += '<a class="' + removeClass + '" data-bool="must" data-filter="' + def.filter + '" data-field="' + field + '" ' + from + to + ' alt="Remove" title="Remove" href="#">';
+                                filters += '<i class="glyphicon glyphicon-black glyphicon-remove"></i>';
+                                filters += "</a>";
+                            }
                         }
 
                         if (def.rel) {

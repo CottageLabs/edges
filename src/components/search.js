@@ -823,6 +823,12 @@ $.extend(edges, {
         // filter function that can be used to trim down the result set
         this.filter = edges.getParam(params.filter, false);
 
+        // a sort function that can be used to organise the results
+        this.sort = edges.getParam(params.sort, false);
+
+        // the maximum number of results to be stored
+        this.limit = edges.getParam(params.limit, false);
+
         // the default renderer for the component to use
         this.defaultRenderer = params.defaultRenderer || "newResultsDisplayRenderer";
 
@@ -844,13 +850,27 @@ $.extend(edges, {
                 source = this.edge.secondaryResults[this.secondaryResults];
             }
 
-            if (source) {
-                var results = source.results();
-                if (this.filter) {
-                    results = this.filter({results: results});
-                }
-                this.results = results;
+            // if there are no sources to pull results from, leave us with an empty
+            // result set
+            if (!source) {
+                return;
             }
+
+            // first filter the results
+            var results = source.results();
+            if (this.filter) {
+                results = this.filter({results: results});
+            }
+
+            if (this.sort) {
+                results.sort(this.sort);
+            }
+
+            if (this.limit !== false) {
+                results = results.slice(0, this.limit);
+            }
+
+            this.results = results;
         }
     }
 });
