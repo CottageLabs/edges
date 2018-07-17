@@ -1358,7 +1358,7 @@ var es = {
         };
 
         this.total = function() {
-            if (this.data.hits && this.data.hits.total) {
+            if (this.data.hits && this.data.hits.hasOwnProperty("total")) {
                 return parseInt(this.data.hits.total);
             }
             return false;
