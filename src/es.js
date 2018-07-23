@@ -1382,10 +1382,22 @@ var es = {
         var querystring = JSON.stringify(queryobj);
 
         // make the call to the elasticsearch web service
+        /* This is the old version by GET - it suffered from limitations when queries were large
         $.ajax({
             type: "get",
             url: search_url,
             data: {source: querystring},
+            dataType: datatype,
+            success: es.querySuccess(success),
+            error: es.queryError(error),
+            complete: complete
+        });*/
+
+        $.ajax({
+            type: "post",
+            url: search_url,
+            data: querystring,
+            contentType: "application/json",
             dataType: datatype,
             success: es.querySuccess(success),
             error: es.queryError(error),
