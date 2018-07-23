@@ -1372,6 +1372,7 @@ var es = {
     doQuery : function(params) {
         // extract the parameters of the request
         var success = params.success;
+        var error = params.error;
         var complete = params.complete;
         var search_url = params.search_url;
         var queryobj = params.queryobj;
@@ -1387,6 +1388,7 @@ var es = {
             data: {source: querystring},
             dataType: datatype,
             success: es.querySuccess(success),
+            error: es.queryError(error),
             complete: complete
         });
     },
@@ -1395,6 +1397,16 @@ var es = {
         return function(data) {
             var result = es.newResult({raw: data});
             callback(result);
+        }
+    },
+
+    queryError : function(callback) {
+        return function(data) {
+            if (callback) {
+                callback(data);
+            } else {
+                throw new Error(data);
+            }
         }
     },
 
