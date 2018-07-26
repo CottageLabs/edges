@@ -70,6 +70,122 @@ $.extend(edges, {
                 }
 
                 return true;
+            },
+
+            wrapLabels : function(params) {
+                var axisSelector = params.axisSelector;
+                var maxWidth = params.maxWidth;
+                var maxHeight = params.maxHeight;
+                var lineHeight = params.lineHeight || 1.2;
+                var minimumLineLength = params.minimumLineLength || 3;
+
+                // to make room for rounding errors and hyphens
+                maxWidth = maxWidth - 5;
+
+                function separate(text) {
+                    // get the current content then clear the text element
+                    var chars = text.text().trim().split("");
+                    text.text(null);
+
+                    // set up registries for the tspans and the text lines that they will create
+                    var tspans = [];
+                    var lines = [];
+
+                    // create the current tspan
+                    var x = text.attr("x");
+                    var currentTspan = text.append("tspan").attr("x", x).attr("y", 0);
+
+                    // record the current tspan and the current line
+                    tspans.push(currentTspan);
+                    var currentLine = [];
+                    lines.push(currentLine);
+
+                    // for each character in th text, push to the current line, assign to the tspan, and then
+                    // check if we have exceeded the allowed max width
+                    for (var j = 0; j < chars.length; j++) {
+                        var char = chars[j];
+                        currentLine.push(char);
+                        currentTspan.text(currentLine.join(""));
+                        if (currentTspan.node().getComputedTextLength() >= maxWidth) {
+                            // if we have exceeded the max width, remove the last character, and reset
+                            // the tspan to its previous state
+                            currentLine.pop();
+                            currentTspan.text(currentLine.join(""));
+
+                            // now start a new line, a new tspan, and add them both to their registries
+                            currentLine = [char];
+                            currentTspan = text.append("tspan").attr("x", x).attr("y", 0);
+                            currentTspan.text(currentLine.join(""));
+                            tspans.push(currentTspan);
+                            lines.push(currentLine);
+                        }
+                    }
+
+                    // check to see if the final line is long enough.  If not, borrow characters
+                    // from the previous line
+                    var lastLine = lines[lines.length - 1];
+                    if (lastLine.length < minimumLineLength && lines.length > 1) {
+                        var prevLine = lines[lines.length - 2];
+                        var missing = minimumLineLength - lastLine.length;
+                        for (var i = 0; i < missing; i++) {
+                            lastLine.unshift(prevLine.pop());
+                        }
+                        tspans[lines.length - 1].text(lastLine.join(""));
+                        tspans[lines.length - 2].text(prevLine.join(""));
+                    }
+
+                    // to all lines where the previous line ends with a letter and the next line begins
+                    // with a letter, add hyphens
+                    for (var i = 0; i < lines.length; i++) {
+                        var thisLine = lines[i];
+                        var thisLineLastChar = thisLine[thisLine.length - 1];
+                        if (lines.length - 1 >= i + 1) {
+                            var nextLine = lines[i + 1];
+                            var nextLineLastChar = nextLine[nextLine.length - 1];
+                            if (thisLineLastChar !== " " && nextLineLastChar !== " ") {
+                                thisLine.push("-");
+                                tspans[i].text(thisLine.join(""));
+                            }
+                        }
+                    }
+
+                    return tspans;
+                }
+
+                function distribute(text, tspans) {
+                    var imax = tspans.length;
+                    var pmax = lineHeight * (imax - 1);
+                    var dy = parseFloat(text.attr("dy"));
+
+                    for (var j = 0; j < tspans.length; j++) {
+                        var pos = (lineHeight * j) - (pmax / 2.0) + dy;
+                        var tspan = tspans[j];
+                        tspan.attr("dy", pos + "em");
+                    }
+                }
+
+                function reduce(text, tspans) {
+                    var reduced = false;
+                    var box = text.node().getBBox();
+                    if (box.height > maxHeight && tspans.length > 1) {
+                        tspans[tspans.length - 1].remove();
+                        tspans.pop();
+                        var line = tspans[tspans.length - 1].text();
+                        line = line.substring(0, line.length - 3) + "...";
+                        tspans[tspans.length - 1].text(line);
+                        reduced = true;
+                    }
+                    return reduced;
+                }
+
+                d3.selectAll(axisSelector + " .tick text").each(function(i, e) {
+                    var text = d3.select(this);
+                    var tspans = separate(text);
+                    do {
+                        distribute(text, tspans);
+                    }
+                    while (reduce(text, tspans))
+                });
             }
         },
 
@@ -220,6 +336,7 @@ $.extend(edges, {
 
             this.xAxisLabel = edges.getParam(params.xAxisLabel, false);
             this.yAxisLabel = edges.getParam(params.yAxisLabel, false);
+            this.xAxisLabelWrap = edges.getParam(params.xAxisLabelWrap, false);
 
             this.tooltipGenerator = edges.getParam(params.tooltipGenerator, false);
 
@@ -364,7 +481,27 @@ $.extend(edges, {
                         .transition().duration(that.transitionDuration)
                         .call(chart);
 
-                    nv.utils.windowResize(chart.update);
+                    if (that.xAxisLabelWrap) {
+                        edges.nvd3.tools.wrapLabels({
+                            axisSelector: svgSelector + " .nv-x.nv-axis",
+                            maxWidth: that.marginLeft - 5,
+                            maxHeight: that.barHeight
+                        });
+                    }
+
+                    function updateChart() {
+                        chart.update();
+                        if (that.xAxisLabelWrap) {
+                            edges.nvd3.tools.wrapLabels({
+                                chart: chart,
+                                axisSelector: ".nv-x.nv-axis",
+                                maxWidth: that.marginLeft - 5,
+                                maxHeight: that.barHeight
+                            });
+                        }
+                    }
+
+                    nv.utils.windowResize(updateChart);
 
                     return chart;
                 });
