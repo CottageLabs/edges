@@ -78,7 +78,9 @@ $.extend(true, edges, {
                 // insert the frame within which the results actually will go
                 var results = edge.category("results");
                 if (results.length > 0) {
-                    thefacetview += '<div class="row"><div class="col-md-12"><div class="' + resultsClass + '" dir="auto"><div id="' + results[0].id + '"></div></div></div></div>';
+                    for (var i = 0; i < results.length; i++) {
+                        thefacetview += '<div class="row"><div class="col-md-12"><div class="' + resultsClass + '" dir="auto"><div id="' + results[i].id + '"></div></div></div></div>';
+                    }
                 }
 
                 // make space at the bottom for the pager

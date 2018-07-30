@@ -388,7 +388,6 @@ var es = {
             var include_sort = params.include_sort === undefined ? true : params.include_sort;
             var include_fields = params.include_fields === undefined ? true : params.include_fields;
             var include_aggregations = params.include_aggregations === undefined ? true : params.include_aggregations;
-            var include_facets = params.include_facets === undefined ? true : params.include_facets;
 
             // queries will be separated in queries and bool filters, which may then be
             // combined later
@@ -1359,7 +1358,7 @@ var es = {
         };
 
         this.total = function() {
-            if (this.data.hits && this.data.hits.total) {
+            if (this.data.hits && this.data.hits.hasOwnProperty("total")) {
                 return parseInt(this.data.hits.total);
             }
             return false;
@@ -1373,6 +1372,7 @@ var es = {
     doQuery : function(params) {
         // extract the parameters of the request
         var success = params.success;
+        var error = params.error;
         var complete = params.complete;
         var search_url = params.search_url;
         var queryobj = params.queryobj;
@@ -1382,12 +1382,25 @@ var es = {
         var querystring = JSON.stringify(queryobj);
 
         // make the call to the elasticsearch web service
+        /* This is the old version by GET - it suffered from limitations when queries were large
         $.ajax({
             type: "get",
             url: search_url,
             data: {source: querystring},
             dataType: datatype,
             success: es.querySuccess(success),
+            error: es.queryError(error),
+            complete: complete
+        });*/
+
+        $.ajax({
+            type: "post",
+            url: search_url,
+            data: querystring,
+            contentType: "application/json",
+            dataType: datatype,
+            success: es.querySuccess(success),
+            error: es.queryError(error),
             complete: complete
         });
     },
@@ -1396,6 +1409,16 @@ var es = {
         return function(data) {
             var result = es.newResult({raw: data});
             callback(result);
+        }
+    },
+
+    queryError : function(callback) {
+        return function(data) {
+            if (callback) {
+                callback(data);
+            } else {
+                throw new Error(data);
+            }
         }
     },
 

@@ -47,6 +47,188 @@ $.extend(edges, {
                         return c;
                     }
                 }
+            },
+
+            hasData : function(dataSeries) {
+                if (!dataSeries) {
+                    return false;
+                }
+
+                if (dataSeries.length == 0) {
+                    return false;
+                }
+
+                var emptyCount = 0;
+                for (var i = 0; i < dataSeries.length; i++) {
+                    var series = dataSeries[i];
+                    if (series.values.length == 0) {
+                        emptyCount++;
+                    }
+                }
+                if (emptyCount == dataSeries.length) {
+                    return false;
+                }
+
+                return true;
+            },
+
+            wrapLabels : function(params) {
+                var axisSelector = params.axisSelector;
+                var maxWidth = params.maxWidth;
+                var maxHeight = params.maxHeight;
+                var lineHeight = params.lineHeight || 1.2;
+                var wordBreaks = params.wordBreaks || [" ", "\t"];
+                var minChunkSize = params.minHyphenSize || 3;
+
+                function _isMidWord(currentLine, remainder) {
+                    var leftChar = $.inArray(currentLine[currentLine.length - 1], wordBreaks) === -1;
+                    var rightChar = $.inArray(remainder[0], wordBreaks) === -1;
+                    return leftChar && rightChar;
+                }
+
+                function _toPrevSpace(currentLine) {
+                    for (var i = currentLine.length - 1; i >= 0; i--) {
+                        var char = currentLine[i];
+                        if ($.inArray(char, wordBreaks) !== -1) {
+                            return currentLine.length - i;
+                        }
+                    }
+                    return -1;
+                }
+
+                function _toNextSpace(remainder) {
+                    for (var i = 0; i < remainder.length; i++) {
+                        var char = remainder[i];
+                        if ($.inArray(char, wordBreaks) !== -1) {
+                            return i + 1;
+                        }
+                    }
+                    return -1;
+                }
+
+                function _backtrack(count, currentLine, remainder) {
+                    for (var i = 0; i < count; i++) {
+                        remainder.unshift(currentLine.pop());
+                    }
+                }
+
+                function _isTooLong(tspan) {
+                    return tspan.node().getComputedTextLength() >= maxWidth
+                }
+
+                function separate(text) {
+                    // get the current content then clear the text element
+                    var chars = text.text().trim().split("");
+                    text.text(null);
+
+                    // set up registries for the text lines that they will create
+                    var lines = [];
+
+                    // create a tspan for working in - we need it to calculate line widths dynamically
+                    var x = text.attr("x");
+                    var tspan = text.append("tspan").attr("x", x).attr("y", 0);
+
+                    // record the current line
+                    var currentLine = [];
+
+                    // for each character in the text, push to the current line, assign to the tspan, and then
+                    // check if we have exceeded the allowed max width
+                    while (chars.length > 0) {
+                        var char = chars.shift();
+                        currentLine.push(char);
+                        tspan.text(currentLine.join(""));
+
+                        var maxed = false;
+                        var hyphenated = false;
+                        while(_isTooLong(tspan)) {
+                            // record that we pushed the tspan to the limit
+                            maxed = true;
+
+                            // if we already added a hyphen, remove it
+                            if (hyphenated) {
+                                currentLine.splice(currentLine.length - 1);
+                                hyphenated = false;
+                            }
+
+                            // if we have exceeded the max width back-track 1
+                            _backtrack(1, currentLine, chars);
+
+                            if (_isMidWord(currentLine, chars)) {
+                                var toPrevSpace = _toPrevSpace(currentLine);
+
+                                if (toPrevSpace === -1 || toPrevSpace - 1 > minChunkSize) {
+                                    _backtrack(1, currentLine, chars);
+                                    currentLine.push("-");
+                                    hyphenated = true;
+                                } else {
+                                    _backtrack(toPrevSpace, currentLine, chars);
+                                }
+                            }
+
+                            currentLine = currentLine.join("").trim().split("");
+                            tspan.text(currentLine.join(""));
+                        }
+
+                        // if we didn't yet fill the tspan, continue adding characters
+                        if (!maxed && chars.length > 0) {
+                            continue;
+                        }
+
+                        // otherwise, move on to the next line
+                        if (maxed || chars.length === 0) {
+                            lines.push(currentLine);
+                            currentLine = [];
+                        }
+                    }
+
+                    // create all the tspans
+                    tspan.remove();
+                    var tspans = [];
+                    for (var i = 0; i < lines.length; i++) {
+                        tspan = text.append("tspan").attr("x", x).attr("y", 0);
+                        tspan.text(lines[i].join(""));
+                        tspans.push(tspan);
+                    }
+
+                    return tspans;
+                }
+
+                function distribute(text, tspans) {
+                    var imax = tspans.length;
+                    var pmax = lineHeight * (imax - 1);
+                    var dy = parseFloat(text.attr("dy"));
+
+                    for (var j = 0; j < tspans.length; j++) {
+                        var pos = (lineHeight * j) - (pmax / 2.0) + dy;
+                        var tspan = tspans[j];
+                        tspan.attr("dy", pos + "em");
+                    }
+                }
+
+                function reduce(text, tspans) {
+                    var reduced = false;
+                    var box = text.node().getBBox();
+                    if (box.height > maxHeight && tspans.length > 1) {
+                        tspans[tspans.length - 1].remove();
+                        tspans.pop();
+                        var line = tspans[tspans.length - 1].text();
+                        if (line.length > 3) {
+                            line = line.substring(0, line.length - 3) + "...";
+                        }
+                        tspans[tspans.length - 1].text(line);
+                        reduced = true;
+                    }
+                    return reduced;
+                }
+
+                d3.selectAll(axisSelector + " .tick text").each(function(i, e) {
+                    var text = d3.select(this);
+                    var tspans = separate(text);
+                    do {
+                        distribute(text, tspans);
+                    }
+                    while (reduce(text, tspans))
+                });
             }
         },
 
@@ -197,6 +379,7 @@ $.extend(edges, {
 
             this.xAxisLabel = edges.getParam(params.xAxisLabel, false);
             this.yAxisLabel = edges.getParam(params.yAxisLabel, false);
+            this.xAxisLabelWrap = edges.getParam(params.xAxisLabelWrap, false);
 
             this.tooltipGenerator = edges.getParam(params.tooltipGenerator, false);
 
@@ -205,6 +388,10 @@ $.extend(edges, {
             this.reserveAbove = edges.getParam(params.reserveAbove, 0);
             this.reserveBelow = edges.getParam(params.reserveBelow, 0);
             this.groupSpacing = edges.getParam(params.groupSpacing, false);
+
+            this.hideIfNoData = edges.getParam(params.hideIfNoData, false);
+            this.onHide = edges.getParam(params.onHide, false);
+            this.onShow = edges.getParam(params.onShow, false);
 
             this.namespace = "edges-nvd3-horizontal-multibar";
 
@@ -218,6 +405,24 @@ $.extend(edges, {
                 var data_series = this.component.dataSeries;
                 if (!data_series) {
                     data_series = [];
+                }
+
+                // now decide if we are going to continue
+                if (this.hideIfNoData) {
+                    if (!edges.nvd3.tools.hasData(data_series)) {
+                        this.component.context.html("");
+                        this.component.context.hide();
+
+                        if (this.onHide) {
+                            this.onHide();
+                        }
+
+                        return;
+                    }
+                }
+                this.component.context.show();
+                if (this.onShow) {
+                    this.onShow();
                 }
 
                 var customAttributes = "";
@@ -319,7 +524,27 @@ $.extend(edges, {
                         .transition().duration(that.transitionDuration)
                         .call(chart);
 
-                    nv.utils.windowResize(chart.update);
+                    if (that.xAxisLabelWrap) {
+                        edges.nvd3.tools.wrapLabels({
+                            axisSelector: svgSelector + " .nv-x.nv-axis",
+                            maxWidth: that.marginLeft - 5,
+                            maxHeight: that.barHeight
+                        });
+                    }
+
+                    function updateChart() {
+                        chart.update();
+                        if (that.xAxisLabelWrap) {
+                            edges.nvd3.tools.wrapLabels({
+                                chart: chart,
+                                axisSelector: ".nv-x.nv-axis",
+                                maxWidth: that.marginLeft - 5,
+                                maxHeight: that.barHeight
+                            });
+                        }
+                    }
+
+                    nv.utils.windowResize(updateChart);
 
                     return chart;
                 });
@@ -341,15 +566,45 @@ $.extend(edges, {
             this.showLegend = edges.getParam(params.showLegend, true);
             this.xAxisLabel = params.xAxisLabel || "";
             this.yAxisLabel = params.yAxisLabel || "";
+            this.yAxisLabelDistance = edges.getParam(params.yAxisLabelDistance, 0);
 
             this.marginTop = edges.getParam(params.marginTop, 30);
             this.marginRight = edges.getParam(params.marginRight, 20);
             this.marginBottom = edges.getParam(params.marginBottom, 50);
             this.marginLeft = edges.getParam(params.marginLeft, 60);
 
+            this.hideIfNoData = edges.getParam(params.hideIfNoData, false);
+            this.onHide = edges.getParam(params.onHide, false);
+            this.onShow = edges.getParam(params.onShow, false);
+
             this.namespace = "edges-nvd3-multibar";
 
             this.draw = function () {
+                // first sort out the data series
+                var data_series = this.component.dataSeries;
+                if (!data_series) {
+                    data_series = [];
+                }
+                data_series = edges.nvd3.DataSeriesConversions.toXY(this.component.dataSeries);
+
+                // now decide if we are going to continue
+                if (this.hideIfNoData) {
+                    if (!edges.nvd3.tools.hasData(data_series)) {
+                        this.component.context.html("");
+                        this.component.context.hide();
+
+                        if (this.onHide) {
+                            this.onHide();
+                        }
+
+                        return;
+                    }
+                }
+                this.component.context.show();
+                if (this.onShow) {
+                    this.onShow();
+                }
+
                 var displayClasses = edges.css_classes(this.namespace, "display", this);
                 var displayFrag = "";
                 if (this.component.display) {
@@ -360,13 +615,7 @@ $.extend(edges, {
                 var svgSelector = edges.css_id_selector(this.namespace, "svg", this);
                 this.component.context.html(displayFrag + '<svg id="' + svgId + '"></svg>');
 
-                var data_series = this.component.dataSeries;
-                if (!data_series) {
-                    data_series = [];
-                }
-                data_series = edges.nvd3.DataSeriesConversions.toXY(this.component.dataSeries);
                 var outer = this;
-
                 nv.addGraph(function () {
                     var chart = nv.models.multiBarChart()
                         .showControls(outer.controls)
@@ -378,7 +627,8 @@ $.extend(edges, {
 
                     chart.yAxis
                         .axisLabel(outer.yAxisLabel)
-                        .tickFormat(d3.format(outer.yTickFormat));
+                        .tickFormat(d3.format(outer.yTickFormat))
+                        .axisLabelDistance(outer.yAxisLabelDistance);
 
                     if (outer.barColor) {
                         chart.barColor(outer.barColor);
