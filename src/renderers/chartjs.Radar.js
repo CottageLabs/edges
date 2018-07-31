@@ -38,6 +38,7 @@ $.extend(true, edges, {
             this.title = edges.getParam(params.title, false);
             this.description = edges.getParam(params.description, false);
             this.anchor = edges.getParam(params.anchor, false);
+            this.figureLabel = edges.getParam(params.figureLabel, false);
 
             // whether the chart can be downloaded
             this.download = edges.getParam(params.download, false);
@@ -70,6 +71,7 @@ $.extend(true, edges, {
                     var downloadId = edges.css_id(this.namespace, "download", this);
                     var titleClass = edges.css_classes(this.namespace, "title", this);
                     var descClass = edges.css_classes(this.namespace, "desc", this);
+                    var figureClass = edges.css_classes(this.namespace, "figure", this);
 
                     var anchorFrag = "";
                     if (this.anchor) {
@@ -85,10 +87,16 @@ $.extend(true, edges, {
                     if (this.description) {
                         descFrag = '<div class="' + descClass + '">' + this.description + '</div>';
                     }
+
+                    var figureFrag = "";
+                    if (this.figureLabel) {
+                        figureFrag = '<div class="' + figureClass + '">' + this.figureLabel + '</div>';
+                    }
                     
                     var frag = '<div class="' + containerClass + '">' + anchorFrag + titleFrag + descFrag + '\
                         <div class="' + chartClass + '">\
                             <canvas id="' + canvasId + '" width="400" height="400"></canvas>\
+                            ' + figureFrag + '\
                         </div>';
 
                     if (this.download) {
