@@ -35,6 +35,11 @@ $.extend(true, edges, {
             // the data series properties to be attached to each data series before being passed to chartjs
             this.dataSeriesProperties = edges.getParam(params.dataSeriesProperties, {});
 
+            this.title = edges.getParam(params.title, false);
+            this.description = edges.getParam(params.description, false);
+            this.anchor = edges.getParam(params.anchor, false);
+            this.figureLabel = edges.getParam(params.figureLabel, false);
+
             // whether the chart can be downloaded
             this.download = edges.getParam(params.download, false);
             this.downloadText = edges.getParam(params.downloadText, "download");
@@ -64,10 +69,34 @@ $.extend(true, edges, {
                     var canvasId = edges.css_id(this.namespace, "canvas", this);
                     var canvasIdSelector = edges.css_id_selector(this.namespace, "canvas", this);
                     var downloadId = edges.css_id(this.namespace, "download", this);
+                    var titleClass = edges.css_classes(this.namespace, "title", this);
+                    var descClass = edges.css_classes(this.namespace, "desc", this);
+                    var figureClass = edges.css_classes(this.namespace, "figure", this);
 
-                    var frag = '<div class="' + containerClass + '">\
+                    var anchorFrag = "";
+                    if (this.anchor) {
+                        anchorFrag = '<a name="' + this.anchor + '"></a>'
+                    }
+
+                    var titleFrag = "";
+                    if (this.title) {
+                        titleFrag = '<div class="' + titleClass + '"><h1>' + this.title + '</h1></div>';
+                    }
+
+                    var descFrag = "";
+                    if (this.description) {
+                        descFrag = '<div class="' + descClass + '">' + this.description + '</div>';
+                    }
+
+                    var figureFrag = "";
+                    if (this.figureLabel) {
+                        figureFrag = '<div class="' + figureClass + '">' + this.figureLabel + '</div>';
+                    }
+                    
+                    var frag = '<div class="' + containerClass + '">' + anchorFrag + titleFrag + descFrag + '\
                         <div class="' + chartClass + '">\
                             <canvas id="' + canvasId + '" width="400" height="400"></canvas>\
+                            ' + figureFrag + '\
                         </div>';
 
                     if (this.download) {
