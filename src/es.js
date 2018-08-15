@@ -23,6 +23,9 @@ var es = {
     // distance units allowed by ES
     distanceUnits : ["km", "mi", "miles", "in", "inch", "yd", "yards", "kilometers", "mm", "millimeters", "cm", "centimeters", "m", "meters"],
 
+    // request method to be used throughout.  Set this before using the module if you want it different
+    requestMethod : "get",
+
     ////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////
@@ -1382,27 +1385,31 @@ var es = {
         var querystring = JSON.stringify(queryobj);
 
         // make the call to the elasticsearch web service
-        /* This is the old version by GET - it suffered from limitations when queries were large
-        $.ajax({
-            type: "get",
-            url: search_url,
-            data: {source: querystring},
-            dataType: datatype,
-            success: es.querySuccess(success),
-            error: es.queryError(error),
-            complete: complete
-        });*/
 
-        $.ajax({
-            type: "post",
-            url: search_url,
-            data: querystring,
-            contentType: "application/json",
-            dataType: datatype,
-            success: es.querySuccess(success),
-            error: es.queryError(error),
-            complete: complete
-        });
+        if (es.requestMethod === "get") {
+            $.ajax({
+                type: "get",
+                url: search_url,
+                data: {source: querystring},
+                dataType: datatype,
+                success: es.querySuccess(success),
+                error: es.queryError(error),
+                complete: complete
+            });
+        } else if (es.requestMethod === "post") {
+            $.ajax({
+                type: "post",
+                url: search_url,
+                data: querystring,
+                contentType: "application/json",
+                dataType: datatype,
+                success: es.querySuccess(success),
+                error: es.queryError(error),
+                complete: complete
+            });
+        } else {
+            throw "es.requestMethod must be either 'get' or 'post";
+        }
     },
 
     querySuccess : function(callback) {
