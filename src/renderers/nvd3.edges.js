@@ -536,8 +536,7 @@ $.extend(edges, {
                         chart.update();
                         if (that.xAxisLabelWrap) {
                             edges.nvd3.tools.wrapLabels({
-                                chart: chart,
-                                axisSelector: ".nv-x.nv-axis",
+                                axisSelector: svgSelector + " .nv-x.nv-axis",
                                 maxWidth: that.marginLeft - 5,
                                 maxHeight: that.barHeight
                             });
