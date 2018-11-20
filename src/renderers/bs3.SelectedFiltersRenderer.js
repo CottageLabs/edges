@@ -13,6 +13,8 @@ $.extend(true, edges, {
 
             this.allowRemove = edges.getParam(params.allowRemove, true);
 
+            this.showSearchString = edges.getParam(params.showSearchString, false);
+
             this.namespace = "edges-bs3-selected-filters";
 
             this.draw = function () {
@@ -28,6 +30,20 @@ $.extend(true, edges, {
                 var containerClass = edges.css_classes(ns, "container", this);
 
                 var filters = "";
+
+                if (this.showSearchString && sf.searchString) {
+                    var field = sf.searchField;
+                    var text = sf.searchString;
+                    filters += '<span class="' + fieldClass + '">';
+                    if (field) {
+                        if (field in sf.fieldDisplays) {
+                            field = sf.fieldDisplays[field];
+                        }
+                        filters += '<span class="' + fieldNameClass + '">' + field + ':</span>';
+                    }
+                    filters += '<span class="' + valClass + '">"' + text + '"</span>';
+                    filters += '</span>';
+                }
 
                 var fields = Object.keys(sf.mustFilters);
                 for (var i = 0; i < fields.length; i++) {
