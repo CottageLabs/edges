@@ -136,7 +136,7 @@ $.extend(true, edges, {
                             }
 
                             if (fd.valueFunction) {
-                                val = fd.valueFunction(val);
+                                val = fd.valueFunction(val, res);
                             } else {
                                 val = edges.escapeHtml(val);
                             }
