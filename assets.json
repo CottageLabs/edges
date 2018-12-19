@@ -26,7 +26,7 @@
 		"edges.components.ranges" : ["js", "components/ranges.js"],
 		"edges.components.search" : ["js", "components/search.js"],
 		"edges.components.selectors" : ["js", "components/selectors.js"],
-		"edges.componets.tables" : ["js", "components/tables.js"],
+		"edges.components.tables" : ["js", "components/tables.js"],
 
 		"edges.renderers.bs3.BasicRangeSelectorRenderer" : ["js", "renderers/bs3.BasicRangeSelectorRenderer.js"],
 		"edges.renderers.bs3.BSMultiDateRange" : ["js", "renderers/bs3.BSMultiDateRange.js"],
@@ -134,7 +134,7 @@
 		"edges.components.ranges" : ["edges.core", "jquery"],
 		"edges.components.search" : ["edges.core", "jquery", "es1x"],
 		"edges.components.selectors" : ["edges.core", "jquery", "es1x"],
-		"edges.componets.tables" : ["edges.core", "jquery", "edges.csv"],
+		"edges.components.tables" : ["edges.core", "jquery", "edges.csv"],
 
 		"edges.renderers.bs3.BasicRangeSelectorRenderer" : ["edges.core", "jquery"],
 		"edges.renderers.bs3.BSMultiDateRange" : ["edges.core", "jquery", "daterangepicker"],

@@ -112,5 +112,98 @@ $.extend(edges, {
         this.changeSort = function(sortBy, sortDir) {
 
         };
+    },
+
+    newAggregateTable : function(params) {
+        return edges.instantiate(edges.AggregateTable, params, edges.newComponent);
+    },
+    AggregateTable : function(params) {
+
+        this.aggregateAround = edges.getParam(params.aggregateAround, false);
+
+        this.sort = edges.getParam(params.sort, false);
+
+        this.limit = edges.getParam(params.limit, false);
+
+        this.splitFieldsOn = edges.getParam(params.splitFieldsOn, false);
+
+        this.namespace = "edges-aggregate-table";
+
+        this.results = [];
+
+        this.synchronise = function(edge) {
+            this.results = [];
+
+            var source = this.edge.result;
+            if (!source) {
+                return;
+            }
+
+            var agg = source.aggregation(this.aggregateAround);
+            for (var i = 0; i < agg.buckets.length; i++) {
+                var bucket = agg.buckets[i];
+                var obj = {};
+                var keys = Object.keys(bucket);
+                for (var j = 0; j < keys.length; j++) {
+                    var key = keys[j];
+                    var val = bucket[key];
+                    if (key === "key") {
+                        obj[this.aggregateAround] = val;
+                    } else if (key === "doc_count") {
+                        obj["doc_count"] = val;
+                    } else {
+                        obj[key] = val.value;
+                    }
+                }
+                this.results.push(obj);
+            }
+
+            if (this.sort) {
+                this.results.sort(this.sort);
+            }
+
+            if (this.limit !== false) {
+                this.results = this.results.slice(0, this.limit);
+            }
+
+            this._restructure();
+        };
+
+        this._restructure = function() {
+            if (this.splitFieldsOn === false) {
+                return;
+            }
+
+            var newResults = [];
+
+            for (var k = 0; k < this.results.length; k++) {
+                var result = this.results[k];
+
+                var newResult = {};
+                var keys = Object.keys(result);
+                for (var i = 0; i < keys.length; i++) {
+                    var key = keys[i];
+                    var val = result[key];
+                    var bits = key.split(this.splitFieldsOn);
+                    var context = newResult;
+                    for (var j = 0; j < bits.length; j++) {
+                        var bit = bits[j];
+                        if (!context.hasOwnProperty(bit)) {
+                            if (j === bits.length - 1) {
+                                context[bit] = val;
+                            } else {
+                                context[bit] = {};
+                                context = context[bit];
+                            }
+                        } else {
+                            context = context[bit];
+                        }
+                    }
+                }
+                newResults.push(newResult);
+            }
+
+            this.results = newResults;
+        };
     }
 });
