@@ -662,6 +662,12 @@ $.extend(edges, {
             this.showLegend = edges.getParam(params.showLegend, true);
             this.xAxisLabel = params.xAxisLabel || "";
             this.yAxisLabel = params.yAxisLabel || "";
+            this.yAxisLabelDistance = edges.getParam(params.yAxisLabelDistance, 0);
+
+            this.marginTop = edges.getParam(params.marginTop, 30);
+            this.marginRight = edges.getParam(params.marginRight, 20);
+            this.marginBottom = edges.getParam(params.marginBottom, 50);
+            this.marginLeft = edges.getParam(params.marginLeft, 60);
 
             this.namespace = "edges-nvd3-simple-line-chart";
 
@@ -685,7 +691,8 @@ $.extend(edges, {
 
                 nv.addGraph(function() {
                     var chart = nv.models.lineChart()
-                        .useInteractiveGuideline(outer.interactiveGuideline);
+                        .useInteractiveGuideline(outer.interactiveGuideline)
+                        .margin({top: outer.marginTop, right: outer.marginRight, bottom: outer.marginBottom, left: outer.marginLeft});
 
                     chart.xAxis
                         .axisLabel(outer.xAxisLabel)
@@ -701,7 +708,8 @@ $.extend(edges, {
 
                     chart.yAxis
                         .axisLabel(outer.yAxisLabel)
-                        .tickFormat(d3.format(outer.yTickFormat));
+                        .tickFormat(d3.format(outer.yTickFormat))
+                        .axisLabelDistance(outer.yAxisLabelDistance);
 
                     chart.showLegend(outer.showLegend);
 
