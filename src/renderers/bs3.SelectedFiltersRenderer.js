@@ -15,6 +15,8 @@ $.extend(true, edges, {
 
             this.showSearchString = edges.getParam(params.showSearchString, false);
 
+            this.ifNoFilters = edges.getParam(params.ifNoFilters, false);
+
             this.namespace = "edges-bs3-selected-filters";
 
             this.draw = function () {
@@ -82,6 +84,10 @@ $.extend(true, edges, {
                         }
                     }
                     filters += "</span>";
+                }
+
+                if (filters === "" && this.ifNoFilters) {
+                    filters = this.ifNoFilters;
                 }
 
                 if (filters !== "") {
