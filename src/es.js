@@ -99,10 +99,10 @@ var es = {
         // of the function)
         this.queryString = false;
         this.sort = [];
+        this.source = params.source || false;
 
         // ones that we haven't used yet, so are awaiting implementation
         // NOTE: once we implement these, they also need to be considered in merge()
-        this.source = params.source || false;
         this.should = params.should || [];
         this.mustNot = params.mustNot || [];
         this.partialFields = params.partialFields || false;
@@ -210,7 +210,51 @@ var es = {
             return this.sort;
         };
 
-        this.setSource = function(include, exclude) {};
+        this.setSourceFilters = function(params) {
+            if (!this.source) {
+                this.source = {include: [], exclude: []};
+            }
+            if (params.include) {
+                this.source.include = params.include;
+            }
+            if (params.exclude) {
+                this.source.exclude = params.exclude;
+            }
+        };
+
+        this.addSourceFilters = function(params) {
+            if (!this.source) {
+                this.source = {include: [], exclude: []};
+            }
+            if (params.include) {
+                if (this.source.include) {
+                    Array.prototype.push.apply(this.source.include, params.include);
+                } else {
+                    this.source.include = params.include;
+                }
+            }
+            if (params.exclude) {
+                if (this.source.include) {
+                    Array.prototype.push.apply(this.source.include, params.include);
+                } else {
+                    this.source.include = params.include;
+                }
+            }
+        };
+
+        this.getSourceIncludes = function() {
+            if (!this.source) {
+                return [];
+            }
+            return this.source.include;
+        };
+
+        this.getSourceExcludes = function() {
+            if (!this.source) {
+                return [];
+            }
+            return this.source.exclude;
+        };
 
         this.addFacet = function() {};
         this.removeFacet = function() {};
@@ -335,7 +379,7 @@ var es = {
         // create, parse, serialise functions
 
         this.merge = function(source) {
-            // merge this query (in place) with the provded query, where the provided
+            // merge this query (in place) with the provided query, where the provided
             // query is dominant (i.e. any properties it has override this object)
             //
             // These are the merge rules:
@@ -347,6 +391,7 @@ var es = {
             // this must - append any new ones from source
             // this.queryString - take from source if set
             // this.sort - prepend any from source
+            // this.source - append any new ones from source
 
             this.filtered = source.filtered;
             if (source.size) {
@@ -378,6 +423,9 @@ var es = {
                     this.prependSortBy(sorts[i])
                 }
             }
+            var includes = source.getSourceIncludes();
+            var excludes = source.getSourceExcludes();
+            this.addSourceFilters({include: includes, exclude: excludes});
         };
 
         this.objectify = function(params) {
@@ -391,6 +439,7 @@ var es = {
             var include_sort = params.include_sort === undefined ? true : params.include_sort;
             var include_fields = params.include_fields === undefined ? true : params.include_fields;
             var include_aggregations = params.include_aggregations === undefined ? true : params.include_aggregations;
+            var include_source_filters = params.include_source_filters === undefined ? true : params.include_source_filters;
 
             // queries will be separated in queries and bool filters, which may then be
             // combined later
@@ -462,6 +511,17 @@ var es = {
                 for (var i = 0; i < this.aggs.length; i++) {
                     var agg = this.aggs[i];
                     $.extend(q.aggs, agg.objectify())
+                }
+            }
+
+            // add the source filters
+            if (include_source_filters && this.source && (this.source.include || this.source.exclude)) {
+                q["_source"] = {};
+                if (this.source.include.length > 0) {
+                    q["_source"]["include"] = this.source.include;
+                }
+                if (this.source.exclude.length > 0) {
+                    q["_source"]["exclude"] = this.source.exclude;
                 }
             }
 
@@ -550,6 +610,27 @@ var es = {
                         this.addAggregation(oa);
                     }
                 }
+            }
+
+            if (obj._source) {
+                var source = obj._source;
+                var include = [];
+                var exclude = [];
+
+                if (typeof source === "string") {
+                    include.push(source);
+                }
+                else if (Array.isArray(source)) {
+                    include = source;
+                } else {
+                    if (source.hasOwnProperty("include")) {
+                        include = source.include;
+                    }
+                    if (source.hasOwnProperty("exclude")) {
+                        exclude = source.exclude;
+                    }
+                }
+                this.setSourceFilters({include: include, exclude: exclude});
             }
         };
 
