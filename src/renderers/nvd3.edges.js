@@ -658,7 +658,7 @@ $.extend(edges, {
             this.yTickFormat = params.yTickFormat || ',.2f';
             this.transitionDuration = params.transitionDuration || 500;
             this.lineColor = params.lineColor || false;
-            this.includeOnY = params.includeOnY || false;
+            this.includeOnY = edges.getParam(params.includeOnY, false);
             this.showLegend = edges.getParam(params.showLegend, true);
             this.xAxisLabel = params.xAxisLabel || "";
             this.yAxisLabel = params.yAxisLabel || "";
@@ -702,7 +702,7 @@ $.extend(edges, {
                         chart.color(outer.lineColor);
                     }
 
-                    if (outer.includeOnY) {
+                    if (outer.includeOnY !== false) {
                         chart.forceY(outer.includeOnY);
                     }
 
