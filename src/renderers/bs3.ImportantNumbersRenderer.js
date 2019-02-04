@@ -14,6 +14,8 @@ $.extend(true, edges, {
             this.mainNumberFormat = edges.getParam(params.mainNumberFormat, false);
             this.secondNumberFormat = edges.getParam(params.secondNumberFormat, false);
 
+            this.resizeHandler = edges.getParam(params.resizeHandler, false);
+
             //////////////////////////////////////////////
             // variables for internal state
             this.namespace = "edges-bs3-important-numbers";
@@ -59,7 +61,13 @@ $.extend(true, edges, {
 
                 // and render into the page
                 this.component.context.html(frag);
-            }
+
+                // if there's a resize handler, call it and bind it
+                if (this.resizeHandler) {
+                    this.resizeHandler(this);
+                    edges.on(window, "resize", this, "draw");
+                }
+            };
         }
     }
 });
