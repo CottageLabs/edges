@@ -1002,11 +1002,17 @@ var edges = {
             }
         } else {
             if (caller.component) {
-                caller.component.jq(selector).on(event, clos)
+                var element = caller.component.jq(selector);
+                element.off(event);
+                element.on(event, clos);
             } else if (caller.edge) {
-                caller.edge.jq(selector).on(event, clos)
+                var element = caller.edge.jq(selector);
+                element.off(event);
+                element.on(event, clos);
             } else {
-                $(selector).on(event, clos);
+                var element = $(selector);
+                element.off(event);
+                element.on(event, clos);
             }
         }
     },
