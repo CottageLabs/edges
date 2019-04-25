@@ -23,16 +23,68 @@ $.extend(true, edges, {
 
             // enable the share/save link feature
             this.shareLink = edges.getParam(params.shareLink, false);
+            this.shareLinkText = edges.getParam(params.shareLinkText, "share");
 
             ////////////////////////////////////////
             // state variables
 
-            this.showShortUrl = false;
+            this.shareBoxOpen = false;
+
+            this.showShortened = false;
 
             this.namespace = "edges-bs3-search-controller";
 
             this.draw = function () {
+                // reset these on each draw
+                this.shareBoxOpen = false;
+                this.showShortened = false;
+
                 var comp = this.component;
+
+                var shareButtonFrag = "";
+                var shareFrag = "";
+                if (this.shareLink) {
+                    var shareButtonClass = edges.css_classes(this.namespace, "toggle-share", this);
+                    shareButtonFrag = '<button class="' + shareButtonClass + ' btn btn-default btn-sm">' + this.shareLinkText + '</button>';
+                    var shorten = "";
+                    if (this.component.urlShortener) {
+                        var shortenClass = edges.css_classes(this.namespace, "shorten", this);
+                        shorten = '<div class="' + shortenClass + '">Share a link to this search <button class="btn btn-default btn-xs"><span class="glyphicon glyphicon-resize-small"></span>shorten url</button></div>'
+                    }
+                    var embed = "";
+                    if (this.component.embedSnippet) {
+                        var embedClass = edges.css_classes(this.namespace, "embed", this);
+                        embed = '<div class="row">\
+                            <div class="col-md-12">\
+                                Embed this search in your webpage\
+                            </div>\
+                        </div>\
+                        <div class="row">\
+                            <div class="col-md-12">\
+                                <textarea readonly class="' + embedClass + '"></textarea>\
+                            </div>\
+                        </div>';
+                    }
+                    var shareBoxClass = edges.css_classes(this.namespace, "share", this);
+                    var closeClass = edges.css_classes(this.namespace, "close-share", this);
+                    var shareUrlClass = edges.css_classes(this.namespace, "share-url", this);
+                    shareFrag = '<div class="' + shareBoxClass + '" style="display:none">\
+                        <div class="row">\
+                            <div class="col-md-11">\
+                                ' + shorten + '\
+                            </div>\
+                            <div class="col-md-1">\
+                                <a href="#" class="' + closeClass + ' pull-right"><span class="glyphicon glyphicon-remove"></span></a>\
+                            </div>\
+                        </div>\
+                        <div class="row">\
+                            <div class="col-md-12">\
+                                <textarea readonly class="' + shareUrlClass + '"></textarea>\
+                            </div>\
+                        </div>\
+                        ' + embed + '\
+                    </div>';
+                }
 
                 // if sort options are provided render the orderer and the order by
                 var sortOptions = "&nbsp;";
@@ -47,7 +99,7 @@ $.extend(true, edges, {
                                     <span class="input-group-btn"> \
                                         <button type="button" class="btn btn-default btn-sm ' + directionClass + '" title="" href="#"></button> \
                                     </span> \
-                                    <select class="form-control input-sm ' + sortFieldClass + '"> \
+                                    <select class="' + sortFieldClass + ' form-control input-sm"> \
                                         <option value="_score">Relevance</option>';
 
                     for (var i = 0; i < comp.sortOptions.length; i++) {
@@ -68,7 +120,7 @@ $.extend(true, edges, {
                     // classes that we'll use
                     var searchFieldClass = edges.css_classes(this.namespace, "field", this);
 
-                    field_select += '<select class="form-control input-sm ' + searchFieldClass + '" style="width: 120px">';
+                    field_select += '<select class="' + searchFieldClass + ' form-control input-sm">';
                     field_select += '<option value="">search all</option>';
 
                     for (var i = 0; i < comp.fieldOptions.length; i++) {
@@ -112,16 +164,21 @@ $.extend(true, edges, {
                         <div class="form-group"> \
                             <div class="input-group"> \
                                 ' + clearFrag + field_select + '\
-                                <input type="text" id="' + textId + '" class="form-control input-sm ' + textClass + '" name="q" value="" placeholder="' + this.searchPlaceholder + '"/> \
+                                <input type="text" id="' + textId + '" class="' + textClass + ' form-control input-sm" name="q" value="" placeholder="' + this.searchPlaceholder + '"/> \
                                 ' + searchFrag + ' \
                             </div> \
                         </div> \
                     </div>';
 
                 // assemble the final fragment and render it into the component's context
-                var frag = '<div class="row"><div class="col-md-5">{{SORT}}</div><div class="col-md-7">{{SEARCH}}</div></div>';
-                frag = frag.replace(/{{SORT}}/g, sortOptions)
-                    .replace(/{{SEARCH}}/g, searchBox);
+                var lhs = "";
+                if (this.shareLink) {
+                    lhs = '<div class="col-md-2">' + shareButtonFrag + '</div><div class="col-md-4">' + sortOptions + '</div>'
+                } else {
+                    lhs = '<div class="col-md-6">' + sortOptions + '</div>';
+                }
+                var frag = '<div class="row">' + lhs + '<div class="col-md-6">{{SEARCH}}</div></div>' + shareFrag;
+                frag = frag.replace(/{{SEARCH}}/g, searchBox);
 
                 comp.context.html(frag);
 
@@ -163,6 +220,19 @@ $.extend(true, edges, {
 
                 var searchSelector = edges.css_class_selector(this.namespace, "search", this);
                 edges.on(searchSelector, "click", this, "doSearch");
+
+                if (this.shareLink) {
+                    var shareSelector = edges.css_class_selector(this.namespace, "toggle-share", this);
+                    edges.on(shareSelector, "click", this, "toggleShare");
+
+                    var closeShareSelector = edges.css_class_selector(this.namespace, "close-share", this);
+                    edges.on(closeShareSelector, "click", this, "toggleShare");
+
+                    if (this.component.urlShortener) {
+                        var shortenSelector = edges.css_class_selector(this.namespace, "shorten", this);
+                        edges.on(shortenSelector, "click", this, "toggleShorten");
+                    }
+                }
             };
 
             //////////////////////////////////////////////////////
@@ -241,6 +311,61 @@ $.extend(true, edges, {
                 var textId = edges.css_id_selector(this.namespace, "text", this);
                 var text = this.component.jq(textId).val();
                 this.component.setSearchText(text);
+            };
+
+            this.toggleShare = function(element) {
+                var shareSelector = edges.css_class_selector(this.namespace, "share", this);
+                var shareUrlSelector = edges.css_class_selector(this.namespace, "share-url", this);
+                var el = this.component.jq(shareSelector);
+                var textarea = this.component.jq(shareUrlSelector);
+                if (this.shareBoxOpen) {
+                    el.hide();
+                    textarea.val("");
+                    if (this.component.embedSnippet) {
+                        var embedSelector = edges.css_class_selector(this.namespace, "embed", this);
+                        var embedTextarea = this.component.jq(embedSelector);
+                        embedTextarea.val("");
+                    }
+                    this.shareBoxOpen = false;
+                } else {
+                    el.show();
+                    if (this.showShortened) {
+                        textarea.val(this.component.shortUrl);
+                    } else {
+                        textarea.val(this.component.edge.fullUrl());
+                    }
+                    if (this.component.embedSnippet) {
+                        var embedSelector = edges.css_class_selector(this.namespace, "embed", this);
+                        var embedTextarea = this.component.jq(embedSelector);
+                        embedTextarea.val(this.component.embedSnippet(this));
+                    }
+                    this.shareBoxOpen = true;
+                }
+            };
+
+            this.toggleShorten = function(element) {
+                if (!this.component.shortUrl) {
+                    var callback = edges.objClosure(this, "updateShortUrl");
+                    this.component.generateShortUrl(callback);
+                } else {
+                    this.updateShortUrl();
+                }
+            };
+
+            this.updateShortUrl = function() {
+                var shareUrlSelector = edges.css_class_selector(this.namespace, "share-url", this);
+                var shortenSelector = edges.css_class_selector(this.namespace, "shorten", this);
+                var textarea = this.component.jq(shareUrlSelector);
+                var button = this.component.jq(shortenSelector).find("button");
+                if (this.showShortened) {
+                    textarea.val(this.component.edge.fullUrl());
+                    button.html('<span class="glyphicon glyphicon-resize-small"></span>shorten url');
+                    this.showShortened = false;
+                } else {
+                    textarea.val(this.component.shortUrl);
+                    button.html('<span class="glyphicon glyphicon-resize-full"></span>original url');
+                    this.showShortened = true;
+                }
             };
         }
     }

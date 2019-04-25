@@ -2,6 +2,7 @@ $.extend(edges, {
     ///////////////////////////////////////////////////
     // Selector implementations
 
+
     newRefiningANDTermSelector : function(params) {
         if (!params) { params = {} }
         edges.RefiningANDTermSelector.prototype = edges.newSelector(params);
@@ -39,6 +40,8 @@ $.extend(edges, {
 
         // override the parent's defaultRenderer
         this.defaultRenderer = params.defaultRenderer || "newRefiningANDTermSelectorRenderer";
+
+        this.active = edges.getParam(params.active, true);
 
         //////////////////////////////////////////
         // properties used to store internal state
@@ -80,10 +83,12 @@ $.extend(edges, {
                 // assign the terms and counts from the aggregation
                 var buckets = this.edge.result.buckets(this.id);
 
-                if (buckets.length < this.deactivateThreshold) {
-                    this.active = false
-                } else {
-                    this.active = true;
+                if (this.deactivateThreshold) {
+                    if (buckets.length < this.deactivateThreshold) {
+                        this.active = false
+                    } else {
+                        this.active = true;
+                    }
                 }
 
                 // list all of the pre-defined filters for this field from the baseQuery
@@ -189,6 +194,25 @@ $.extend(edges, {
             nq.from = 0;
             this.edge.pushQuery(nq);
             this.edge.doQuery();
+        };
+
+        this.clearFilters = function(params) {
+            var triggerQuery = edges.getParam(params.triggerQuery, true);
+
+            if (this.filters.length > 0) {
+                var nq = this.edge.cloneQuery();
+                for (var i = 0; i < this.filters.length; i++) {
+                    var filter = this.filters[i];
+                    nq.removeMust(es.newTermFilter({
+                        field: this.field,
+                        value: filter.term
+                    }));
+                }
+                this.edge.pushQuery(nq);
+            }
+            if (triggerQuery) {
+                this.edge.doQuery();
+            }
         };
 
         this.changeSize = function(newSize) {
@@ -768,32 +792,138 @@ $.extend(edges, {
 
     newDateHistogramSelector : function(params) {
         if (!params) { params = {} }
-        edges.BasicRangeSelector.prototype = edges.newSelector(params);
-        return new edges.BasicRangeSelector(params);
+        edges.DateHistogramSelector.prototype = edges.newSelector(params);
+        return new edges.DateHistogramSelector(params);
     },
     DateHistogramSelector : function(params) {
         // "year, quarter, month, week, day, hour, minute ,second"
         // period to use for date histogram
         this.interval = params.interval || "year";
 
-        // "asc|desc"
-        // which ordering to use for date histogram
-        this.sort = params.sort || "asc";
+        this.sortFunction = edges.getParam(params.sortFunction, false);
 
-        // whether to suppress display of date range with no values
-        this.hideEmptyDateBin = params.hideEmptyDateBin || true;
+        this.displayFormatter = edges.getParam(params.displayFormatter, false);
 
-        // the number of values to show initially (note you should set size=false)
-        this.shortDisplay = params.shortDisplay || false;
+        this.active = edges.getParam(params.active, true);
 
         //////////////////////////////////////////////
         // values to be rendered
 
         this.values = [];
+        this.filters = [];
+
+        this.contrib = function(query) {
+            query.addAggregation(
+                es.newDateHistogramAggregation({
+                    name: this.id,
+                    field: this.field,
+                    interval: this.interval
+                })
+            );
+        };
 
         this.synchronise = function() {
             // reset the state of the internal variables
             this.values = [];
+            this.filters = [];
+
+            if (this.edge.result) {
+                var buckets = this.edge.result.buckets(this.id);
+                for (var i = 0; i < buckets.length; i++) {
+                    var bucket = buckets[i];
+                    var key = bucket.key;
+                    if (this.displayFormatter) {
+                        key = this.displayFormatter(key);
+                    }
+                    var obj = {"display" : key, "gte": bucket.key, "count" : bucket.doc_count};
+                    if (i < buckets.length - 1) {
+                        obj["lt"] = buckets[i+1].key;
+                    }
+                    this.values.push(obj);
+                }
+            }
+
+            if (this.sortFunction) {
+                this.values = this.sortFunction(this.values);
+            }
+
+            // now check to see if there are any range filters set on this field
+            if (this.edge.currentQuery) {
+                var filters = this.edge.currentQuery.listMust(es.newRangeFilter({field: this.field}));
+                for (var i = 0; i < filters.length; i++) {
+                    var to = filters[i].lt;
+                    var from = filters[i].gte;
+                    for (var j = 0; j < this.values.length; j++) {
+                        var val = this.values[j];
+                        if (val.gte.toString() === from) {
+                            if (!val.hasOwnProperty("lt") && !to) {
+                                this.filters.push(val);
+                            } else if (val.hasOwnProperty("lt") && to) {
+                                if (val.lt.toString() === to) {
+                                    this.filters.push(val);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        this.selectRange = function(params) {
+            var from = params.gte;
+            var to = params.lt;
+
+            var nq = this.edge.cloneQuery();
+
+            // just add a new range filter (the query builder will ensure there are no duplicates)
+            var params = {field: this.field};
+            if (from) {
+                params["gte"] = from;
+            }
+            if (to) {
+                params["lt"] = to;
+            }
+            nq.addMust(es.newRangeFilter(params));
+
+            // reset the search page to the start and then trigger the next query
+            nq.from = 0;
+            this.edge.pushQuery(nq);
+            this.edge.doQuery();
+        };
+
+        this.removeFilter = function(params) {
+            var from = params.gte;
+            var to = params.lt;
+
+            var nq = this.edge.cloneQuery();
+
+            // just add a new range filter (the query builder will ensure there are no duplicates)
+            var params = {field: this.field};
+            if (from) {
+                params["gte"] = from;
+            }
+            if (to) {
+                params["lt"] = to;
+            }
+            nq.removeMust(es.newRangeFilter(params));
+
+            // reset the search page to the start and then trigger the next query
+            nq.from = 0;
+            this.edge.pushQuery(nq);
+            this.edge.doQuery();
+        };
+
+        this.clearFilters = function(params) {
+            var triggerQuery = edges.getParam(params.triggerQuery, true);
+
+            var nq = this.edge.cloneQuery();
+            var qargs = {field: this.field};
+            nq.removeMust(es.newRangeFilter(qargs));
+            this.edge.pushQuery(nq);
+
+            if (triggerQuery) {
+                this.edge.doQuery();
+            }
         };
     },
 

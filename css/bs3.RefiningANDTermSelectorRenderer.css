@@ -24,6 +24,11 @@
     text-decoration: none;
 }
 
+.edges-bs3-refiningand-term-selector-tooltip {
+    padding: 2px 5px 2px 5px;
+    background-color: #eeeeee;
+}
+
 .edges-bs3-refiningand-term-selector-controls {
     padding-bottom: 5px;
     padding-left: 5px;

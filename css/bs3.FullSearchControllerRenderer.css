@@ -1,0 +1,32 @@
+.edges-bs3-search-controller-field {
+    width: auto !important;
+}
+
+.edges-bs3-search-controller-text {
+    width: auto !important;
+}
+
+.edges-bs3-search-controller-share {
+    border: 1px solid #bce8f1;
+    color: #3a87ad;
+    background-color: #d9edf7;
+    padding: 10px;
+    margin: 10px 0px 10px 0px;
+    border-radius: 5px;
+}
+
+.edges-bs3-search-controller-share-url {
+    width: 100%;
+    max-width: 100%;
+    color: #000000;
+    height: 5em;
+    margin-top: 3px;
+    margin-bottom: 3px;
+}
+
+.edges-bs3-search-controller-embed {
+    width: 100%;
+    max-width: 100%;
+    color: #000000;
+    height: 5em;
+}

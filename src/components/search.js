@@ -184,6 +184,9 @@ $.extend(edges, {
         // provide a function which will do url shortening for the share/save link
         this.urlShortener = params.urlShortener || false;
 
+        // function to generate an embed snippet
+        this.embedSnippet = edges.getParam(params.embedSnippet, false);
+
         // on free-text search, default operator for the elasticsearch query system to use
         this.defaultOperator = params.defaultOperator || "OR";
 
@@ -211,7 +214,7 @@ $.extend(edges, {
             this.searchField = false;
             this.sortBy = false;
             this.sortDir = "desc";
-            // this.shortUrl - not sure what to do with this one yet
+            this.shortUrl = false;
 
             if (this.edge.currentQuery) {
                 var qs = this.edge.currentQuery.getQueryString();
@@ -333,6 +336,29 @@ $.extend(edges, {
 
         this.clearSearch = function () {
             this.edge.reset();
+        };
+
+        this.generateShortUrl = function(callback) {
+            var query = this.edge.currentQuery.objectify({
+                include_query_string : true,
+                include_filters : true,
+                include_paging : true,
+                include_sort : true,
+                include_fields : false,
+                include_aggregations : false
+            });
+            var success_callback = edges.objClosure(this, "setShortUrl", false, callback);
+            var error_callback = function() {};
+            this.urlShortener(query, success_callback, error_callback);
+        };
+
+        this.setShortUrl = function(short_url, callback) {
+            if (short_url) {
+                this.shortUrl = short_url;
+            } else {
+                this.shortUrl = false;
+            }
+            callback();
         };
     },
 
