@@ -75,7 +75,7 @@ $.extend(true, edges, {
                     // get the terms of the filters that have already been set
                     var filterTerms = [];
                     for (var i = 0; i < ts.filters.length; i++) {
-                        filterTerms.push(ts.filters[i]);
+                        filterTerms.push(ts.filters[i].display);
                     }
 
                     // render each value, if it is not also a filter that has been set
@@ -115,7 +115,7 @@ $.extend(true, edges, {
                             ltData = ' data-lt="' + edges.escapeHtml(filt.lt) + '" ';
                         }
                         filterFrag += '<div class="' + resultClass + '"><strong>' + edges.escapeHtml(filt.display) + "&nbsp;";
-                        filterFrag += '<a href="#" class="' + filterRemoveClass + '" data-gte="' + edges.escapeHtml(filt.term) + '"' + ltData + '>';
+                        filterFrag += '<a href="#" class="' + filterRemoveClass + '" data-gte="' + edges.escapeHtml(filt.gte) + '"' + ltData + '>';
                         filterFrag += '<i class="glyphicon glyphicon-black glyphicon-remove"></i></a>';
                         filterFrag += "</strong></a></div>";
                     }
@@ -156,8 +156,6 @@ $.extend(true, edges, {
                 var valueSelector = edges.css_class_selector(namespace, "value", this);
                 var filterRemoveSelector = edges.css_class_selector(namespace, "filter-remove", this);
                 var toggleSelector = edges.css_id_selector(namespace, "toggle", this);
-                var sizeSelector = edges.css_id_selector(namespace, "size", this);
-                var orderSelector = edges.css_id_selector(namespace, "order", this);
                 var tooltipSelector = edges.css_id_selector(namespace, "tooltip-toggle", this);
 
                 // for when a value in the facet is selected

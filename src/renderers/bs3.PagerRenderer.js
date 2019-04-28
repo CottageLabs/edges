@@ -25,6 +25,8 @@ $.extend(true, edges, {
 
             this.showPageNavigation = edges.getParam(params.showPageNavigation, true);
 
+            this.numberFormat = edges.getParam(params.numberFormat, false);
+
             this.namespace = "edges-bs3-pager";
 
             this.draw = function () {
@@ -46,7 +48,11 @@ $.extend(true, edges, {
                 // the total number of records found
                 var recordCount = "";
                 if (this.showRecordCount) {
-                    recordCount = '<span class="' + totalClass + '">' + this.component.total + '</span> results found';
+                    var total = this.component.total;
+                    if (this.numberFormat) {
+                        total = this.numberFormat(total);
+                    }
+                    recordCount = '<span class="' + totalClass + '">' + total + '</span> results found';
                 }
 
                 // the number of records per page
@@ -86,8 +92,14 @@ $.extend(true, edges, {
                         next = '<span class="' + nextClass + ' disabled">Next</a>';
                     }
 
+                    var pageNum = this.component.page;
+                    var totalPages = this.component.totalPages;
+                    if (this.numberFormat) {
+                        pageNum = this.numberFormat(pageNum);
+                        totalPages = this.numberFormat(totalPages);
+                    }
                     nav = '<div class="' + navClass + '">' + first + prev +
-                        '<span class="' + pageClass + '">Page ' + this.component.page + ' of ' + this.component.totalPages + '</span>' +
+                        '<span class="' + pageClass + '">Page ' + pageNum + ' of ' + totalPages + '</span>' +
                         next + "</div>";
                 }
 

@@ -1188,6 +1188,11 @@ var es = {
         this.lte = es.getParam(params.lte, false);
         this.gte = es.getParam(params.gte, false);
 
+        // normalise the values to strings
+        if (this.lt) { this.lt = this.lt.toString() }
+        if (this.lte) { this.lte = this.lte.toString() }
+        if (this.gte) { this.gte = this.gte.toString() }
+
         this.matches = function(other) {
             // ask the parent object first
             // var pm = this.__proto__.matches.call(this, other);

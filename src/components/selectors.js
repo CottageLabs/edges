@@ -848,21 +848,21 @@ $.extend(edges, {
             }
 
             // now check to see if there are any range filters set on this field
+            // this works in a very specific way: if there is a filter on this field, and it
+            // starts from the date of a filter in the result list, then we make they assumption
+            // that they are a match.  This is because a date histogram either has all the results
+            // or only one date bin, if that date range has been selected.  And once a range is selected
+            // there will be no "lt" date field to compare the top of the range to.  So, this is the best
+            // we can do, and it means that if you have both a date histogram and another range selector
+            // for the same field, they may confuse eachother.
             if (this.edge.currentQuery) {
                 var filters = this.edge.currentQuery.listMust(es.newRangeFilter({field: this.field}));
                 for (var i = 0; i < filters.length; i++) {
-                    var to = filters[i].lt;
                     var from = filters[i].gte;
                     for (var j = 0; j < this.values.length; j++) {
                         var val = this.values[j];
                         if (val.gte.toString() === from) {
-                            if (!val.hasOwnProperty("lt") && !to) {
-                                this.filters.push(val);
-                            } else if (val.hasOwnProperty("lt") && to) {
-                                if (val.lt.toString() === to) {
-                                    this.filters.push(val);
-                                }
-                            }
+                            this.filters.push(val);
                         }
                     }
                 }
