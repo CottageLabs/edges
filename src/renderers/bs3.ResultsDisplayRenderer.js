@@ -16,7 +16,7 @@ $.extend(true, edges, {
             this.noResultsText = params.noResultsText || "No results to display";
 
             // ordered list of fields and display values
-            // [{field: "field.name", display: "Display Name"}]
+            // [{field: "field.name", display: "Display Name"]
             this.fieldDisplayMap = params.fieldDisplayMap || [];
 
             // if a multi-value field is found that needs to be displayed, which character
@@ -30,11 +30,10 @@ $.extend(true, edges, {
 
             this.displayMap = {};
 
-            this.namespace = "edges-bs-results-display";
+            this.namespace = "edges-bs3-results-display";
 
             this.init = function (component) {
-                Object.getPrototypeOf(this).init.call(this, component);
-                // this.__proto__.init.call(this, component);
+                edges.up(this, "init" [component]);
 
                 // read the fieldDisplayMap out into more readily usable internal variables
                 if (this.fieldDisplayMap.length > 0) {
