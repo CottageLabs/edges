@@ -39,6 +39,9 @@ $.extend(true, edges, {
             // to use to join
             this.arrayValueJoin = params.arrayValueJoin || ", ";
 
+            // if a field does not have a value, don't display anything from its part of the render
+            this.omitFieldIfEmpty = edges.getParam(params.omitFieldIfEmpty, true);
+
             //////////////////////////////////////////////
             // variables for internal state
 
@@ -76,8 +79,6 @@ $.extend(true, edges, {
             this._renderResult = function (res) {
                 // list the css classes we'll require
                 var rowClasses = edges.css_classes(this.namespace, "row", this);
-                var fieldClasses = edges.css_classes(this.namespace, "field", this);
-                var valueClasses = edges.css_classes(this.namespace, "value", this);
 
                 // get a list of the fields on the object to display
                 var frag = "";
@@ -86,9 +87,7 @@ $.extend(true, edges, {
                     var rowFrag = "";
                     for (var j = 0; j < row.length; j++) {
                         var entry = row[j];
-                        if (entry.pre) {
-                            rowFrag += entry.pre;
-                        }
+                        // first sort out the value, and make sure there is one
                         var val = "";
                         if (entry.field) {
                             val = this._getValue(entry.field, res);
@@ -98,6 +97,13 @@ $.extend(true, edges, {
                         }
                         if (entry.valueFunction) {
                             val = entry.valueFunction(val, res, this);
+                        }
+                        if (!val && this.omitFieldIfEmpty) {
+                            continue;
+                        }
+
+                        if (entry.pre) {
+                            rowFrag += entry.pre;
                         }
                         rowFrag += val;
                         if (entry.post) {

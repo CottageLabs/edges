@@ -172,12 +172,14 @@ $.extend(true, edges, {
 
                 // assemble the final fragment and render it into the component's context
                 var lhs = "";
+                var searchMd = "6";
                 if (this.shareLink) {
-                    lhs = '<div class="col-md-2">' + shareButtonFrag + '</div><div class="col-md-4">' + sortOptions + '</div>'
+                    lhs = '<div class="col-xs-6 col-md-2">' + shareButtonFrag + '</div><div class="col-xs-6 col-md-4">' + sortOptions + '</div>'
                 } else {
-                    lhs = '<div class="col-md-6">' + sortOptions + '</div>';
+                    lhs = '<div class="col-xs-12 col-md-4">' + sortOptions + '</div>';
+                    searchMd = "8"
                 }
-                var frag = '<div class="row">' + lhs + '<div class="col-md-6">{{SEARCH}}</div></div>' + shareFrag;
+                var frag = '<div class="row">' + lhs + '<div class="col-xs-12 col-md-' + searchMd + '">{{SEARCH}}</div></div>' + shareFrag;
                 frag = frag.replace(/{{SEARCH}}/g, searchBox);
 
                 comp.context.html(frag);
