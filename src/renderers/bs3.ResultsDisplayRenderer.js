@@ -1,11 +1,8 @@
 $.extend(true, edges, {
     bs3 : {
         newResultsDisplayRenderer: function (params) {
-            if (!params) {
-                params = {}
-            }
-            edges.bs3.ResultsDisplayRenderer.prototype = edges.newRenderer(params);
-            return new edges.bs3.ResultsDisplayRenderer(params);
+            if (!params) { params = {} }
+            return edges.instantiate(edges.bs3.ResultsDisplayRenderer, params, edges.newRenderer);
         },
         ResultsDisplayRenderer: function (params) {
 
@@ -33,7 +30,7 @@ $.extend(true, edges, {
             this.namespace = "edges-bs3-results-display";
 
             this.init = function (component) {
-                edges.up(this, "init" [component]);
+                edges.up(this, "init", [component]);
 
                 // read the fieldDisplayMap out into more readily usable internal variables
                 if (this.fieldDisplayMap.length > 0) {
