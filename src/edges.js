@@ -102,6 +102,9 @@ var edges = {
         // list of all the components that are involved in this edge
         this.components = edges.getParam(params.components, []);
 
+        // the query adapter
+        this.queryAdapter = edges.getParam(params.queryAdapter, edges.newESQueryAdapter());
+
         // render packs to use to source automatically assigned rendering objects
         this.renderPacks = edges.getParam(params.renderPacks, [edges.bs3, edges.nvd3, edges.highcharts, edges.google, edges.d3]);
 
@@ -355,6 +358,12 @@ var edges = {
         this.doPrimaryQuery = function(callback) {
             var context = {"callback" : callback};
 
+            this.queryAdapter.doQuery({
+                edge: this,
+                success: edges.objClosure(this, "querySuccess", ["result"], context),
+                error: edges.objClosure(this, "queryFail", context)
+            });
+            /*
             // issue the query to elasticsearch
             es.doQuery({
                 search_url: this.search_url,
@@ -362,7 +371,7 @@ var edges = {
                 datatype: this.datatype,
                 success: edges.objClosure(this, "querySuccess", ["result"], context),
                 error: edges.objClosure(this, "queryFail", context)
-            })
+            })*/
         };
 
         this.queryFail = function(params) {
@@ -756,6 +765,37 @@ var edges = {
 
         ////////////////////////////////////////
         this.construct();
+    },
+
+    /////////////////////////////////////////////
+    // Query adapter base class
+
+    newQueryAdapter : function(params) {
+        if (!params) { params = {} }
+        return edges.instantiate(edges.QueryAdapter, params);
+    },
+    QueryAdapter : function(params) {
+        this.doQuery = function(params) {};
+    },
+
+    newESQueryAdapter : function(params) {
+        if (!params) { params = {} }
+        return edges.instantiate(edges.ESQueryAdapter, params);
+    },
+    ESQueryAdapter : function(params) {
+        this.doQuery = function(params) {
+            var edge = params.edge;
+            var success = params.success;
+            var error = params.error;
+
+            es.doQuery({
+                search_url: edge.search_url,
+                queryobj: edge.currentQuery.objectify(),
+                datatype: edge.datatype,
+                success: success,
+                error: error
+            });
+        };
     },
 
     /////////////////////////////////////////////
