@@ -90,7 +90,7 @@ $.extend(true, edges, {
                         // first sort out the value, and make sure there is one
                         var val = "";
                         if (entry.field) {
-                            val = this._getValue(entry.field, res);
+                            val = this._getValue(entry.field, res, val);
                         }
                         if (val) {
                             val = edges.escapeHtml(val);
@@ -116,7 +116,8 @@ $.extend(true, edges, {
                 return frag;
             };
 
-            this._getValue = function (path, rec) {
+            this._getValue = function (path, rec, def) {
+                if (def === undefined) { def = false; }
                 var bits = path.split(".");
                 var val = rec;
                 for (var i = 0; i < bits.length; i++) {
@@ -124,13 +125,13 @@ $.extend(true, edges, {
                     if (field in val) {
                         val = val[field];
                     } else {
-                        return false;
+                        return def;
                     }
                 }
                 if ($.isArray(val)) {
                     val = val.join(this.arrayValueJoin);
                 } else if ($.isPlainObject(val)) {
-                    val = false;
+                    val = def;
                 }
                 return val;
             };

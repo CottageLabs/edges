@@ -361,22 +361,14 @@ var edges = {
             this.queryAdapter.doQuery({
                 edge: this,
                 success: edges.objClosure(this, "querySuccess", ["result"], context),
-                error: edges.objClosure(this, "queryFail", context)
+                error: edges.objClosure(this, "queryFail", false, context)
             });
-            /*
-            // issue the query to elasticsearch
-            es.doQuery({
-                search_url: this.search_url,
-                queryobj: this.currentQuery.objectify(),
-                datatype: this.datatype,
-                success: edges.objClosure(this, "querySuccess", ["result"], context),
-                error: edges.objClosure(this, "queryFail", context)
-            })*/
         };
 
         this.queryFail = function(params) {
             var callback = params.context;
             this.context.trigger("edges:query-fail");
+            console.log("WARN: query fail");
             callback();
         };
 
@@ -768,7 +760,7 @@ var edges = {
     },
 
     /////////////////////////////////////////////
-    // Query adapter base class
+    // Query adapter base class and core ES implementation
 
     newQueryAdapter : function(params) {
         if (!params) { params = {} }

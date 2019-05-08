@@ -1440,6 +1440,8 @@ var es = {
                         res.push(source._source);
                     } else if ("fields" in source) {
                         res.push(source.fields);
+                    } else {
+                        res.push(source);
                     }
                 }
             }
