@@ -12,6 +12,7 @@
     padding-left: 10px;
     padding-right: 10px;
     border-bottom: 1px dashed #cccccc;
+    overflow-wrap: break-word;
 }
 
 .edges-bs3-results-fields-by-row-record:hover {

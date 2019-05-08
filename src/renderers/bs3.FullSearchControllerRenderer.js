@@ -170,23 +170,25 @@ $.extend(true, edges, {
                         </div> \
                     </div>';
 
+                // caclulate all the div widths
+                var shareMd = "2";
+                var sortMd = "4";
+                var searchMd = this.shareLink ? "6" : sortOptions !== "" ? "8" : "12";
+                var shareXs = "6";
+                var sortXs = "6";
+                var searchXs = "12";
+
                 // assemble the final fragment and render it into the component's context
                 var lhs = "";
                 if (this.shareLink) {
-                    lhs = '<div class="col-md-2">' + shareButtonFrag + '</div>'
+                    lhs = '<div class="col-xs-' + shareXs + ' col-md-' + shareMd + '">' + shareButtonFrag + '</div>'
                 }
                 if (sortOptions !== "") {
-                    var sortOptionsWidth = "6";
-                    if (this.shareLink) {
-                        sortOptionsWidth = "4";
-                    }
-                    lhs += '<div class="col-md-' + sortOptionsWidth + '">' + sortOptions + '</div>';
+                    lhs += '<div class="col-xs-' + sortXs + ' col-md-' + sortMd + '">' + sortOptions + '</div>';
                 }
-                var searchWidth = "12";
-                if (lhs !== "") {
-                    searchWidth = "6";
-                }
-                var frag = '<div class="row">' + lhs + '<div class="col-md-' + searchWidth + '">{{SEARCH}}</div></div>' + shareFrag;
+
+                var frag = '<div class="row">' + lhs + '<div class="col-xs-' + searchXs + ' col-md-' + searchMd + '">{{SEARCH}}</div></div>' + shareFrag;
+                
                 frag = frag.replace(/{{SEARCH}}/g, searchBox);
 
                 comp.context.html(frag);
