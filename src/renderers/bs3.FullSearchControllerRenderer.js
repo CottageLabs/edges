@@ -87,7 +87,7 @@ $.extend(true, edges, {
                 }
 
                 // if sort options are provided render the orderer and the order by
-                var sortOptions = "&nbsp;";
+                var sortOptions = "";
                 if (comp.sortOptions && comp.sortOptions.length > 0) {
                     // classes that we'll use
                     var directionClass = edges.css_classes(this.namespace, "direction", this);
@@ -160,7 +160,7 @@ $.extend(true, edges, {
                     </span>';
                 }
 
-                var searchBox = '<div class="form-inline pull-right"> \
+                var searchBox = '<div class="form-inline"> \
                         <div class="form-group"> \
                             <div class="input-group"> \
                                 ' + clearFrag + field_select + '\
@@ -173,11 +173,20 @@ $.extend(true, edges, {
                 // assemble the final fragment and render it into the component's context
                 var lhs = "";
                 if (this.shareLink) {
-                    lhs = '<div class="col-md-2">' + shareButtonFrag + '</div><div class="col-md-4">' + sortOptions + '</div>'
-                } else {
-                    lhs = '<div class="col-md-6">' + sortOptions + '</div>';
+                    lhs = '<div class="col-md-2">' + shareButtonFrag + '</div>'
                 }
-                var frag = '<div class="row">' + lhs + '<div class="col-md-6">{{SEARCH}}</div></div>' + shareFrag;
+                if (sortOptions !== "") {
+                    var sortOptionsWidth = "6";
+                    if (this.shareLink) {
+                        sortOptionsWidth = "4";
+                    }
+                    lhs += '<div class="col-md-' + sortOptionsWidth + '">' + sortOptions + '</div>';
+                }
+                var searchWidth = "12";
+                if (lhs !== "") {
+                    searchWidth = "6";
+                }
+                var frag = '<div class="row">' + lhs + '<div class="col-md-' + searchWidth + '">{{SEARCH}}</div></div>' + shareFrag;
                 frag = frag.replace(/{{SEARCH}}/g, searchBox);
 
                 comp.context.html(frag);
