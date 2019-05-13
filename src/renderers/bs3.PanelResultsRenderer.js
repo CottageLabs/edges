@@ -24,6 +24,8 @@ $.extend(true, edges, {
 
             this.imageFunction = edges.getParam(params.imageFunction, false);
 
+            this.annotationHeight = edges.getParam(params.annotationHeight, 50);
+
             // ordered list of rows of fields with pre and post wrappers, and a value function
             // (all fields are optional)
             //
@@ -370,6 +372,8 @@ $.extend(true, edges, {
                 }
 
                 var panelClasses = edges.css_classes(this.namespace, "panel", this);
+                var containerClasses = edges.css_classes(this.namespace, "container", this);
+                var annotationClasses = edges.css_classes(this.namespace, "annotation", this);
 
                 var frag = "";
                 for (var i = 0; i < dims.length; i++) {
@@ -377,27 +381,44 @@ $.extend(true, edges, {
                     var rec = this.component.results[initialCursor + i];
 
                     var panelStyles = "width: " + (dim.w + dim.pl + dim.pr) + "px; ";
-                    panelStyles += "height: " + largestHeight + "px";
+                    panelStyles += "height: " + (largestHeight + this.annotationHeight) + "px";
                     frag += '<div class="' + panelClasses + '" style="' + panelStyles + '">';
 
-                    var imageStyles = "width: 100%; height: " + largestHeight + "px; ";
-                    imageStyles += "padding-left: " + dim.pl + "px; ";
-                    imageStyles += "padding-right: " + dim.pr + "px; ";
-                    imageStyles += "padding-top: " + (Math.ceil((largestHeight - dim.h) / 2)) + "px; ";
-                    frag += '<div style="' + imageStyles + '">';
+                    var containerStyles = "width: 100%; height: " + largestHeight + "px; ";
+                    containerStyles += "padding-left: " + dim.pl + "px; ";
+                    containerStyles += "padding-right: " + dim.pr + "px; ";
+                    containerStyles += "padding-top: " + (Math.ceil((largestHeight - dim.h) / 2)) + "px; ";
+                    frag += '<div class="' + containerClasses + '" style="' + containerStyles + '">';
 
                     var imgStyles = "width: " + dim.w + "px; height: " + dim.h + "px; ";
                     imgStyles += "background-color: " + edges.objVal(this.bgColorPath, rec, "#ffffff") + "; ";
-                    var url = this.imageFunction(rec, this);
-                    frag += '<img src="' + url + '" style="' + imgStyles + '">';
 
-                    frag += "</div></div>";
+                    var imgData = this.imageFunction(rec, this);
+                    var url = imgData.src;
+                    var alt = imgData.alt || "";
+                    var imgFrag = '<img src="' + url + '" alt="' + alt + '" style="' + imgStyles + '">';
+                    if (imgData.a) {
+                        imgFrag = '<a href="' + imgData.a + '">' + imgFrag + '</a>';
+                    }
+                    frag += imgFrag;
+
+                    frag += "</div>";
+
+                    var annotationStyles = "width: 100%; height: " + this.annotationHeight + "px;";
+                    var annotation = this._renderAnnotation({record: rec});
+                    frag += '<div class="' + annotationClasses + '" style="' + annotationStyles + '">' + annotation + '</div>';
+
+                    frag += "</div>";
                 }
 
-
                 return frag;
+            };
 
-                /*
+            this._renderAnnotation = function(params) {
+                var res = params.record;
+
+                var rowClass = edges.css_classes(this.namespace, "annotate-row", this);
+
                 // get a list of the fields on the object to display
                 var frag = "";
                 for (var i = 0; i < this.panelDisplay.length; i++) {
@@ -420,17 +441,24 @@ $.extend(true, edges, {
                             continue;
                         }
 
+                        var fieldClass = "";
+                        if (entry.field) {
+                            fieldClass = "field_" + edges.safeId(entry.field)
+                        }
+                        var fieldFrag = '<span class="' + fieldClass + '">';
                         if (entry.pre) {
-                            rowFrag += entry.pre;
+                            fieldFrag += entry.pre;
                         }
-                        rowFrag += val;
+                        fieldFrag += val;
                         if (entry.post) {
-                            rowFrag += entry.post;
+                            fieldFrag += entry.post;
                         }
+                        fieldFrag += "</span>";
+                        rowFrag += fieldFrag;
                     }
-                    frag += '<div class="' + panelRowClasses + '">' + rowFrag + '</div>';
+                    frag += '<div class="' + rowClass + '">' + rowFrag + '</div>';
                 }
-                */
+                return frag;
             };
 
             this._getValue = function (path, rec, def) {

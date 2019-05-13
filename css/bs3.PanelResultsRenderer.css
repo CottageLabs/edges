@@ -35,3 +35,8 @@
 .edges-bs3-panel-results-value {
 
 }
+
+.edges-bs3-panel-results-annotation {
+    padding: 5px;
+    overflow-y: hidden;
+}
