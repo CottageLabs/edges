@@ -777,12 +777,17 @@ var edges = {
     ESQueryAdapter : function(params) {
         this.doQuery = function(params) {
             var edge = params.edge;
+            var query = params.query;
             var success = params.success;
             var error = params.error;
 
+            if (!query) {
+                query = edge.currentQuery;
+            }
+
             es.doQuery({
                 search_url: edge.search_url,
-                queryobj: edge.currentQuery.objectify(),
+                queryobj: query.objectify(),
                 datatype: edge.datatype,
                 success: success,
                 error: error
