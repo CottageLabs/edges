@@ -26,6 +26,8 @@ $.extend(true, edges, {
 
             this.annotationHeight = edges.getParam(params.annotationHeight, 50);
 
+            this.triggerInfiniteScrollWhenRemain = edges.getParam(params.triggerInfiniteScrollWhenRemain, 10);
+
             // ordered list of rows of fields with pre and post wrappers, and a value function
             // (all fields are optional)
             //
@@ -55,34 +57,146 @@ $.extend(true, edges, {
 
             this.cursor = 0;
 
+            this.lastLineCursor = 0;
+
+            this.scrollTriggerSelector = false;
+
+            this.scrolling = false;
+
             this.namespace = "edges-bs3-panel-results";
 
             this.draw = function() {
                 this.cursor = 0;
+                this.scrolling = false;
+
+                if (this.component.infiniteScroll) {
+                    this.scrollTriggerSelector = edges.css_class_selector(this.namespace, "trigger", this);
+                }
 
                 var frag = this.noResultsText;
                 if (this.component.results === false) {
                     frag = "";
                 }
 
-                var results = this.component.results;
-                if (results && results.length > 0) {
-                    var containerWidth = Math.floor(this.component.context.width());
-
-                    // list the css classes we'll require
-                    var panelClass = edges.css_classes(this.namespace, "panel", this);
-
-                    // now call the renderer on each image to build the records
-                    frag = "";
-                    while (this.cursor < results.length) {
-                        frag += this._renderRow({containerWidth: containerWidth});
-                    }
+                var resultsFrag = this._renderResults();
+                if (resultsFrag !== "") {
+                    frag = resultsFrag;
                 }
 
                 // finally stick it all together into the container
                 var containerClasses = edges.css_classes(this.namespace, "container", this);
                 var container = '<div class="' + containerClasses + '">' + frag + '</div>';
                 this.component.context.html(container);
+
+                this._bindInfiniteScroll();
+            };
+
+            this._bindInfiniteScroll = function() {
+                if (this.component.infiniteScroll) {
+                    edges.on(window, "scroll", this, "considerInfiniteScroll");
+                }
+            };
+
+            this._renderResults = function(params) {
+                var frag = "";
+                var results = this.component.results;
+                if (results && results.length > 0) {
+                    var containerWidth = Math.floor(this.component.context.width());
+
+                    // list the css classes we'll require
+                    var triggerClass = edges.css_classes(this.namespace, "trigger", this);
+                    var triggerRendered = false;
+
+                    // now call the renderer on each image to build the records
+                    while (this.cursor < results.length) {
+                        this.lastLineCursor = this.cursor; // remember the position of the start of the last line
+                        frag += this._renderRow({containerWidth: containerWidth});
+
+                        if (!triggerRendered && this.component.infiniteScroll &&
+                                results.length - this.cursor <= this.triggerInfiniteScrollWhenRemain) {
+                            frag += '<div class="' + triggerClass + '" style="height: 0px; width: 100%"></div>';
+                            triggerRendered = true;
+                        }
+                    }
+                }
+                return frag;
+            };
+
+            this.considerInfiniteScroll = function() {
+                if (this.scrolling) {
+                    // we're already working on getting the next page of data
+                    return;
+                }
+                var trigger = this.component.context.find(this.scrollTriggerSelector);
+                if (trigger.length === 0 || !this._elementInViewport({element: trigger})) {
+                    return;
+                }
+                this.scrolling = true;
+                var callback = edges.objClosure(this, "showMoreResults", false, {previousResultCount : this.component.results.length});
+                this.component.infiniteScrollNextPage({callback: callback});
+            };
+
+            // FIXME: if the user scrolls the element out of the viewport before the scroll event can be triggered
+            // on it, then this may not load the next page of results.  To do that, the user would have to be
+            // scrolling incredibly fast, so not an urgent thing to address.
+            this._elementInViewport = function(params) {
+                var el = params.element[0]; // unwrap the jquery object
+                var w = $(window);
+
+                var rect = el.getBoundingClientRect();
+                return (
+                    rect.top >= 0 &&
+                    rect.left >= 0 &&
+                    rect.bottom <= w.height() &&
+                    rect.right <= w.width()
+                );
+            };
+
+            this.showMoreResults = function(params) {
+                // if there are no new results, that means we scrolled to the end,
+                // so delete the trigger so we don't get any more paging requests, and
+                // leave it at that.
+                var previousResultCount = params.previousResultCount;
+                if (previousResultCount >= this.component.results.length) {
+                    var trigger = this.component.context.find(this.scrollTriggerSelector);
+                    trigger.remove();
+                    this.scrolling = false;
+                    return;
+                }
+
+                // roll back the cursor to the start of the last line, we will begin to redraw from there
+                // in case that line was incomplete last time
+                var deleteFrom = this.lastLineCursor;
+                this.cursor = this.lastLineCursor;
+
+                // render the new results.  The called function works off the cursor, so you will
+                // only get a frag that represents the results going forward (this will also include
+                // the next page trigger)
+                var resultsFrag = this._renderResults();
+
+                // delete the last trigger
+                var trigger = this.component.context.find(this.scrollTriggerSelector);
+                trigger.remove();
+
+                // delete the last row
+                var panelSelector = edges.css_class_selector(this.namespace, "panel", this);
+                var panels = this.component.context.find(panelSelector);
+                for (var i = deleteFrom; i < panels.length; i++) {
+                    $(panels[i]).remove();
+                }
+
+                // append the results to the container (including the new trigger)
+                var containerSelector = edges.css_class_selector(this.namespace, "container", this);
+                var container = this.component.context.find(containerSelector);
+                container.append(resultsFrag);
+
+                // bind the infinite scroll and allow it to be used
+                this._bindInfiniteScroll();
+                this.scrolling = false;
+
+                // in the mean time the user may have scrolled to the end of what we're displaying, so
+                // we should trigger a check for more infinite scrolling
+                this.considerInfiniteScroll();
             };
 
             this._caclulateDims = function(params) {
@@ -372,7 +486,7 @@ $.extend(true, edges, {
                 }
 
                 var panelClasses = edges.css_classes(this.namespace, "panel", this);
-                var containerClasses = edges.css_classes(this.namespace, "container", this);
+                var containerClasses = edges.css_classes(this.namespace, "img-container", this);
                 var annotationClasses = edges.css_classes(this.namespace, "annotation", this);
 
                 var frag = "";

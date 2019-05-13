@@ -830,11 +830,7 @@ $.extend(edges, {
     // Results list implementation
 
     newResultsDisplay: function (params) {
-        if (!params) {
-            params = {}
-        }
-        edges.ResultsDisplay.prototype = edges.newComponent(params);
-        return new edges.ResultsDisplay(params);
+        return edges.instantiate(edges.ResultsDisplay, params, edges.newComponent);
     },
     ResultsDisplay: function (params) {
         ////////////////////////////////////////////
@@ -855,6 +851,10 @@ $.extend(edges, {
         // the maximum number of results to be stored
         this.limit = edges.getParam(params.limit, false);
 
+        this.infiniteScroll = edges.getParam(params.infiniteScroll, false);
+
+        this.infiniteScrollPageSize = edges.getParam(params.infiniteScrollPageSize, 10);
+
         // the default renderer for the component to use
         this.defaultRenderer = params.defaultRenderer || "newResultsDisplayRenderer";
 
@@ -867,9 +867,15 @@ $.extend(edges, {
         // that no results were found)
         this.results = false;
 
+        this.infiniteScrollQuery = false;
+
+        this.hitCount = 0;
+
         this.synchronise = function () {
             // reset the state of the internal variables
             this.results = [];
+            this.infiniteScrollQuery = false;
+            this.hitCount = 0;
 
             var source = this.edge.result;
             if (this.secondaryResults !== false) {
@@ -884,6 +890,15 @@ $.extend(edges, {
 
             // first filter the results
             var results = source.results();
+            this._appendResults({results: results});
+
+            // record the hit count for later use
+            this.hitCount = source.total();
+        };
+
+        this._appendResults = function(params) {
+            var results = params.results;
+
             if (this.filter) {
                 results = this.filter({results: results});
             }
@@ -896,7 +911,51 @@ $.extend(edges, {
                 results = results.slice(0, this.limit);
             }
 
-            this.results = results;
+            this.results = this.results.concat(results);
+        };
+
+        this.infiniteScrollNextPage = function(params) {
+            var callback = params.callback;
+
+            // if we have exhausted the result set, don't try to get the next page
+            if (this.results.length >= this.hitCount) {
+                return;
+            }
+
+            if (!this.infiniteScrollQuery) {
+                this.infiniteScrollQuery = this.edge.cloneQuery();
+                this.infiniteScrollQuery.clearAggregations();
+            }
+
+            // move the from/size parameters to get us the next page
+            var currentSize = this.infiniteScrollQuery.getSize();
+            var currentFrom = this.infiniteScrollQuery.getFrom();
+            if (currentFrom === false) {
+                currentFrom = 0;
+            }
+            this.infiniteScrollQuery.from = currentFrom + currentSize;
+            this.infiniteScrollQuery.size = this.infiniteScrollPageSize;
+
+            var successCallback = edges.objClosure(this, "infiniteScrollSuccess", ["result"], {callback: callback});
+            var errorCallback = edges.objClosure(this, "infiniteScrollError", false, {callback: callback});
+
+            this.edge.queryAdapter.doQuery({
+                edge: this.edge,
+                query: this.infiniteScrollQuery,
+                success: successCallback,
+                error: errorCallback
+            });
+        };
+
+        this.infiniteScrollSuccess = function(params) {
+            var results = params.result.results();
+            this._appendResults({results: results});
+            params.callback();
+        };
+
+        this.infinteScrollError = function(params) {
+            alert("error");
+            params.callback();
         }
     }
 });
