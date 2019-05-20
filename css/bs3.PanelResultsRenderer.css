@@ -37,6 +37,13 @@
 }
 
 .edges-bs3-panel-results-annotation {
-    padding: 5px;
+    padding-top: 5px;
     overflow-y: hidden;
+    text-align: center;
+}
+
+.edges-bs3-panel-results-annotate-row {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
 }

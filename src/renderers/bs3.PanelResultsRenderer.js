@@ -208,7 +208,7 @@ $.extend(true, edges, {
                 // first stage is to consume images from the results array until there
                 // are none left, or we overflow the available width
                 var totalWidth = 0;
-                var pads = 0;
+                // var pads = 0;
                 var padding = 0;
                 var fullWidth = 0;
                 while (true) {
@@ -236,10 +236,11 @@ $.extend(true, edges, {
 
                     totalWidth += w;
                     // when there is more than one image, we need to account for 2 padding areas
-                    if (dims.length > 1) {
-                        pads += 2;
-                        padding = pads * this.basePadding
-                    }
+                    //if (dims.length > 1) {
+                    //    pads += 2;
+                    //    padding = pads * this.basePadding
+                    //}
+                    padding = dims.length * 2 * this.basePadding;
                     fullWidth = totalWidth + padding;
 
                     if (fullWidth === containerWidth) {
@@ -251,8 +252,8 @@ $.extend(true, edges, {
                 }
 
                 // set the padding for the end elements
-                dims[0].pl = 0;
-                dims[dims.length - 1].pr = 0;
+                //dims[0].pl = 0;
+                //dims[dims.length - 1].pr = 0;
 
                 // if we get to here, we have a set of dimensions which are less than or greater than
                 // the container width
@@ -328,7 +329,7 @@ $.extend(true, edges, {
                     // and reset the right padding on the final element to zero
                     dims.pop();
                     this.cursor--;
-                    dims[dims.length - 1].pr = 0;
+                    // dims[dims.length - 1].pr = 0;
 
                     // reset all the remaining elements to their original values
                     var totalWidth = 0;
@@ -437,7 +438,8 @@ $.extend(true, edges, {
                 }
 
                 // ensure shortfall is a multiple of the number of paddings
-                var pads = (dims.length - 1) * 2;
+                // var pads = (dims.length - 1) * 2;
+                var pads = dims.length * 2;
                 var extra = shortfall % pads;
                 shortfall -= extra;
 
@@ -510,7 +512,7 @@ $.extend(true, edges, {
                     var imgData = this.imageFunction(rec, this);
                     var url = imgData.src;
                     var alt = imgData.alt || "";
-                    var imgFrag = '<img src="' + url + '" alt="' + alt + '" style="' + imgStyles + '">';
+                    var imgFrag = '<img src="' + url + '" alt="' + alt + '" title="' + alt + '" style="' + imgStyles + '">';
                     if (imgData.a) {
                         imgFrag = '<a href="' + imgData.a + '">' + imgFrag + '</a>';
                     }
@@ -518,7 +520,7 @@ $.extend(true, edges, {
 
                     frag += "</div>";
 
-                    var annotationStyles = "width: 100%; height: " + this.annotationHeight + "px;";
+                    var annotationStyles = "width: 100%; height: " + this.annotationHeight + "px; padding-left:" + dim.pl + "px; padding-right:" + dim.pr + "px;";
                     var annotation = this._renderAnnotation({record: rec});
                     frag += '<div class="' + annotationClasses + '" style="' + annotationStyles + '">' + annotation + '</div>';
 
@@ -559,7 +561,7 @@ $.extend(true, edges, {
                         if (entry.field) {
                             fieldClass = "field_" + edges.safeId(entry.field)
                         }
-                        var fieldFrag = '<span class="' + fieldClass + '">';
+                        var fieldFrag = '<span title="' + val + '" class="' + fieldClass + '">';
                         if (entry.pre) {
                             fieldFrag += entry.pre;
                         }
