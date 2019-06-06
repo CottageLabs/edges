@@ -108,6 +108,10 @@ var edges = {
         // render packs to use to source automatically assigned rendering objects
         this.renderPacks = edges.getParam(params.renderPacks, [edges.bs3, edges.nvd3, edges.highcharts, edges.google, edges.d3]);
 
+        // list of callbacks to be run synchronously with the edge instance as the argument
+        // (these bind at the same points as all the events are triggered, and are keyed the same way)
+        this.callbacks = edges.getParam(params.callbacks, {});
+
         /////////////////////////////////////////////
         // operational properties
 
@@ -159,7 +163,7 @@ var edges = {
             this.context = $(this.selector);
 
             // trigger the edges:init event
-            this.context.trigger("edges:pre-init");
+            this.trigger("edges:pre-init");
 
             // if we are to manage the URL, attempt to pull a query from it
             if (this.manageUrl) {
@@ -216,11 +220,10 @@ var edges = {
             // finally push the query, which will reconcile it with the baseQuery
             this.pushQuery(requestedQuery);
 
-            // trigger the edges:started event
-            this.context.trigger("edges:post-init");
+            // trigger the edges:post-init event
+            this.trigger("edges:post-init");
 
             // now issue a query
-            // this.doQuery();
             this.cycle();
         };
 
@@ -244,7 +247,7 @@ var edges = {
             this.shortUrl = false;
 
             // pre query event
-            this.context.trigger("edges:pre-query");
+            this.trigger("edges:pre-query");
 
             // if we are managing the url space, use pushState to set it
             if (this.manageUrl) {
@@ -269,11 +272,11 @@ var edges = {
             this.synchronise();
 
             // pre-render trigger
-            this.context.trigger("edges:pre-render");
+            this.trigger("edges:pre-render");
             // render
             this.draw();
             // post render trigger
-            this.context.trigger("edges:post-render");
+            this.trigger("edges:post-render");
 
             // searching has completed, so flip the switch back
             this.searching = false;
@@ -297,7 +300,7 @@ var edges = {
         // reset the query to the start and re-issue the query
         this.reset = function() {
             // tell the world we're about to reset
-            this.context.trigger("edges:pre-reset");
+            this.trigger("edges:pre-reset");
 
             // clone from the opening query
             var requestedQuery = this.cloneOpeningQuery();
@@ -312,7 +315,7 @@ var edges = {
             this.pushQuery(requestedQuery);
 
             // tell the world that we've done the reset
-            this.context.trigger("edges:post-reset");
+            this.trigger("edges:post-reset");
 
             // now execute the query
             // this.doQuery();
@@ -367,7 +370,7 @@ var edges = {
 
         this.queryFail = function(params) {
             var callback = params.context;
-            this.context.trigger("edges:query-fail");
+            this.trigger("edges:query-fail");
             console.log("WARN: query fail");
             callback();
         };
@@ -377,7 +380,7 @@ var edges = {
             var callback = params.callback;
 
             // success trigger
-            this.context.trigger("edges:query-success");
+            this.trigger("edges:query-success");
             callback();
         };
 
@@ -387,7 +390,7 @@ var edges = {
                 return;
             }
 
-            this.context.trigger("edges:pre-preflight");
+            this.trigger("edges:pre-preflight");
 
             var entries = [];
             var ids = Object.keys(this.preflightQueries);
@@ -420,10 +423,10 @@ var edges = {
                 },
                 errorCallbackArgs : ["result"],
                 error:  function(params) {
-                    that.context.trigger("edges:error-preflight");
+                    that.trigger("edges:error-preflight");
                 },
                 carryOn: function() {
-                    that.context.trigger("edges:post-preflight");
+                    that.trigger("edges:post-preflight");
                     callback();
                 }
             });
@@ -528,6 +531,13 @@ var edges = {
             return $(selector, this.context);
         };
 
+        this.trigger = function(event_name) {
+            if (event_name in this.callbacks) {
+                this.callbacks[event_name](this);
+            }
+            this.context.trigger(event_name);
+        };
+
         /////////////////////////////////////////////////////
         // URL management functions
 
@@ -602,7 +612,7 @@ var edges = {
 
         this.loadStaticsAsync = function(callback) {
             if (!this.staticFiles || this.staticFiles.length == 0) {
-                this.context.trigger("edges:post-load-static");
+                this.trigger("edges:post-load-static");
                 callback();
                 return;
             }
@@ -643,10 +653,10 @@ var edges = {
                 errorCallbackArgs : ["data"],
                 error:  function(params) {
                     that.errorLoadingStatic.push(params.entry.id);
-                    that.context.trigger("edges:error-load-static");
+                    that.trigger("edges:error-load-static");
                 },
                 carryOn: function() {
-                    that.context.trigger("edges:post-load-static");
+                    that.trigger("edges:post-load-static");
                     callback();
                 }
             });
