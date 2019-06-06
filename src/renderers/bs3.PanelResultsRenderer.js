@@ -28,6 +28,8 @@ $.extend(true, edges, {
 
             this.triggerInfiniteScrollWhenRemain = edges.getParam(params.triggerInfiniteScrollWhenRemain, 10);
 
+            this.scrollToOffset = edges.getParam(params.scrollToOffset, false);
+
             // ordered list of rows of fields with pre and post wrappers, and a value function
             // (all fields are optional)
             //
@@ -88,7 +90,15 @@ $.extend(true, edges, {
                 var container = '<div class="' + containerClasses + '">' + frag + '</div>';
                 this.component.context.html(container);
 
+                // bind the handlers for infinite scroll
                 this._bindInfiniteScroll();
+
+                // now, if we want to scroll to an offset position, figure out the offset, get the results if
+                // necessary, and then do the scroll
+                if (this.scrollToOffset) {
+                    this._scrollToOffset();
+                    this.considerInfiniteScroll();
+                }
             };
 
             this._bindInfiniteScroll = function() {
@@ -122,13 +132,21 @@ $.extend(true, edges, {
                 return frag;
             };
 
+            this._scrollToOffset = function(params) {
+                var selector = "[data-pos=" + this.scrollToOffset + "]";
+                var els = $(selector);
+                if (els.length > 0) {
+                    els[0].scrollIntoView();
+                }
+            };
+
             this.considerInfiniteScroll = function() {
                 if (this.scrolling) {
                     // we're already working on getting the next page of data
                     return;
                 }
                 var trigger = this.component.context.find(this.scrollTriggerSelector);
-                if (trigger.length === 0 || !this._elementInViewport({element: trigger})) {
+                if (trigger.length === 0 || !this._elementInOrAboveViewport({element: trigger})) {
                     return;
                 }
                 this.scrolling = true;
@@ -136,20 +154,19 @@ $.extend(true, edges, {
                 this.component.infiniteScrollNextPage({callback: callback});
             };
 
-            // FIXME: if the user scrolls the element out of the viewport before the scroll event can be triggered
-            // on it, then this may not load the next page of results.  To do that, the user would have to be
-            // scrolling incredibly fast, so not an urgent thing to address.
-            this._elementInViewport = function(params) {
+            this._elementInOrAboveViewport = function(params) {
                 var el = params.element[0]; // unwrap the jquery object
                 var w = $(window);
 
                 var rect = el.getBoundingClientRect();
+                /*
                 return (
                     rect.top >= 0 &&
                     rect.left >= 0 &&
                     rect.bottom <= w.height() &&
                     rect.right <= w.width()
-                );
+                );*/
+                return rect.top < w.height();
             };
 
             this.showMoreResults = function(params) {
@@ -494,11 +511,14 @@ $.extend(true, edges, {
                 var frag = "";
                 for (var i = 0; i < dims.length; i++) {
                     var dim = dims[i];
-                    var rec = this.component.results[initialCursor + i];
+                    var ri = initialCursor + i;
+                    var rec = this.component.results[ri];
+
+                    var dataPos = ' data-pos="' + ri + '" ';
 
                     var panelStyles = "width: " + (dim.w + dim.pl + dim.pr) + "px; ";
                     panelStyles += "height: " + (largestHeight + this.annotationHeight) + "px";
-                    frag += '<div class="' + panelClasses + '" style="' + panelStyles + '">';
+                    frag += '<div class="' + panelClasses + '" style="' + panelStyles + '"' + dataPos + '>';
 
                     var containerStyles = "width: 100%; height: " + largestHeight + "px; ";
                     containerStyles += "padding-left: " + dim.pl + "px; ";
@@ -509,7 +529,7 @@ $.extend(true, edges, {
                     var imgStyles = "width: " + dim.w + "px; height: " + dim.h + "px; ";
                     imgStyles += "background-color: " + edges.objVal(this.bgColorPath, rec, "#ffffff") + "; ";
 
-                    var imgData = this.imageFunction(rec, this);
+                    var imgData = this.imageFunction(ri, rec, this);
                     var url = imgData.src;
                     var alt = imgData.alt || "";
                     var imgFrag = '<img src="' + url + '" alt="' + alt + '" title="' + alt + '" style="' + imgStyles + '">';
