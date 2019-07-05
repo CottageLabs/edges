@@ -111,7 +111,14 @@ $.extend(true, edges, {
                 var frag = "";
                 var results = this.component.results;
                 if (results && results.length > 0) {
+                    // get the width of the container
                     var containerWidth = Math.floor(this.component.context.width());
+
+                    // if the container is in the variable width zone of bootstrap's otherwise
+                    // fixed width displays, then leave some room for the scroll bar to appear
+                    if (containerWidth < 768) {
+                        containerWidth -= 20;
+                    }
 
                     // list the css classes we'll require
                     var triggerClass = edges.css_classes(this.namespace, "trigger", this);
@@ -252,11 +259,6 @@ $.extend(true, edges, {
                     dims.push({w: w, h: h, ow: w, oh: h, pl : this.basePadding, pr: this.basePadding, a: aspect});
 
                     totalWidth += w;
-                    // when there is more than one image, we need to account for 2 padding areas
-                    //if (dims.length > 1) {
-                    //    pads += 2;
-                    //    padding = pads * this.basePadding
-                    //}
                     padding = dims.length * 2 * this.basePadding;
                     fullWidth = totalWidth + padding;
 
@@ -267,10 +269,6 @@ $.extend(true, edges, {
                         break;
                     }
                 }
-
-                // set the padding for the end elements
-                //dims[0].pl = 0;
-                //dims[dims.length - 1].pr = 0;
 
                 // if we get to here, we have a set of dimensions which are less than or greater than
                 // the container width
@@ -341,27 +339,36 @@ $.extend(true, edges, {
                     distributed += adjustment;
                 }
 
-                if (failed) {
+                if (failed || distribute.length == 0) {
                     // remove the final element from the array and roll-back the cursor
                     // and reset the right padding on the final element to zero
-                    dims.pop();
-                    this.cursor--;
-                    // dims[dims.length - 1].pr = 0;
+                    if (dims.length > 1) {
+                        dims.pop();
+                        this.cursor--;
 
-                    // reset all the remaining elements to their original values
-                    var totalWidth = 0;
-                    for (var i = 0; i < dims.length; i++) {
-                        var dim = dims[i];
-                        // reset the properties
-                        dim.w = dim.ow;
-                        dim.h = dim.oh;
-                        totalWidth += dim.w + dim.pl + dim.pr;
+                        // reset all the remaining elements to their original values
+                        var totalWidth = 0;
+                        for (var i = 0; i < dims.length; i++) {
+                            var dim = dims[i];
+                            // reset the properties
+                            dim.w = dim.ow;
+                            dim.h = dim.oh;
+                            totalWidth += dim.w + dim.pl + dim.pr;
+                        }
+
+                        // calculate the new excess (which should be negative), and pass it all
+                        // on
+                        excess = totalWidth - containerWidth;
+                        return this._resizeRow({dims: dims, excess: excess, containerWidth: containerWidth});
+                    } else {
+                        // there is only one image in the row and it is too large for the space, even after
+                        // being compacted within the limts of the configuration
+                        var dim = dims[0];
+                        dim.pl = 0;
+                        dim.pr = 0;
+                        dim.w = containerWidth;
+                        dim.h = Math.round(dim.w / dim.a);
                     }
-
-                    // calculate the new excess (which should be negative), and pass it all
-                    // on
-                    excess = totalWidth - containerWidth;
-                    return this._resizeRow({dims: dims, excess: excess, containerWidth: containerWidth});
                 }
                 return dims;
             };
