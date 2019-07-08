@@ -4,9 +4,7 @@ $.extend(edges, {
 
 
     newRefiningANDTermSelector : function(params) {
-        if (!params) { params = {} }
-        edges.RefiningANDTermSelector.prototype = edges.newSelector(params);
-        return new edges.RefiningANDTermSelector(params);
+        return edges.instantiate(edges.RefiningANDTermSelector, params, edges.newSelector);
     },
     RefiningANDTermSelector : function(params) {
         ////////////////////////////////////////////
@@ -43,6 +41,10 @@ $.extend(edges, {
 
         this.active = edges.getParam(params.active, true);
 
+        // whether this component updates itself on every request, or whether it is static
+        // throughout its lifecycle.  One of "update" or "static"
+        this.lifecycle = edges.getParam(params.lifecycle, "update");
+
         //////////////////////////////////////////
         // properties used to store internal state
 
@@ -57,6 +59,15 @@ $.extend(edges, {
 
         //////////////////////////////////////////
         // overrides on the parent object's standard functions
+
+        this.init = function(edge) {
+            // first kick the request up to the superclass
+            edges.up(this, "init", [edge]);
+
+            if (this.lifecycle === "static") {
+                this.listAll();
+            }
+        };
 
         this.contrib = function(query) {
             var params = {
@@ -75,79 +86,131 @@ $.extend(edges, {
 
         this.synchronise = function() {
             // reset the state of the internal variables
-            this.values = [];
-            this.filters = [];
-
-            // if there is a result object, pull and prepare the values
-            if (this.edge.result) {
-                // assign the terms and counts from the aggregation
-                var buckets = this.edge.result.buckets(this.id);
-
-                if (this.deactivateThreshold) {
-                    if (buckets.length < this.deactivateThreshold) {
-                        this.active = false
-                    } else {
-                        this.active = true;
-                    }
-                }
-
-                // list all of the pre-defined filters for this field from the baseQuery
-                var predefined = [];
-                if (this.excludePreDefinedFilters && this.edge.baseQuery) {
-                    predefined = this.edge.baseQuery.listMust(es.TermFilter({field: this.field}));
-                }
-
-                var realCount = 0;
-                for (var i = 0; i < buckets.length; i++) {
-                    var bucket = buckets[i];
-
-                    // ignore empty strings
-                    if (this.ignoreEmptyString && bucket.key === "") {
-                        continue;
-                    }
-
-                    // ignore pre-defined filters
-                    if (this.excludePreDefinedFilters) {
-                        var exclude = false;
-                        for (var j = 0; j < predefined.length; j++) {
-                            var f = predefined[j];
-                            if (bucket.key === f.value) {
-                                exclude = true;
-                                break;
-                            }
-                        }
-                        if (exclude) {
-                            continue;
-                        }
-                    }
-
-                    // if we get to here we're going to add this to the values, so
-                    // increment the real count
-                    realCount++;
-
-                    // we must cut off at the set size, as there may be more
-                    // terms that we care about
-                    if (realCount > this.size) {
-                        break;
-                    }
-
-                    // translate the term if necessary
-                    var key = this._translate(bucket.key);
-
-                    // store the original value and the translated value plus the count
-                    var obj = {display: key, term: bucket.key, count: bucket.doc_count};
-                    this.values.push(obj);
+            if (this.lifecycle === "update") {
+                // if we are in the "update" lifecycle, then reset and read all the values
+                this.values = [];
+                if (this.edge.result) {
+                    this._readValues({result: this.edge.result});
                 }
             }
+            this.filters = [];
 
             // extract all the filter values that pertain to this selector
-
             var filters = this.edge.currentQuery.listMust(es.newTermFilter({field: this.field}));
             for (var i = 0; i < filters.length; i++) {
                 var val = filters[i].value;
                 val = this._translate(val);
                 this.filters.push({display: val, term: filters[i].value});
             }
+        };
+
+        this._readValues = function(params) {
+            var result = params.result;
+
+            // assign the terms and counts from the aggregation
+            var buckets = result.buckets(this.id);
+
+            if (this.deactivateThreshold) {
+                if (buckets.length < this.deactivateThreshold) {
+                    this.active = false
+                } else {
+                    this.active = true;
+                }
+            }
+
+            // list all of the pre-defined filters for this field from the baseQuery
+            var predefined = [];
+            if (this.excludePreDefinedFilters && this.edge.baseQuery) {
+                predefined = this.edge.baseQuery.listMust(es.TermFilter({field: this.field}));
+            }
+
+            var realCount = 0;
+            for (var i = 0; i < buckets.length; i++) {
+                var bucket = buckets[i];
+
+                // ignore empty strings
+                if (this.ignoreEmptyString && bucket.key === "") {
+                    continue;
+                }
+
+                // ignore pre-defined filters
+                if (this.excludePreDefinedFilters) {
+                    var exclude = false;
+                    for (var j = 0; j < predefined.length; j++) {
+                        var f = predefined[j];
+                        if (bucket.key === f.value) {
+                            exclude = true;
+                            break;
+                        }
+                    }
+                    if (exclude) {
+                        continue;
+                    }
+                }
+
+                // if we get to here we're going to add this to the values, so
+                // increment the real count
+                realCount++;
+
+                // we must cut off at the set size, as there may be more
+                // terms that we care about
+                if (realCount > this.size) {
+                    break;
+                }
+
+                // translate the term if necessary
+                var key = this._translate(bucket.key);
+
+                // store the original value and the translated value plus the count
+                var obj = {display: key, term: bucket.key, count: bucket.doc_count};
+                this.values.push(obj);
+            }
+        };
+
+        /////////////////////////////////////////////////
+        // query handlers for getting the full list of terms to display
+
+        this.listAll = function() {
+            // to list all possible terms, build off the base query
+            var bq = this.edge.cloneBaseQuery();
+            bq.clearAggregations();
+            bq.size = 0;
+
+            // now add the aggregation that we want
+            var params = {
+                name: this.id,
+                field: this.field,
+                orderBy: this.orderBy,
+                orderDir: this.orderDir,
+                size: this.size
+            };
+            bq.addAggregation(
+                es.newTermsAggregation(params)
+            );
+
+            // issue the query to elasticsearch
+            this.edge.queryAdapter.doQuery({
+                edge: this.edge,
+                query: bq,
+                success: edges.objClosure(this, "listAllQuerySuccess", ["result"]),
+                error: edges.objClosure(this, "listAllQueryFail")
+            });
+        };
+
+        this.listAllQuerySuccess = function(params) {
+            var result = params.result;
+
+            // set the values according to what comes back
+            this.values = [];
+            this._readValues({result: result});
+
+            // since this happens asynchronously, we may want to draw
+            this.draw();
+        };
+
+        this.listAllQueryFail = function() {
+            this.values = [];
+            console.log("RefiningANDTermSelector asynchronous query failed");
         };
 
         //////////////////////////////////////////

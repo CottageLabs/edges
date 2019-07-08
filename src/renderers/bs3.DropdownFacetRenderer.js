@@ -11,6 +11,9 @@ $.extend(true, edges, {
             // formatter for count display
             this.countFormat = edges.getParam(params.countFormat, false);
 
+            // allow the user to set multiple filters
+            this.multipleFilters = edges.getParam(params.multipleFilters, true);
+
             // namespace to use in the page
             this.namespace = "edges-bs3-dropdown-facet";
 
@@ -59,6 +62,8 @@ $.extend(true, edges, {
                             }
                             if (first && filterTerms.length > 0) {
                                 results += '<li role="separator" class="divider"></li>';
+                                var filterHeader = this.multipleFilters ? "Add filter" : "Switch filter";
+                                results += '<li class="dropdown-header">' + filterHeader + '</li>';
                                 first = false;
                             }
                             results += '<li class="' + resultClass + '"><a href="#" class="' + valClass + '" data-key="' + edges.escapeHtml(val.term) + '">' +
@@ -102,6 +107,9 @@ $.extend(true, edges, {
 
             this.termSelected = function (element) {
                 var term = this.component.jq(element).attr("data-key");
+                if (!this.multipleFilters) {
+                    this.component.clearFilters({triggerQuery: false});
+                }
                 this.component.selectTerm(term);
             };
 
