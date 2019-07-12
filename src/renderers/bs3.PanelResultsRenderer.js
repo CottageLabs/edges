@@ -24,6 +24,8 @@ $.extend(true, edges, {
 
             this.imageFunction = edges.getParam(params.imageFunction, false);
 
+            this.imageOnEvent = edges.getParam(params.imageOnEvent, {});
+
             this.annotationHeight = edges.getParam(params.annotationHeight, 50);
 
             this.triggerInfiniteScrollWhenRemain = edges.getParam(params.triggerInfiniteScrollWhenRemain, 10);
@@ -93,6 +95,9 @@ $.extend(true, edges, {
                 // bind the handlers for infinite scroll
                 this._bindInfiniteScroll();
 
+                // bind the event handlers for images
+                this._bindImageEvents();
+
                 // now, if we want to scroll to an offset position, figure out the offset, get the results if
                 // necessary, and then do the scroll
                 if (this.scrollToOffset) {
@@ -104,6 +109,21 @@ $.extend(true, edges, {
             this._bindInfiniteScroll = function() {
                 if (this.component.infiniteScroll) {
                     edges.on(window, "scroll", this, "considerInfiniteScroll");
+                }
+            };
+
+            this._unbindInfiniteScroll = function() {
+                if (this.component.infiniteScroll) {
+                    edges.off(window, "scroll", this);
+                }
+            };
+
+            this._bindImageEvents = function() {
+                var imageSelector = edges.css_class_selector(this.namespace, "img-link", this);
+                var images = this.component.context.find(imageSelector);
+                for (var event in this.imageOnEvent) {
+                    var fn = this.imageOnEvent[event];
+                    images.off(event).on(event, fn);
                 }
             };
 
@@ -217,6 +237,9 @@ $.extend(true, edges, {
                 // bind the infinite scroll and allow it to be used
                 this._bindInfiniteScroll();
                 this.scrolling = false;
+
+                // bind the event handlers for images
+                this._bindImageEvents();
 
                 // in the mean time the user may have scrolled to the end of what we're displaying, so
                 // we should trigger a check for more infinite scrolling
@@ -541,7 +564,14 @@ $.extend(true, edges, {
                     var alt = imgData.alt || "";
                     var imgFrag = '<img src="' + url + '" alt="' + alt + '" title="' + alt + '" style="' + imgStyles + '">';
                     if (imgData.a) {
-                        imgFrag = '<a href="' + imgData.a + '">' + imgFrag + '</a>';
+                        var imgLinkClass = edges.css_classes(this.namespace, "img-link", this);
+                        var dataFrag = "";
+                        for (var key in imgData) {
+                            if (key.substring(0, 5) === "data-") {
+                                dataFrag += key + "=" + imgData[key] + " ";
+                            }
+                        }
+                        imgFrag = '<a class="' + imgLinkClass + '" href="' + imgData.a + '" ' + dataFrag + '>' + imgFrag + '</a>';
                     }
                     frag += imgFrag;
 
@@ -622,6 +652,14 @@ $.extend(true, edges, {
                     val = def;
                 }
                 return val;
+            };
+
+            this.sleep = function() {
+                this._unbindInfiniteScroll();
+            };
+
+            this.wake = function() {
+                this._bindInfiniteScroll();
             };
         }
     }

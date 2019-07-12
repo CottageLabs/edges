@@ -322,6 +322,20 @@ var edges = {
             this.cycle();
         };
 
+        this.sleep = function() {
+            for (var i = 0; i < this.components.length; i++) {
+                var component = this.components[i];
+                component.sleep();
+            }
+        };
+
+        this.wake = function() {
+            for (var i = 0; i < this.components.length; i++) {
+                var component = this.components[i];
+                component.wake();
+            }
+        };
+
         ////////////////////////////////////////////////////
         //  functions for working with the queries
 
@@ -817,7 +831,9 @@ var edges = {
         this.init = function(component) {
             this.component = component
         };
-        this.draw = function(component) {}
+        this.draw = function(component) {};
+        this.sleep = function() {};
+        this.wake = function() {}
     },
 
     newComponent : function(params) {
@@ -853,6 +869,18 @@ var edges = {
         this.contrib = function(query) {};
         this.synchronise = function() {};
 
+        this.sleep = function() {
+            if (this.renderer) {
+                this.renderer.sleep();
+            }
+        };
+
+        this.wake = function() {
+            if (this.renderer) {
+                this.renderer.wake();
+            }
+        };
+
         // convenience method for any renderer rendering a component
         this.jq = function(selector) {
             return this.edge.jq(selector);
@@ -886,6 +914,52 @@ var edges = {
     },
     Template : function(params) {
         this.draw = function(edge) {}
+    },
+
+    newNestedEdge : function(params) {
+        if (!params) { params = {}}
+        params.category = params.category || "edge";
+        params.renderer = false;
+        params.defaultRenderer = false;
+        return edges.instantiate(edges.NestedEdge, params, edges.newComponent)
+    },
+    NestedEdge : function(params) {
+        this.constructOnInit = edges.getParam(params.constructOnInit, false);
+
+        this.constructArgs = edges.getParam(params.constructArgs, {});
+
+        this.inner = false;
+
+        this.init = function(edge) {
+            this.edge = edge;
+            if (this.constructOnInit) {
+                this.construct();
+            }
+        };
+
+        this.setConstructArg = function(key, value) {
+            this.constructArgs[key] = value;
+        };
+
+        this.construct = function() {};
+
+        this.destroy = function() {
+            this.inner.context.empty();
+        };
+
+        this.sleep = function() {
+            this.inner.sleep();
+            this.inner.context.hide();
+        };
+
+        this.wake = function() {
+            if (this.inner) {
+                this.inner.context.show();
+                this.inner.wake();
+            } else {
+                this.construct();
+            }
+        }
     },
 
     ///////////////////////////////////////////////////////////
@@ -1061,6 +1135,27 @@ var edges = {
                 element.off(event);
                 element.on(event, clos);
             }
+        }
+    },
+
+    off : function(selector, event, caller) {
+        // if the caller has an inner component (i.e. it is a Renderer), use the component's id
+        // otherwise, if it has a namespace (which is true of Renderers or Templates) use that
+        if (caller.component && caller.component.id) {
+            event = event + "." + caller.component.id;
+        } else if (caller.namespace) {
+            event = event + "." + caller.namespace;
+        }
+
+        if (caller.component) {
+            var element = caller.component.jq(selector);
+            element.off(event);
+        } else if (caller.edge) {
+            var element = caller.edge.jq(selector);
+            element.off(event);
+        } else {
+            var element = $(selector);
+            element.off(event);
         }
     },
 
