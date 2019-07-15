@@ -80,3 +80,7 @@
     border-radius: 8px;
 }
 
+.edges-bs3-datehistogram-selector-show-link {
+    text-align: center;
+    border-top: 1px dotted #cccccc;
+}
