@@ -401,6 +401,9 @@ $.extend(edges, {
         // function to use to format any range that does not appear in the range maps
         this.formatUnknownRange = edges.getParam(params.formatUnknownRange, false);
 
+        // if we get a filter for a field we have no config for, should we ignore it?
+        this.ignoreUnknownFilters = edges.getParam(params.ignoreUnknownFilters, false);
+
         // override the parent's default renderer
         this.defaultRenderer = edges.getParam(params.defaultRenderer, "newSelectedFiltersRenderer");
 
@@ -437,6 +440,9 @@ $.extend(edges, {
             var musts = this.edge.currentQuery.listMust();
             for (var i = 0; i < musts.length; i++) {
                 var f = musts[i];
+                if (this.ignoreUnknownFilters && !(f.field in this.fieldDisplays)) {
+                    continue;
+                }
                 if (f.type_name === "term") {
                     this._synchronise_term(f);
                 } else if (f.type_name === "terms") {
