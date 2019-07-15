@@ -24,9 +24,13 @@ $.extend(true, edges, {
 
             this.imageFunction = edges.getParam(params.imageFunction, false);
 
+            this.imageOnEvent = edges.getParam(params.imageOnEvent, {});
+
             this.annotationHeight = edges.getParam(params.annotationHeight, 50);
 
             this.triggerInfiniteScrollWhenRemain = edges.getParam(params.triggerInfiniteScrollWhenRemain, 10);
+
+            this.scrollToOffset = edges.getParam(params.scrollToOffset, false);
 
             // ordered list of rows of fields with pre and post wrappers, and a value function
             // (all fields are optional)
@@ -88,7 +92,18 @@ $.extend(true, edges, {
                 var container = '<div class="' + containerClasses + '">' + frag + '</div>';
                 this.component.context.html(container);
 
+                // bind the handlers for infinite scroll
                 this._bindInfiniteScroll();
+
+                // bind the event handlers for images
+                this._bindImageEvents();
+
+                // now, if we want to scroll to an offset position, figure out the offset, get the results if
+                // necessary, and then do the scroll
+                if (this.scrollToOffset) {
+                    this._scrollToOffset();
+                    this.considerInfiniteScroll();
+                }
             };
 
             this._bindInfiniteScroll = function() {
@@ -97,11 +112,33 @@ $.extend(true, edges, {
                 }
             };
 
+            this._unbindInfiniteScroll = function() {
+                if (this.component.infiniteScroll) {
+                    edges.off(window, "scroll", this);
+                }
+            };
+
+            this._bindImageEvents = function() {
+                var imageSelector = edges.css_class_selector(this.namespace, "img-link", this);
+                var images = this.component.context.find(imageSelector);
+                for (var event in this.imageOnEvent) {
+                    var fn = this.imageOnEvent[event];
+                    images.off(event).on(event, fn);
+                }
+            };
+
             this._renderResults = function(params) {
                 var frag = "";
                 var results = this.component.results;
                 if (results && results.length > 0) {
+                    // get the width of the container
                     var containerWidth = Math.floor(this.component.context.width());
+
+                    // if the container is in the variable width zone of bootstrap's otherwise
+                    // fixed width displays, then leave some room for the scroll bar to appear
+                    if (containerWidth < 768) {
+                        containerWidth -= 20;
+                    }
 
                     // list the css classes we'll require
                     var triggerClass = edges.css_classes(this.namespace, "trigger", this);
@@ -122,13 +159,21 @@ $.extend(true, edges, {
                 return frag;
             };
 
+            this._scrollToOffset = function(params) {
+                var selector = "[data-pos=" + this.scrollToOffset + "]";
+                var els = $(selector);
+                if (els.length > 0) {
+                    els[0].scrollIntoView();
+                }
+            };
+
             this.considerInfiniteScroll = function() {
                 if (this.scrolling) {
                     // we're already working on getting the next page of data
                     return;
                 }
                 var trigger = this.component.context.find(this.scrollTriggerSelector);
-                if (trigger.length === 0 || !this._elementInViewport({element: trigger})) {
+                if (trigger.length === 0 || !this._elementInOrAboveViewport({element: trigger})) {
                     return;
                 }
                 this.scrolling = true;
@@ -136,20 +181,19 @@ $.extend(true, edges, {
                 this.component.infiniteScrollNextPage({callback: callback});
             };
 
-            // FIXME: if the user scrolls the element out of the viewport before the scroll event can be triggered
-            // on it, then this may not load the next page of results.  To do that, the user would have to be
-            // scrolling incredibly fast, so not an urgent thing to address.
-            this._elementInViewport = function(params) {
+            this._elementInOrAboveViewport = function(params) {
                 var el = params.element[0]; // unwrap the jquery object
                 var w = $(window);
 
                 var rect = el.getBoundingClientRect();
+                /*
                 return (
                     rect.top >= 0 &&
                     rect.left >= 0 &&
                     rect.bottom <= w.height() &&
                     rect.right <= w.width()
-                );
+                );*/
+                return rect.top < w.height();
             };
 
             this.showMoreResults = function(params) {
@@ -194,6 +238,9 @@ $.extend(true, edges, {
                 this._bindInfiniteScroll();
                 this.scrolling = false;
 
+                // bind the event handlers for images
+                this._bindImageEvents();
+
                 // in the mean time the user may have scrolled to the end of what we're displaying, so
                 // we should trigger a check for more infinite scrolling
                 this.considerInfiniteScroll();
@@ -235,11 +282,6 @@ $.extend(true, edges, {
                     dims.push({w: w, h: h, ow: w, oh: h, pl : this.basePadding, pr: this.basePadding, a: aspect});
 
                     totalWidth += w;
-                    // when there is more than one image, we need to account for 2 padding areas
-                    //if (dims.length > 1) {
-                    //    pads += 2;
-                    //    padding = pads * this.basePadding
-                    //}
                     padding = dims.length * 2 * this.basePadding;
                     fullWidth = totalWidth + padding;
 
@@ -250,10 +292,6 @@ $.extend(true, edges, {
                         break;
                     }
                 }
-
-                // set the padding for the end elements
-                //dims[0].pl = 0;
-                //dims[dims.length - 1].pr = 0;
 
                 // if we get to here, we have a set of dimensions which are less than or greater than
                 // the container width
@@ -324,27 +362,36 @@ $.extend(true, edges, {
                     distributed += adjustment;
                 }
 
-                if (failed) {
+                if (failed || distribute.length == 0) {
                     // remove the final element from the array and roll-back the cursor
                     // and reset the right padding on the final element to zero
-                    dims.pop();
-                    this.cursor--;
-                    // dims[dims.length - 1].pr = 0;
+                    if (dims.length > 1) {
+                        dims.pop();
+                        this.cursor--;
 
-                    // reset all the remaining elements to their original values
-                    var totalWidth = 0;
-                    for (var i = 0; i < dims.length; i++) {
-                        var dim = dims[i];
-                        // reset the properties
-                        dim.w = dim.ow;
-                        dim.h = dim.oh;
-                        totalWidth += dim.w + dim.pl + dim.pr;
+                        // reset all the remaining elements to their original values
+                        var totalWidth = 0;
+                        for (var i = 0; i < dims.length; i++) {
+                            var dim = dims[i];
+                            // reset the properties
+                            dim.w = dim.ow;
+                            dim.h = dim.oh;
+                            totalWidth += dim.w + dim.pl + dim.pr;
+                        }
+
+                        // calculate the new excess (which should be negative), and pass it all
+                        // on
+                        excess = totalWidth - containerWidth;
+                        return this._resizeRow({dims: dims, excess: excess, containerWidth: containerWidth});
+                    } else {
+                        // there is only one image in the row and it is too large for the space, even after
+                        // being compacted within the limts of the configuration
+                        var dim = dims[0];
+                        dim.pl = 0;
+                        dim.pr = 0;
+                        dim.w = containerWidth;
+                        dim.h = Math.round(dim.w / dim.a);
                     }
-
-                    // calculate the new excess (which should be negative), and pass it all
-                    // on
-                    excess = totalWidth - containerWidth;
-                    return this._resizeRow({dims: dims, excess: excess, containerWidth: containerWidth});
                 }
                 return dims;
             };
@@ -494,11 +541,14 @@ $.extend(true, edges, {
                 var frag = "";
                 for (var i = 0; i < dims.length; i++) {
                     var dim = dims[i];
-                    var rec = this.component.results[initialCursor + i];
+                    var ri = initialCursor + i;
+                    var rec = this.component.results[ri];
+
+                    var dataPos = ' data-pos="' + ri + '" ';
 
                     var panelStyles = "width: " + (dim.w + dim.pl + dim.pr) + "px; ";
                     panelStyles += "height: " + (largestHeight + this.annotationHeight) + "px";
-                    frag += '<div class="' + panelClasses + '" style="' + panelStyles + '">';
+                    frag += '<div class="' + panelClasses + '" style="' + panelStyles + '"' + dataPos + '>';
 
                     var containerStyles = "width: 100%; height: " + largestHeight + "px; ";
                     containerStyles += "padding-left: " + dim.pl + "px; ";
@@ -509,12 +559,19 @@ $.extend(true, edges, {
                     var imgStyles = "width: " + dim.w + "px; height: " + dim.h + "px; ";
                     imgStyles += "background-color: " + edges.objVal(this.bgColorPath, rec, "#ffffff") + "; ";
 
-                    var imgData = this.imageFunction(rec, this);
+                    var imgData = this.imageFunction(ri, rec, this);
                     var url = imgData.src;
                     var alt = imgData.alt || "";
                     var imgFrag = '<img src="' + url + '" alt="' + alt + '" title="' + alt + '" style="' + imgStyles + '">';
                     if (imgData.a) {
-                        imgFrag = '<a href="' + imgData.a + '">' + imgFrag + '</a>';
+                        var imgLinkClass = edges.css_classes(this.namespace, "img-link", this);
+                        var dataFrag = "";
+                        for (var key in imgData) {
+                            if (key.substring(0, 5) === "data-") {
+                                dataFrag += key + "=" + imgData[key] + " ";
+                            }
+                        }
+                        imgFrag = '<a class="' + imgLinkClass + '" href="' + imgData.a + '" ' + dataFrag + '>' + imgFrag + '</a>';
                     }
                     frag += imgFrag;
 
@@ -595,6 +652,14 @@ $.extend(true, edges, {
                     val = def;
                 }
                 return val;
+            };
+
+            this.sleep = function() {
+                this._unbindInfiniteScroll();
+            };
+
+            this.wake = function() {
+                this._bindInfiniteScroll();
             };
         }
     }
