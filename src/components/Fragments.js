@@ -10,6 +10,8 @@ $.extend(edges, {
 
         this.datatype = edges.getParam(params.datatype, "html");
 
+        this.onDraw = edges.getParam(params.onDraw, false);
+
         this.fragment = "";
 
         this.currentUrl = "";
@@ -40,6 +42,9 @@ $.extend(edges, {
 
         this.draw = function() {
             this.context.html(this.fragment);
+            if (this.onDraw) {
+                this.onDraw(this);
+            }
         }
     }
 
