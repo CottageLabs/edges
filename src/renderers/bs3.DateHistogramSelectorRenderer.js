@@ -33,6 +33,9 @@ $.extend(true, edges, {
             // whether to suppress display of date range with no values
             this.hideEmptyDateBin = params.hideEmptyDateBin || true;
 
+            // how many of the values to display initially, with a "show all" option for the rest
+            this.shortDisplay = edges.getParam(params.shortDisplay, false);
+
             // namespace to use in the page
             this.namespace = "edges-bs3-datehistogram-selector";
 
@@ -50,15 +53,11 @@ $.extend(true, edges, {
                 var resultsListClass = edges.css_classes(namespace, "results-list", this);
                 var resultClass = edges.css_classes(namespace, "result", this);
                 var valClass = edges.css_classes(namespace, "value", this);
-                var controlClass = edges.css_classes(namespace, "controls", this);
                 var filterRemoveClass = edges.css_classes(namespace, "filter-remove", this);
                 var facetClass = edges.css_classes(namespace, "facet", this);
                 var headerClass = edges.css_classes(namespace, "header", this);
                 var selectedClass = edges.css_classes(namespace, "selected", this);
 
-                var controlId = edges.css_id(namespace, "controls", this);
-                var sizeId = edges.css_id(namespace, "size", this);
-                var orderId = edges.css_id(namespace, "order", this);
                 var toggleId = edges.css_id(namespace, "toggle", this);
                 var resultsId = edges.css_id(namespace, "results", this);
 
@@ -79,9 +78,19 @@ $.extend(true, edges, {
                     }
 
                     // render each value, if it is not also a filter that has been set
+                    var longClass = edges.css_classes(namespace, "long", this);
+                    var short = true;
                     for (var i = 0; i < ts.values.length; i++) {
                         var val = ts.values[i];
                         if ($.inArray(val.display, filterTerms) === -1) {
+                            var myLongClass = "";
+                            var styles = "";
+                            if (this.shortDisplay && this.shortDisplay <= i) {
+                                myLongClass = longClass;
+                                styles = 'style="display:none"';
+                                short = false;
+                            }
+
                             var count = val.count;
                             if (this.countFormat) {
                                 count = this.countFormat(count)
@@ -90,10 +99,20 @@ $.extend(true, edges, {
                             if (val.lt) {
                                 ltData = ' data-lt="' + edges.escapeHtml(val.lt) + '" ';
                             }
-                            results += '<div class="' + resultClass + '"><a href="#" class="' + valClass + '" data-gte="' + edges.escapeHtml(val.gte) + '"' + ltData + '>' +
+                            results += '<div class="' + resultClass + ' ' + myLongClass + '" '  + styles +  '><a href="#" class="' + valClass + '" data-gte="' + edges.escapeHtml(val.gte) + '"' + ltData + '>' +
                                 edges.escapeHtml(val.display) + "</a> (" + count + ")</div>";
+
                         }
                     }
+                    if (!short) {
+                        var showClass = edges.css_classes(namespace, "show-link", this);
+                        var showId = edges.css_id(namespace, "show-link", this);
+                        var slToggleId = edges.css_id(namespace, "sl-toggle", this);
+                        results += '<div class="' + showClass + '" id="' + showId + '">\
+                            <a href="#" id="' + slToggleId + '"><span class="all">show all</span><span class="less" style="display:none">show less</span></a> \
+                        </div>';
+                    }
+
                 }
 
                 // if there is a tooltip, make the frag
@@ -157,6 +176,7 @@ $.extend(true, edges, {
                 var filterRemoveSelector = edges.css_class_selector(namespace, "filter-remove", this);
                 var toggleSelector = edges.css_id_selector(namespace, "toggle", this);
                 var tooltipSelector = edges.css_id_selector(namespace, "tooltip-toggle", this);
+                var shortLongToggleSelector = edges.css_id_selector(namespace, "sl-toggle", this);
 
                 // for when a value in the facet is selected
                 edges.on(valueSelector, "click", this, "termSelected");
@@ -166,6 +186,8 @@ $.extend(true, edges, {
                 edges.on(filterRemoveSelector, "click", this, "removeFilter");
                 // toggle the full tooltip
                 edges.on(tooltipSelector, "click", this, "toggleTooltip");
+                // toggle show/hide full list
+                edges.on(shortLongToggleSelector, "click", this, "toggleShortLong");
             };
 
             /////////////////////////////////////////////////////
@@ -227,6 +249,17 @@ $.extend(true, edges, {
                 var tooltipSelector = edges.css_id_selector(this.namespace, "tooltip-toggle", this);
                 // refresh the event binding
                 edges.on(tooltipSelector, "click", this, "toggleTooltip");
+            };
+
+            this.toggleShortLong = function(element) {
+                var longSelector = edges.css_class_selector(this.namespace, "long", this);
+                var showSelector = edges.css_id_selector(this.namespace, "show-link", this);
+                var container = this.component.jq(longSelector);
+                var show = this.component.jq(showSelector);
+
+                container.slideToggle(200);
+                show.find(".all").toggle();
+                show.find(".less").toggle();
             };
 
             //////////////////////////////////////////////////////////
