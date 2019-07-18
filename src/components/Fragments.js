@@ -10,6 +10,10 @@ $.extend(edges, {
 
         this.datatype = edges.getParam(params.datatype, "html");
 
+        this.beforeSynchronise = edges.getParam(params.beforeSynchronise, false);
+
+        this.ready = edges.getParam(params.ready, true);
+
         this.onDraw = edges.getParam(params.onDraw, false);
 
         this.fragment = "";
@@ -17,6 +21,14 @@ $.extend(edges, {
         this.currentUrl = "";
 
         this.synchronise = function() {
+            if (this.beforeSynchronise) {
+                this.beforeSynchronise(this);
+            }
+
+            if (!this.ready) {
+                return;
+            }
+
             var url = this.urlTemplate;
             for (var sub in this.urlSubstitutions) {
                 url = url.replace(sub, this.urlSubstitutions[sub]);
