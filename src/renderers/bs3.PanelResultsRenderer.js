@@ -18,11 +18,13 @@ $.extend(true, edges, {
 
             this.maxHeight = edges.getParam(params.maxHeight, 200);
 
-            this.aspectPath = edges.getParam(params.aspectPath, "metadata.image.a");
+            this.aspectPath = edges.getParam(params.aspectPath);
 
-            this.bgColorPath = edges.getParam(params.bgColorPath, "metadata.image.avgcol");
+            this.bgColorPath = edges.getParam(params.bgColorPath);
 
             this.imageFunction = edges.getParam(params.imageFunction, false);
+
+            this.additionalPanelClasses = edges.getParam(params.additionalPanelClasses, "");
 
             this.imageOnEvent = edges.getParam(params.imageOnEvent, {});
 
@@ -33,7 +35,7 @@ $.extend(true, edges, {
             this.scrollToOffset = edges.getParam(params.scrollToOffset, false);
 
             // ordered list of rows of fields with pre and post wrappers, and a value function
-            // (all fields are optional)
+            // (all fields are optional).
             //
             // [
             // [
@@ -50,7 +52,10 @@ $.extend(true, edges, {
             //],
             // ...
             // ]
-            this.panelDisplay = params.panelDisplay || [];
+            // OR
+            // A function that is called with position, result obj and this renderer as args, which returns
+            // a data structure like the above
+            this.annotation = params.annotation || [];
 
             // if a multi-value field is found that needs to be displayed, which character
             // to use to join
@@ -546,9 +551,14 @@ $.extend(true, edges, {
 
                     var dataPos = ' data-pos="' + ri + '" ';
 
+                    var additionalClasses = this.additionalPanelClasses;
+                    if (typeof additionalClasses === "function") {
+                        additionalClasses = additionalClasses(ri, rec, this);
+                    }
+
                     var panelStyles = "width: " + (dim.w + dim.pl + dim.pr) + "px; ";
                     panelStyles += "height: " + (largestHeight + this.annotationHeight) + "px";
-                    frag += '<div class="' + panelClasses + '" style="' + panelStyles + '"' + dataPos + '>';
+                    frag += '<div class="' + panelClasses + ' ' + additionalClasses + '" style="' + panelStyles + '"' + dataPos + '>';
 
                     var containerStyles = "width: 100%; height: " + largestHeight + "px; ";
                     containerStyles += "padding-left: " + dim.pl + "px; ";
@@ -578,7 +588,7 @@ $.extend(true, edges, {
                     frag += "</div>";
 
                     var annotationStyles = "width: 100%; height: " + this.annotationHeight + "px; padding-left:" + dim.pl + "px; padding-right:" + dim.pr + "px;";
-                    var annotation = this._renderAnnotation({record: rec});
+                    var annotation = this._renderAnnotation({pos: ri, record: rec});
                     frag += '<div class="' + annotationClasses + '" style="' + annotationStyles + '">' + annotation + '</div>';
 
                     frag += "</div>";
@@ -589,13 +599,20 @@ $.extend(true, edges, {
 
             this._renderAnnotation = function(params) {
                 var res = params.record;
+                var pos = params.pos;
 
                 var rowClass = edges.css_classes(this.namespace, "annotate-row", this);
 
+                // get the annotation definition
+                var annotationCfg = this.annotation;
+                if (typeof annotationCfg === "function") {
+                    annotationCfg = annotationCfg(pos, res, this);
+                }
+
                 // get a list of the fields on the object to display
                 var frag = "";
-                for (var i = 0; i < this.panelDisplay.length; i++) {
-                    var row = this.panelDisplay[i];
+                for (var i = 0; i < annotationCfg.length; i++) {
+                    var row = annotationCfg[i];
                     var rowFrag = "";
                     for (var j = 0; j < row.length; j++) {
                         var entry = row[j];
@@ -634,24 +651,42 @@ $.extend(true, edges, {
                 return frag;
             };
 
-            this._getValue = function (path, rec, def) {
+            this._getValue = function(path, rec, def) {
                 if (def === undefined) { def = false; }
+
                 var bits = path.split(".");
-                var val = rec;
+                var contexts = [rec];
+
                 for (var i = 0; i < bits.length; i++) {
-                    var field = bits[i];
-                    if (field in val) {
-                        val = val[field];
-                    } else {
-                        return def;
+                    var pathElement = bits[i];
+                    var nextContexts = [];
+                    for (var j = 0; j < contexts.length; j++) {
+                        var context = contexts[j];
+                        if (pathElement in context) {
+                            var nextLevel = context[pathElement];
+                            if (i === bits.length - 1) {
+                                // if this is the last path element, then
+                                // we make the assumption that this is a well defined leaf node, for performance purposes
+                                nextContexts.push(nextLevel);
+                            } else {
+                                // there are more path elements to retrieve, so we have to handle the various types
+                                if ($.isArray(nextLevel)) {
+                                    nextContexts = nextContexts.concat(nextLevel);
+                                } else if ($.isPlainObject(nextLevel)) {
+                                    nextContexts.push(nextLevel);
+                                }
+                                // if the value is a leaf node already then we throw it away
+                            }
+                        }
                     }
+                    contexts = nextContexts;
                 }
-                if ($.isArray(val)) {
-                    val = val.join(this.arrayValueJoin);
-                } else if ($.isPlainObject(val)) {
-                    val = def;
+
+                if (contexts.length === 0) {
+                    return def;
                 }
-                return val;
+
+                return contexts.join(this.arrayValueJoin);
             };
 
             this.sleep = function() {
