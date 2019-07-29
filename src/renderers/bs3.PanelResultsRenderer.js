@@ -608,6 +608,9 @@ $.extend(true, edges, {
                 if (typeof annotationCfg === "function") {
                     annotationCfg = annotationCfg(pos, res, this);
                 }
+                if (!annotationCfg) {
+                    return "";
+                }
 
                 // get a list of the fields on the object to display
                 var frag = "";
