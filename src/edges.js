@@ -944,7 +944,9 @@ var edges = {
         this.construct = function() {};
 
         this.destroy = function() {
-            this.inner.context.empty();
+            if (this.inner) {
+                this.inner.context.empty();
+            }
         };
 
         this.sleep = function() {
@@ -1224,6 +1226,14 @@ var edges = {
         }
     },
 
+    /**
+     * Get the value of an element at the given path in an object
+     *
+     * @param path
+     * @param rec
+     * @param def
+     * @returns {*}
+     */
     objVal : function(path, rec, def) {
         if (def === undefined) {
             def = false;
@@ -1239,6 +1249,53 @@ var edges = {
             }
         }
         return val;
+    },
+
+    /**
+     * The same as objVal but will handle arrays at every level and condense the
+     * results into a single array result.  Always returns an array, even if it is
+     * a single result, OR returns a default, which is returned exactly as specified
+     *
+     * @param path
+     * @param rec
+     * @param def
+     * @returns {*}
+     */
+    objVals : function(path, rec, def) {
+        if (def === undefined) { def = false; }
+
+        var bits = path.split(".");
+        var contexts = [rec];
+
+        for (var i = 0; i < bits.length; i++) {
+            var pathElement = bits[i];
+            var nextContexts = [];
+            for (var j = 0; j < contexts.length; j++) {
+                var context = contexts[j];
+                if (pathElement in context) {
+                    var nextLevel = context[pathElement];
+                    if (i === bits.length - 1) {
+                        // if this is the last path element, then
+                        // we make the assumption that this is a well defined leaf node, for performance purposes
+                        nextContexts.push(nextLevel);
+                    } else {
+                        // there are more path elements to retrieve, so we have to handle the various types
+                        if ($.isArray(nextLevel)) {
+                            nextContexts = nextContexts.concat(nextLevel);
+                        } else if ($.isPlainObject(nextLevel)) {
+                            nextContexts.push(nextLevel);
+                        }
+                        // if the value is a leaf node already then we throw it away
+                    }
+                }
+            }
+            contexts = nextContexts;
+        }
+
+        if (contexts.length === 0) {
+            return def;
+        }
+        return contexts;
     },
 
     getParam : function(value, def) {
