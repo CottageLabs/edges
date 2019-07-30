@@ -946,6 +946,7 @@ var edges = {
         this.destroy = function() {
             if (this.inner) {
                 this.inner.context.empty();
+                this.inner.context.hide();
             }
         };
 
