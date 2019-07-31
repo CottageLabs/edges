@@ -32,19 +32,38 @@ $.extend(true, edges, {
 
                 // this is what's displayed in the body if there are no results
                 var results = '<li class="disabled">Loading...</li>';
-                if (ts.values !== false) {
+                if ((ts.values !== undefined && ts.values !== false) || (ts.terms !== undefined && ts.terms !== false)) {
                     results = '<li class="disabled">No data available</li>';
                 }
 
-                // render a list of the values
-                if (ts.values && ts.values.length > 0) {
-                    results = '<li class="dropdown-header">' + ts.display + '</li>';
+                // get the values (supporting both AND and OR selector apis)
+                var values = [];
+                if (ts.values) {
+                    values = ts.values;
+                } else if (ts.terms) {
+                    values = ts.terms;
+                }
 
-                    // get the terms of the filters that have already been set
-                    var filterTerms = [];
-                    for (var i = 0; i < ts.filters.length; i++) {
-                        filterTerms.push(ts.filters[i].term.toString());
+                var filterTerms = [];
+                var filterDisplays = [];
+                if (ts.filters) {
+                    filterTerms = ts.filters.map(function(x) { return x.term.toString() });
+                    filterDisplays = ts.filters.map(function(x) {return x.display});
+                } else if (ts.selected) {
+                    filterTerms = ts.selected;
+                    for (var i = 0; i < filterTerms.length; i++) {
+                        var term = filterTerms[i];
+                        for (var j = 0; j < values.length; j++) {
+                            if (term === values[j].term.toString()) {
+                                filterDisplays.push(values[j].display);
+                            }
+                        }
                     }
+                }
+
+                // render a list of the values
+                if (values && values.length > 0) {
+                    results = '<li class="dropdown-header">' + ts.display + '</li>';
 
                     if (filterTerms.length > 0) {
                         results += '<li class="' + resultClass + '"><a href="#" class="' + removeClass + '">\
@@ -53,8 +72,8 @@ $.extend(true, edges, {
 
                     // render each value, if it is not also a filter that has been set
                     var first = true;
-                    for (var i = 0; i < ts.values.length; i++) {
-                        var val = ts.values[i];
+                    for (var i = 0; i < values.length; i++) {
+                        var val = values[i];
                         if ($.inArray(val.term.toString(), filterTerms) === -1) {   // the toString() helps us normalise other values, such as integers
                             var count = val.count;
                             if (this.countFormat) {
@@ -78,8 +97,8 @@ $.extend(true, edges, {
 
                 // if we want the active filters, render them
                 var filterFrag = ts.display;
-                if (ts.filters.length > 0) {
-                    filterFrag = ts.filters.map(function(x) {return x.display}).join("; ");
+                if (filterDisplays.length > 0) {
+                    filterFrag = filterDisplays.join("; ");
                 }
 
                 var buttonFrag = '<button class="btn btn-sm btn-default dropdown-toggle" type="button" id="' + buttonId + '" data-toggle="dropdown" aria-haspopup="true" aria-expanded="true">\
