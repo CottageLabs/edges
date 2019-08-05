@@ -1,3 +1,12 @@
+.edges-bs3-facetview-search-controller .col-md-8 {
+    text-align: right;
+}
+
+.edges-bs3-facetview-search-controller .col-md-6 {
+    text-align: right;
+}
+
+
 .edges-bs3-facetview-search-controller .form-inline .input-group .edges-bs3-search-controller-field {
     width: 100px;
 }
@@ -38,7 +47,7 @@
     }
 
     .edges-bs3-facetview-search-controller .form-inline .input-group .edges-bs3-search-controller-text {
-        width: 257px;
+        width: 240px;
     }
 
     .edges-bs3-facetview-search-controller .col-md-6 .form-inline .input-group .edges-bs3-search-controller-field {
@@ -56,7 +65,7 @@
     }
 
     .edges-bs3-facetview-search-controller .form-inline .input-group .edges-bs3-search-controller-text {
-        width: 257px;
+        width: 240px;
     }
 
     .edges-bs3-facetview-search-controller .col-md-6 .form-inline .input-group .edges-bs3-search-controller-field {
@@ -64,7 +73,7 @@
     }
 
     .edges-bs3-facetview-search-controller .col-md-6 .form-inline .input-group .edges-bs3-search-controller-text {
-        width: 171px;
+        width: 165px;
     }
 }
 
