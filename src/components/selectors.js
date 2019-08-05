@@ -407,10 +407,9 @@ $.extend(edges, {
             );
 
             // issue the query to elasticsearch
-            es.doQuery({
-                search_url: this.edge.search_url,
-                queryobj: bq.objectify(),
-                datatype: this.edge.datatype,
+            this.edge.queryAdapter.doQuery({
+                edge: this.edge,
+                query: bq,
                 success: edges.objClosure(this, "listAllQuerySuccess", ["result"]),
                 error: edges.objClosure(this, "listAllQueryFail")
             });
@@ -474,13 +473,22 @@ $.extend(edges, {
             );
 
             // issue the query to elasticsearch
+            this.edge.queryAdapter.doQuery({
+                edge: this.edge,
+                query: bq,
+                success: edges.objClosure(this, "doUpdateQuerySuccess", ["result"]),
+                error: edges.objClosure(this, "doUpdateQueryFail")
+            });
+
+            // issue the query to elasticsearch
+            /*
             es.doQuery({
                 search_url: this.edge.search_url,
                 queryobj: bq.objectify(),
                 datatype: this.edge.datatype,
                 success: edges.objClosure(this, "doUpdateQuerySuccess", ["result"]),
                 error: edges.objClosure(this, "doUpdateQueryFail")
-            });
+            });*/
         };
 
         this.doUpdateQuerySuccess = function(params) {
@@ -593,6 +601,20 @@ $.extend(edges, {
             this.edge.doQuery();
         };
 
+        this.clearFilters = function(params) {
+            var triggerQuery = edges.getParam(params.triggerQuery, true);
+
+            if (this.selected.length > 0) {
+                var nq = this.edge.cloneQuery();
+                nq.removeMust(es.newTermsFilter({
+                    field: this.field
+                }));
+                this.edge.pushQuery(nq);
+            }
+            if (triggerQuery) {
+                this.edge.doQuery();
+            }
+        };
 
         //////////////////////////////////////////
         // "private" functions for internal use
