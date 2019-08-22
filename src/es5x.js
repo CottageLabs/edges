@@ -23,6 +23,9 @@ var es = {
     // distance units allowed by ES
     distanceUnits : ["km", "mi", "miles", "in", "inch", "yd", "yards", "kilometers", "mm", "millimeters", "cm", "centimeters", "m", "meters"],
 
+    // request method to be used throughout.  Set this before using the module if you want it different
+    requestMethod : "get",
+
     ////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////
@@ -34,8 +37,8 @@ var es = {
             range: es.newRangeAggregation,
             geo_distance: es.newGeoDistanceAggregation,
             date_histogram: es.newDateHistogramAggregation,
-            stats: es.StatsAggregation,
-            cardinality: es.CardinalityAggregation
+            stats: es.newStatsAggregation,
+            cardinality: es.newCardinalityAggregation
         };
 
         if (constructors[type]) {
@@ -207,7 +210,51 @@ var es = {
             return this.sort;
         };
 
-        this.setSource = function(include, exclude) {};
+        this.setSourceFilters = function(params) {
+            if (!this.source) {
+                this.source = {include: [], exclude: []};
+            }
+            if (params.include) {
+                this.source.include = params.include;
+            }
+            if (params.exclude) {
+                this.source.exclude = params.exclude;
+            }
+        };
+
+        this.addSourceFilters = function(params) {
+            if (!this.source) {
+                this.source = {include: [], exclude: []};
+            }
+            if (params.include) {
+                if (this.source.include) {
+                    Array.prototype.push.apply(this.source.include, params.include);
+                } else {
+                    this.source.include = params.include;
+                }
+            }
+            if (params.exclude) {
+                if (this.source.include) {
+                    Array.prototype.push.apply(this.source.include, params.include);
+                } else {
+                    this.source.include = params.include;
+                }
+            }
+        };
+
+        this.getSourceIncludes = function() {
+            if (!this.source) {
+                return [];
+            }
+            return this.source.include;
+        };
+
+        this.getSourceExcludes = function() {
+            if (!this.source) {
+                return [];
+            }
+            return this.source.exclude;
+        };
 
         this.addFacet = function() {};
         this.removeFacet = function() {};
@@ -332,7 +379,7 @@ var es = {
         // create, parse, serialise functions
 
         this.merge = function(source) {
-            // merge this query (in place) with the provded query, where the provided
+            // merge this query (in place) with the provided query, where the provided
             // query is dominant (i.e. any properties it has override this object)
             //
             // These are the merge rules:
@@ -344,6 +391,7 @@ var es = {
             // this must - append any new ones from source
             // this.queryString - take from source if set
             // this.sort - prepend any from source
+            // this.source - append any new ones from source
 
             this.filtered = source.filtered;
             if (source.size) {
@@ -375,6 +423,9 @@ var es = {
                     this.prependSortBy(sorts[i])
                 }
             }
+            var includes = source.getSourceIncludes();
+            var excludes = source.getSourceExcludes();
+            this.addSourceFilters({include: includes, exclude: excludes});
         };
 
         this.objectify = function(params) {
@@ -388,7 +439,7 @@ var es = {
             var include_sort = params.include_sort === undefined ? true : params.include_sort;
             var include_fields = params.include_fields === undefined ? true : params.include_fields;
             var include_aggregations = params.include_aggregations === undefined ? true : params.include_aggregations;
-            var include_facets = params.include_facets === undefined ? true : params.include_facets;
+            var include_source_filters = params.include_source_filters === undefined ? true : params.include_source_filters;
 
             // queries will be separated in queries and bool filters, which may then be
             // combined later
@@ -428,23 +479,6 @@ var es = {
             }
             q["query"] = query_portion;
 
-            /*
-            // add the bool to the query in the correct place (depending on filtering)
-            if (this.filtered && this.hasFilters()) {
-                if (Object.keys(query_part).length == 0) {
-                    query_part["match_all"] = {};
-                }
-                q["query"] = {filtered : {filter : {bool : bool}, query : query_part}};
-            } else {
-                if (this.hasFilters()) {
-                    query_part["bool"] = bool;
-                }
-                if (Object.keys(query_part).length == 0) {
-                    query_part["match_all"] = {};
-                }
-                q["query"] = query_part;
-            }*/
-
             if (include_paging) {
                 // page size
                 if (this.size !== undefined && this.size !== false) {
@@ -476,6 +510,17 @@ var es = {
                 for (var i = 0; i < this.aggs.length; i++) {
                     var agg = this.aggs[i];
                     $.extend(q.aggs, agg.objectify())
+                }
+            }
+
+            // add the source filters
+            if (include_source_filters && this.source && (this.source.include || this.source.exclude)) {
+                q["_source"] = {};
+                if (this.source.include.length > 0) {
+                    q["_source"]["include"] = this.source.include;
+                }
+                if (this.source.exclude.length > 0) {
+                    q["_source"]["exclude"] = this.source.exclude;
                 }
             }
 
@@ -571,6 +616,27 @@ var es = {
                         this.addAggregation(oa);
                     }
                 }
+            }
+
+            if (obj._source) {
+                var source = obj._source;
+                var include = [];
+                var exclude = [];
+
+                if (typeof source === "string") {
+                    include.push(source);
+                }
+                else if (Array.isArray(source)) {
+                    include = source;
+                } else {
+                    if (source.hasOwnProperty("include")) {
+                        include = source.include;
+                    }
+                    if (source.hasOwnProperty("exclude")) {
+                        exclude = source.exclude;
+                    }
+                }
+                this.setSourceFilters({include: include, exclude: exclude});
             }
         };
 
@@ -963,6 +1029,28 @@ var es = {
         this.objectify = function() {
             var body = {field: this.field};
             return this._make_aggregation("stats", body);
+        };
+
+        this.parse = function(obj) {
+
+        };
+
+        if (params.raw) {
+            this.parse(params.raw);
+        }
+    },
+
+    newSumAggregation : function(params) {
+        if (!params) { params = {} }
+        es.SumAggregation.prototype = es.newAggregation(params);
+        return new es.SumAggregation(params);
+    },
+    SumAggregation : function(params) {
+        this.field = params.field || false;
+
+        this.objectify = function() {
+            var body = {field: this.field};
+            return this._make_aggregation("sum", body);
         };
 
         this.parse = function(obj) {
@@ -1381,6 +1469,7 @@ var es = {
     doQuery : function(params) {
         // extract the parameters of the request
         var success = params.success;
+        var error = params.error;
         var complete = params.complete;
         var search_url = params.search_url;
         var queryobj = params.queryobj;
@@ -1390,20 +1479,47 @@ var es = {
         var querystring = JSON.stringify(queryobj);
 
         // make the call to the elasticsearch web service
-        $.ajax({
-            type: "get",
-            url: search_url,
-            data: {source: querystring},
-            dataType: datatype,
-            success: es.querySuccess(success),
-            complete: complete
-        });
+
+        if (es.requestMethod === "get") {
+            $.ajax({
+                type: "get",
+                url: search_url,
+                data: {source: querystring},
+                dataType: datatype,
+                success: es.querySuccess(success),
+                error: es.queryError(error),
+                complete: complete
+            });
+        } else if (es.requestMethod === "post") {
+            $.ajax({
+                type: "post",
+                url: search_url,
+                data: querystring,
+                contentType: "application/json",
+                dataType: datatype,
+                success: es.querySuccess(success),
+                error: es.queryError(error),
+                complete: complete
+            });
+        } else {
+            throw "es.requestMethod must be either 'get' or 'post";
+        }
     },
 
     querySuccess : function(callback) {
         return function(data) {
             var result = es.newResult({raw: data});
             callback(result);
+        }
+    },
+
+    queryError : function(callback) {
+        return function(data) {
+            if (callback) {
+                callback(data);
+            } else {
+                throw new Error(data);
+            }
         }
     },
 
