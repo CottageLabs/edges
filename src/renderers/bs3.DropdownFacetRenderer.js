@@ -14,6 +14,9 @@ $.extend(true, edges, {
             // allow the user to set multiple filters
             this.multipleFilters = edges.getParam(params.multipleFilters, true);
 
+            // display or not filters with zero values for the current search
+            this.displayEmptyTerms = edges.getParam(params.displayEmptyTerms, true);
+
             // namespace to use in the page
             this.namespace = "edges-bs3-dropdown-facet";
 
@@ -76,17 +79,19 @@ $.extend(true, edges, {
                         var val = values[i];
                         if ($.inArray(val.term.toString(), filterTerms) === -1) {   // the toString() helps us normalise other values, such as integers
                             var count = val.count;
-                            if (this.countFormat) {
-                                count = this.countFormat(count)
+                            if ((count === 0 && this.displayEmptyTerms) || count > 0) {
+                                if (this.countFormat) {
+                                    count = this.countFormat(count)
+                                }
+                                if (first && filterTerms.length > 0) {
+                                    results += '<li role="separator" class="divider"></li>';
+                                    var filterHeader = this.multipleFilters ? "Add filter" : "Switch filter";
+                                    results += '<li class="dropdown-header">' + filterHeader + '</li>';
+                                    first = false;
+                                }
+                                results += '<li class="' + resultClass + '"><a href="#" class="' + valClass + '" data-key="' + edges.escapeHtml(val.term) + '">' +
+                                    edges.escapeHtml(val.display) + " (" + count + ")</a></li>";
                             }
-                            if (first && filterTerms.length > 0) {
-                                results += '<li role="separator" class="divider"></li>';
-                                var filterHeader = this.multipleFilters ? "Add filter" : "Switch filter";
-                                results += '<li class="dropdown-header">' + filterHeader + '</li>';
-                                first = false;
-                            }
-                            results += '<li class="' + resultClass + '"><a href="#" class="' + valClass + '" data-key="' + edges.escapeHtml(val.term) + '">' +
-                                edges.escapeHtml(val.display) + " (" + count + ")</a></li>";
                         }
                     }
                 }
