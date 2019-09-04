@@ -383,6 +383,34 @@ $.extend(edges, {
                     this.selected.push(val);
                 }
             }
+
+            /*
+            if (this.edge.result && this.terms) {
+                this._synchroniseTerms({result: this.edge.result});
+            }*/
+        };
+
+        this._synchroniseTerms = function(params) {
+            var result = params.result;
+
+            // mesh the terms in the aggregation with the terms in the terms list
+            var buckets = result.buckets(this.id);
+
+            for (var i = 0; i < this.terms.length; i++) {
+                var t = this.terms[i];
+                var found = false;
+                for (var j = 0; j < buckets.length; j++) {
+                    var b = buckets[j];
+                    if (t.term === b.key) {
+                        t.count = b.doc_count;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) {
+                    t.count = 0;
+                }
+            }
         };
 
         /////////////////////////////////////////////////
@@ -428,6 +456,9 @@ $.extend(edges, {
 
             // allow the event handler to be set up
             this.setupEvent();
+
+            // in case there's a race between this and another update operation, subsequently synchronise
+            // this.synchronise();
 
             // since this happens asynchronously, we may want to draw
             this.draw();
@@ -479,21 +510,12 @@ $.extend(edges, {
                 success: edges.objClosure(this, "doUpdateQuerySuccess", ["result"]),
                 error: edges.objClosure(this, "doUpdateQueryFail")
             });
-
-            // issue the query to elasticsearch
-            /*
-            es.doQuery({
-                search_url: this.edge.search_url,
-                queryobj: bq.objectify(),
-                datatype: this.edge.datatype,
-                success: edges.objClosure(this, "doUpdateQuerySuccess", ["result"]),
-                error: edges.objClosure(this, "doUpdateQueryFail")
-            });*/
         };
 
         this.doUpdateQuerySuccess = function(params) {
             var result = params.result;
 
+            /*
             // mesh the terms in the aggregation with the terms in the terms list
             var buckets = result.buckets(this.id);
 
@@ -511,7 +533,8 @@ $.extend(edges, {
                 if (!found) {
                     t.count = 0;
                 }
-            }
+            }*/
+            this._synchroniseTerms({result: result});
 
             // turn off the update flag
             this.updating = false;
