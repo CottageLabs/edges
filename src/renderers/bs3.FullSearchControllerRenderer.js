@@ -141,7 +141,7 @@ $.extend(true, edges, {
                 var clearFrag = "";
                 if (this.clearButton) {
                     clearFrag = '<span class="input-group-btn"> \
-                        <button type="button" class="btn btn-danger btn-sm ' + resetClass + '" title="Clear all search parameters and start again"> \
+                        <button type="button" class="btn btn-danger btn-sm ' + resetClass + '" title="Clear all search and sort parameters and start again"> \
                             <span class="glyphicon glyphicon-remove"></span> \
                         </button> \
                     </span>';
