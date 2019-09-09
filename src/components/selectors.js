@@ -384,10 +384,10 @@ $.extend(edges, {
                 }
             }
 
-            /*
+
             if (this.edge.result && this.terms) {
                 this._synchroniseTerms({result: this.edge.result});
-            }*/
+            }
         };
 
         this._synchroniseTerms = function(params) {
@@ -458,7 +458,7 @@ $.extend(edges, {
             this.setupEvent();
 
             // in case there's a race between this and another update operation, subsequently synchronise
-            // this.synchronise();
+            this.synchronise();
 
             // since this happens asynchronously, we may want to draw
             this.draw();
