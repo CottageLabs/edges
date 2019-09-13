@@ -1455,8 +1455,8 @@ var es = {
         };
 
         this.total = function() {
-            if (this.data.hits && this.data.hits.total) {
-                return parseInt(this.data.hits.total);
+            if (this.data.hits && this.data.hits.total && this.data.hits.total.value) {
+                return parseInt(this.data.hits.total.value);
             }
             return false;
         }

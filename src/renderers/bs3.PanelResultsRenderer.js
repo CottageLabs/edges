@@ -139,9 +139,8 @@ $.extend(true, edges, {
                     // get the width of the container
                     var containerWidth = Math.floor(this.component.context.width());
 
-                    // if the container is in the variable width zone of bootstrap's otherwise
-                    // fixed width displays, then leave some room for the scroll bar to appear
-                    if (containerWidth < 768) {
+                    // make space for a scroll bar in any environment
+                    if (containerWidth > 20) {
                         containerWidth -= 20;
                     }
 
@@ -304,6 +303,10 @@ $.extend(true, edges, {
                 if (excess <= 0 && this.cursor >= results.length) {
                     // if the row fits, and there are no more images, don't attempt to
                     // lay it out, just return as-is
+                    // return dims;
+                    if (dims.length > 0 && excess < 0) {
+                        dims[0].pl += -1 * Math.floor((excess / 2));
+                    }
                     return dims;
                 }
 
