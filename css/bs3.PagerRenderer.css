@@ -13,8 +13,10 @@
     font-weight: bold;
 }
 
-.edges-bs3-pager-size {
-    margin-left: 10px;
+@media (min-width: 992px) {
+    .edges-bs3-pager-size {
+        margin-left: 10px;
+    }
 }
 
 .edges-bs3-pager-nav {
