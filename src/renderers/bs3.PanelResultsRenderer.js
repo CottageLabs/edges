@@ -72,6 +72,8 @@ $.extend(true, edges, {
 
             this.scrolling = false;
 
+            this.lastRowHeight = 0;
+
             this.namespace = "edges-bs3-panel-results";
 
             this.draw = function() {
@@ -250,7 +252,7 @@ $.extend(true, edges, {
                 this.considerInfiniteScroll();
             };
 
-            this._caclulateDims = function(params) {
+            this._calculateDims = function(params) {
                 var containerWidth = params.containerWidth;
 
                 var results = this.component.results;
@@ -301,16 +303,37 @@ $.extend(true, edges, {
                 // the container width
                 var excess = fullWidth - containerWidth;
                 if (excess <= 0 && this.cursor >= results.length) {
-                    // if the row fits, and there are no more images, don't attempt to
-                    // lay it out, just return as-is
-                    // return dims;
-                    if (dims.length > 0 && excess < 0) {
-                        dims[0].pl += -1 * Math.floor((excess / 2));
-                    }
-                    return dims;
+                    return this._finalRow({
+                        dims : dims,
+                        excess: excess,
+                        containerWidth: containerWidth
+                    });
                 }
 
                 return this._resizeRow({dims: dims, excess: excess, containerWidth: containerWidth});
+            };
+
+            this._finalRow = function(params) {
+                var dims = params.dims;
+
+                if (this.lastRowHeight !== 0) {
+                    // first compact every dim to inside the new maximum height
+                    var fullWidth = 0;
+                    for (var i = 0; i < dims.length; i++) {
+                        var dim = dims[i];
+                        if (dim.h > this.lastRowHeight) {
+                            dim.h = this.lastRowHeight;
+                            dim.w = Math.round(dim.h * dim.a);
+                        }
+                        fullWidth += dim.w + dim.pl + dim.pr;
+                    }
+
+                    params["maxHeight"] = this.lastRowHeight;
+                    params["excess"] = fullWidth - params.containerWidth;
+                }
+
+                dims = this._stretchRow(params);
+                return dims;
             };
 
             this._resizeRow = function(params) {
@@ -409,6 +432,9 @@ $.extend(true, edges, {
                 var shortfall = -1 * params.excess;
                 var containerWidth = params.containerWidth;
 
+                // some versions of calls to this function specify their own max height
+                var maxHeight = edges.getParam(params.maxHeight, this.maxHeight);
+
                 // first a repeat application of a distribution of the shortfall until it is
                 // all used or all the images exceed max width or max height
                 while (true) {
@@ -417,13 +443,13 @@ $.extend(true, edges, {
                     var divisor = 0;
                     for (var i = 0; i < dims.length; i++) {
                         var dim = dims[i];
-                        if (dim.w < this.maxWidth && dim.h < this.maxHeight) {
+                        if (dim.w < this.maxWidth && dim.h < maxHeight) {
                             divisor += dim.w;
                             distribute.push(dim);
                         }
                     }
 
-                    // if everyone is at max width, we can't apply this portion of the algoritm
+                    // if everyone is at max width/height, we can't apply this portion of the algorithm
                     // any more
                     if (distribute.length === 0) {
                         break;
@@ -447,15 +473,15 @@ $.extend(true, edges, {
                         dim.h = Math.round(dim.w / dim.a);
 
                         if (dim.w <= this.maxWidth) {
-                            if (dim.h <= this.maxHeight) {
+                            if (dim.h <= maxHeight) {
                                 // the dimensions are within the max height and max width box, so we
                                 // have distributed the entire adjustment
                                 distributed += adjustment;
                             } else {
                                 // the dimensions overflow the max height, so scale back down to max
                                 // height and calculate how much adjustment was actually made
-                                dim.h = this.maxHeight;
-                                dim.w = Math.round(this.maxHeight * dim.a);
+                                dim.h = maxHeight;
+                                dim.w = Math.round(maxHeight * dim.a);
                                 distributed += (dim.w - initW);
                             }
                         } else {
@@ -464,21 +490,21 @@ $.extend(true, edges, {
                             dim.h = Math.round(dim.w / dim.a);
 
                             // then rescale the same as above
-                            if (dim.h <= this.maxHeight) {
+                            if (dim.h <= maxHeight) {
                                 // the dimensions are within the max height and max width box, so
                                 // record the exact adjustment we made
                                 distributed += (dim.w - initW);
                             } else {
                                 // the dimensions overflow the max height, so scale back down to max
                                 // height and calculate how much adjustment was actually made
-                                dim.h = this.maxHeight;
-                                dim.w = Math.round(this.maxHeight * dim.a);
+                                dim.h = maxHeight;
+                                dim.w = Math.round(maxHeight * dim.a);
                                 distributed += (dim.w - initW);
                             }
                         }
                     }
 
-                    // if we have distributed the entire shorfall we are done
+                    // if we have distributed the entire shortfall we are done
                     if (distributed >= shortfall) {
                         return dims;
                     }
@@ -493,7 +519,6 @@ $.extend(true, edges, {
                 }
 
                 // ensure shortfall is a multiple of the number of paddings
-                // var pads = (dims.length - 1) * 2;
                 var pads = dims.length * 2;
                 var extra = shortfall % pads;
                 shortfall -= extra;
@@ -532,7 +557,7 @@ $.extend(true, edges, {
                 var containerWidth = params.containerWidth;
 
                 var initialCursor = this.cursor;
-                var dims = this._caclulateDims(params);
+                var dims = this._calculateDims(params);
 
                 // calculate the tallest image in the row
                 var largestHeight = 0;
@@ -541,6 +566,9 @@ $.extend(true, edges, {
                         largestHeight = dims[i].h;
                     }
                 }
+
+                // record this as the last row height
+                this.lastRowHeight = largestHeight;
 
                 var panelClasses = edges.css_classes(this.namespace, "panel", this);
                 var containerClasses = edges.css_classes(this.namespace, "img-container", this);
