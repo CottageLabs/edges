@@ -378,14 +378,17 @@ var edges = {
             this.queryAdapter.doQuery({
                 edge: this,
                 success: edges.objClosure(this, "querySuccess", ["result"], context),
-                error: edges.objClosure(this, "queryFail", false, context)
+                error: edges.objClosure(this, "queryFail", ["response"], context)
             });
         };
 
         this.queryFail = function(params) {
-            var callback = params.context;
+            var callback = params.callback;
+            var response = params.response;
             this.trigger("edges:query-fail");
-            console.log("WARN: query fail");
+            if (response.hasOwnProperty("responseText")) {
+                console.log("WARN: query fail: " + response.responseText);
+            }
             callback();
         };
 
