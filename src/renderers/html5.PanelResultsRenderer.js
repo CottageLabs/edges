@@ -1,7 +1,7 @@
 $.extend(true, edges, {
-    bs3: {
+    html5: {
         newPanelResultsRenderer : function(params) {
-            return edges.instantiate(edges.bs3.PanelResultsRenderer, params, edges.newRenderer);
+            return edges.instantiate(edges.html5.PanelResultsRenderer, params, edges.newRenderer);
         },
         PanelResultsRenderer : function(params) {
             this.noResultsText = edges.getParam(params.noResultsText, "No results match your search criteria");
@@ -74,7 +74,7 @@ $.extend(true, edges, {
 
             this.lastRowHeight = 0;
 
-            this.namespace = "edges-bs3-panel-results";
+            this.namespace = "edges-html5-panel-results";
 
             this.draw = function() {
                 this.cursor = 0;
