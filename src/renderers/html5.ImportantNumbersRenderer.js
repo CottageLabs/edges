@@ -18,7 +18,7 @@ $.extend(true, edges, {
 
             //////////////////////////////////////////////
             // variables for internal state
-            this.namespace = "edges-bs3-important-numbers";
+            this.namespace = "edges-html5-important-numbers";
 
             this.draw = function () {
 

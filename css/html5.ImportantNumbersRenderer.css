@@ -1,21 +1,21 @@
-.edges-bs3-important-numbers-title {
+.edges-html5-important-numbers-title {
     text-align: center;
 }
 
-.edges-bs3-important-numbers-graphic {
+.edges-html5-important-numbers-graphic {
     position: relative;
 }
 
-.edges-bs3-important-numbers-img {
+.edges-html5-important-numbers-img {
     /* height: 100%; */
     /*text-align: center;*/
 }
 
-.edges-bs3-important-numbers-img img {
+.edges-html5-important-numbers-img img {
     height: 100%
 }
 
-.edges-bs3-important-numbers-main {
+.edges-html5-important-numbers-main {
     position: absolute;
     top: 50%;
     left: 50%;
@@ -27,7 +27,7 @@
     text-shadow: 0 0 3px #ccc;
 }
 
-.edges-bs3-important-numbers-second {
+.edges-html5-important-numbers-second {
     font-size: 1.3em;
     text-align: center;
 }
