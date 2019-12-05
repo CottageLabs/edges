@@ -32,8 +32,6 @@ $.extend(true, edges, {
 
             this.triggerInfiniteScrollWhenRemain = edges.getParam(params.triggerInfiniteScrollWhenRemain, 10);
 
-            this.scrollToOffset = edges.getParam(params.scrollToOffset, false);
-
             // ordered list of rows of fields with pre and post wrappers, and a value function
             // (all fields are optional).
             //
@@ -105,12 +103,9 @@ $.extend(true, edges, {
                 // bind the event handlers for images
                 this._bindImageEvents();
 
-                // now, if we want to scroll to an offset position, figure out the offset, get the results if
-                // necessary, and then do the scroll
-                if (this.scrollToOffset) {
-                    this._scrollToOffset();
-                    this.considerInfiniteScroll();
-                }
+                // it may be, through an accident of configuration, that we should already consider doing an
+                // infinite scroll
+                this.considerInfiniteScroll();
             };
 
             this._bindInfiniteScroll = function() {
@@ -153,24 +148,18 @@ $.extend(true, edges, {
                     // now call the renderer on each image to build the records
                     while (this.cursor < results.length) {
                         this.lastLineCursor = this.cursor; // remember the position of the start of the last line
-                        frag += this._renderRow({containerWidth: containerWidth});
+                        var rowFrag = this._renderRow({containerWidth: containerWidth});
 
                         if (!triggerRendered && this.component.infiniteScroll &&
                                 results.length - this.cursor <= this.triggerInfiniteScrollWhenRemain) {
                             frag += '<div class="' + triggerClass + '" style="height: 0px; width: 100%"></div>';
                             triggerRendered = true;
                         }
+
+                        frag += rowFrag;
                     }
                 }
                 return frag;
-            };
-
-            this._scrollToOffset = function(params) {
-                var selector = "[data-pos=" + this.scrollToOffset + "]";
-                var els = $(selector);
-                if (els.length > 0) {
-                    els[0].scrollIntoView();
-                }
             };
 
             this.considerInfiniteScroll = function() {
