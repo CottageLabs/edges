@@ -618,9 +618,13 @@ var edges = {
         };
 
         this.updateUrl = function() {
-            if ('pushState' in window.history) {
-                var qs = "?" + this.fullUrlQueryString();
-                window.history.pushState("", "", qs);
+            var hasQs = window.location.search !== "";
+            var qs = "?" + this.fullUrlQueryString();
+            var url = window.location.pathname + qs;
+            if (!hasQs) {
+                window.history.replaceState("", "", url);
+            } else {
+                window.history.pushState("", "", url);
             }
         };
 
@@ -936,12 +940,19 @@ var edges = {
         this.init = function(edge) {
             this.edge = edge;
             if (this.constructOnInit) {
-                this.construct();
+                this.construct_and_bind();
             }
         };
 
         this.setConstructArg = function(key, value) {
             this.constructArgs[key] = value;
+        };
+
+        this.construct_and_bind = function() {
+            this.construct();
+            if (this.inner) {
+                this.inner.outer = this;
+            }
         };
 
         this.construct = function() {};
@@ -963,7 +974,7 @@ var edges = {
                 this.inner.context.show();
                 this.inner.wake();
             } else {
-                this.construct();
+                this.construct_and_bind();
             }
         }
     },
