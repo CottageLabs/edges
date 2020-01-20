@@ -618,10 +618,16 @@ var edges = {
         };
 
         this.updateUrl = function() {
-            var hasQs = window.location.search !== "";
+            var currentQs = window.location.search;
             var qs = "?" + this.fullUrlQueryString();
+
+            if (currentQs === qs) {
+                return; // no need to push the state
+            }
+
             var url = window.location.pathname + qs;
-            if (!hasQs) {
+
+            if (currentQs === "") {
                 window.history.replaceState("", "", url);
             } else {
                 window.history.pushState("", "", url);
