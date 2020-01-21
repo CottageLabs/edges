@@ -625,12 +625,13 @@ var edges = {
                 return; // no need to push the state
             }
 
-            var url = window.location.pathname + qs;
+            var url = new URL(window.location.href);
+            url.search = qs;
 
             if (currentQs === "") {
-                window.history.replaceState("", "", url);
+                window.history.replaceState("", "", url.toString());
             } else {
-                window.history.pushState("", "", url);
+                window.history.pushState("", "", url.toString());
             }
         };
 
