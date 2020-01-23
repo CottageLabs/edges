@@ -969,6 +969,7 @@ var edges = {
                 this.inner.context.empty();
                 this.inner.context.hide();
             }
+            this.inner = false;
         };
 
         this.sleep = function() {
