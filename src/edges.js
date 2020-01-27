@@ -955,6 +955,13 @@ var edges = {
             this.constructArgs[key] = value;
         };
 
+        this.getConstructArg = function(key, def) {
+            if (this.constructArgs.hasOwnProperty(key)) {
+                return this.constructArgs[key];
+            }
+            return def;
+        };
+
         this.construct_and_bind = function() {
             this.construct();
             if (this.inner) {
