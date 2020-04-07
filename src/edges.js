@@ -1083,16 +1083,20 @@ var edges = {
     // results in a call (only in the case that the event is a click), to
     // this.handler(element)
     //
-    eventClosure : function(obj, fn, conditional) {
+    eventClosure : function(obj, fn, conditional, preventDefault) {
+        if (preventDefault === undefined) {
+            preventDefault = true;
+        }
         return function(event) {
             if (conditional) {
                 if (!conditional(event)) {
                     return;
                 }
             }
-
-            event.preventDefault();
-            obj[fn](this);
+            if (preventDefault) {
+                event.preventDefault();
+            }
+            obj[fn](this, event);
         }
     },
 
@@ -1130,7 +1134,10 @@ var edges = {
     //////////////////////////////////////////////////////////////////
     // Event binding utilities
 
-    on : function(selector, event, caller, targetFunction, delay, conditional) {
+    on : function(selector, event, caller, targetFunction, delay, conditional, preventDefault) {
+        if (preventDefault === undefined) {
+            preventDefault = true;
+        }
         // if the caller has an inner component (i.e. it is a Renderer), use the component's id
         // otherwise, if it has a namespace (which is true of Renderers or Templates) use that
         if (caller.component && caller.component.id) {
@@ -1140,7 +1147,7 @@ var edges = {
         }
 
         // create the closure to be called on the event
-        var clos = edges.eventClosure(caller, targetFunction, conditional);
+        var clos = edges.eventClosure(caller, targetFunction, conditional, preventDefault);
 
         // now bind the closure directly or with delay
         // if the caller has an inner component (i.e. it is a Renderer) use the components jQuery selector
