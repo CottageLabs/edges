@@ -342,6 +342,11 @@ $.extend(edges, {
         this.valueMap = edges.getParam(params.valueMap, false);
         this.valueFunction = edges.getParam(params.valueFunction, false);
 
+        // should we try to synchronise the term counts from an equivalent aggregation on the
+        // primary query?  You can turn this off if you aren't displaying counts or otherwise
+        // modifying the display based on the counts
+        this.syncCounts = edges.getParam(params.syncCounts, true);
+
         // override the parent's defaultRenderer
         this.defaultRenderer = edges.getParam(params.defaultRenderer, "newORTermSelectorRenderer");
 
@@ -376,16 +381,17 @@ $.extend(edges, {
             this.selected = [];
 
             // extract all the filter values that pertain to this selector
-            var filters = this.edge.currentQuery.listMust(es.newTermsFilter({field: this.field}));
-            for (var i = 0; i < filters.length; i++) {
-                for (var j = 0; j < filters[i].values.length; j++) {
-                    var val = filters[i].values[j];
-                    this.selected.push(val);
+            if (this.edge.currentQuery) {
+                var filters = this.edge.currentQuery.listMust(es.newTermsFilter({field: this.field}));
+                for (var i = 0; i < filters.length; i++) {
+                    for (var j = 0; j < filters[i].values.length; j++) {
+                        var val = filters[i].values[j];
+                        this.selected.push(val);
+                    }
                 }
             }
 
-
-            if (this.edge.result && this.terms) {
+            if (this.syncCounts && this.edge.result && this.terms) {
                 this._synchroniseTerms({result: this.edge.result});
             }
         };
