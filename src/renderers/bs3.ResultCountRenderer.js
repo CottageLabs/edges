@@ -11,6 +11,10 @@ $.extend(true, edges, {
 
             this.suffix = edges.getParam(params.suffix, "");
 
+            this.countFormat = edges.getParam(params.countFormat, false);
+
+            this.htmlContainerWrapper = edges.getParam(params.htmlContainerWrapper, true);
+
             ////////////////////////////////////////
             // state variables
 
@@ -27,14 +31,30 @@ $.extend(true, edges, {
                 if (!total) {
                     total = 0;
                 }
+                if (this.countFormat) {
+                    total = this.countFormat(total);
+                }
+                total = '<span class="' + totalClass + '">' + total + '</span>';
+
+                var prefix = "";
+                if (this.prefix !== "") {
+                    prefix = '<span class="' + prefixClass + '">' + this.prefix + '</span>';
+                }
+
+                var suffix = "";
+                if (this.suffix !== "") {
+                    suffix = '<span class="' + suffixClass + '">' + this.suffix + '</span>';
+                }
+
 
                 // the total number of records found
-                var recordCount = '<span class="' + prefixClass + '">' + this.prefix +
-                    '</span><span class="' + totalClass + '">' + total +
-                    '</span><span class="' + suffixClass + '">' + this.suffix + '</span>';
+                var recordCount = prefix + total + suffix;
 
-                var frag = '<div class="' + containerClass + '"><div class="row"><div class="col-md-12">{{COUNT}}</div></div></div>';
-                frag = frag.replace(/{{COUNT}}/g, recordCount);
+                var frag = recordCount;
+                if (this.htmlContainerWrapper) {
+                    frag = '<div class="' + containerClass + '"><div class="row"><div class="col-md-12">{{COUNT}}</div></div></div>';
+                    frag = frag.replace(/{{COUNT}}/g, recordCount);
+                }
 
                 this.component.context.html(frag);
             };
