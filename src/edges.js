@@ -1264,6 +1264,25 @@ var edges = {
     },
 
     /**
+     * Determine if the object has a property at the given path in the object
+     *
+     * @param obj
+     * @param path
+     * @returns {boolean}
+     */
+    hasProp : function(obj, path) {
+        var bits = path.split(".");
+        var ctx = obj;
+        for (var i = 0; i < bits.length; i++) {
+            if (!ctx.hasOwnProperty(bits[i])) {
+                return false;
+            }
+            ctx = ctx[bits[i]];
+        }
+        return true;
+    },
+
+    /**
      * Get the value of an element at the given path in an object
      *
      * @param path
