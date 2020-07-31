@@ -377,6 +377,10 @@ $.extend(edges, {
         // if these come from a facet/selector, they should probably line up
         this.fieldDisplays = edges.getParam(params.fieldDisplays, {});
 
+        // constraints that consist of multiple filters that we want to treat as a single
+        // one {"filters" : [<es filter templates>], "display" : "...." }
+        this.compoundDisplays = edges.getParam(params.compoundDisplays, []);
+
         // value maps on a per-field basis for Term(s) filters, to apply to values before display.
         // if these come from a facet/selector, they should probably be the same maps
         // {"<field>" : {"<value>" : "<display>"}}
@@ -437,10 +441,35 @@ $.extend(edges, {
                 return;
             }
 
+            // first see if we can detect all the compound filters and record them
+            var inCompound = [];
+            for (var i = 0; i < this.compoundDisplays.length; i++) {
+                var cd = this.compoundDisplays[i];
+                var count = 0;
+                var fieldNames = [];
+                for (var j = 0; j < cd.filters.length; j++) {
+                    var filt = cd.filters[j];
+                    var existing = this.edge.currentQuery.listMust(filt);
+                    if (existing.length > 0) {
+                        count++;
+                        fieldNames.push(filt.field);
+                    }
+                }
+                if (count === cd.filters.length) {
+                    inCompound.concat(fieldNames);
+                    this.mustFilters["compound_" + i] = {
+                        filter: "compound",
+                        display: cd.display,
+                        query_filters: cd.filters
+                    };
+                }
+            }
+
+            // now pull out all the single type queries
             var musts = this.edge.currentQuery.listMust();
             for (var i = 0; i < musts.length; i++) {
                 var f = musts[i];
-                if (this.ignoreUnknownFilters && !(f.field in this.fieldDisplays)) {
+                if (this.ignoreUnknownFilters && !(f.field in this.fieldDisplays) && $.inArray(f.field, inCompound) > -1) {
                     continue;
                 }
                 if (f.type_name === "term") {
@@ -459,6 +488,23 @@ $.extend(edges, {
                 this.searchString = qs.queryString;
                 this.searchField = qs.defaultField;
             }
+        };
+
+        this.removeCompoundFilter = function(params) {
+            var compound_id = params.compound_id;
+            var filts = this.mustFilters[compound_id].query_filters;
+
+            var nq = this.edge.cloneQuery();
+
+            for (var i = 0; i < filts.length; i++) {
+                var filt = filts[i];
+                nq.removeMust(filt);
+            }
+
+            // reset the page to zero and reissue the query
+            nq.from = 0;
+            this.edge.pushQuery(nq);
+            this.edge.doQuery();
         };
 
         this.removeFilter = function (boolType, filterType, field, value) {
