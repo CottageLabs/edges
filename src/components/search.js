@@ -469,7 +469,7 @@ $.extend(edges, {
             var musts = this.edge.currentQuery.listMust();
             for (var i = 0; i < musts.length; i++) {
                 var f = musts[i];
-                if (this.ignoreUnknownFilters && !(f.field in this.fieldDisplays) && $.inArray(f.field, inCompound) > -1) {
+                if (this.ignoreUnknownFilters && !(f.field in this.fieldDisplays) && $.inArray(f.field, inCompound) === -1) {
                     continue;
                 }
                 if (f.type_name === "term") {
