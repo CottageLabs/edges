@@ -387,7 +387,10 @@ var edges = {
             var response = params.response;
             this.trigger("edges:query-fail");
             if (response.hasOwnProperty("responseText")) {
-                console.log("WARN: query fail: " + response.responseText);
+                console.log("ERROR: query fail: " + response.responseText);
+            }
+            if (response.hasOwnProperty("error")) {
+                console.log("ERROR: search execution fail: " + response.error);
             }
             callback();
         };

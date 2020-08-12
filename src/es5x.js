@@ -1478,16 +1478,19 @@ var es = {
         // serialise the query
         var querystring = JSON.stringify(queryobj);
 
-        // make the call to the elasticsearch web service
+        // prep the callbacks (they are connected)
+        var error_callback = es.queryError(error);
+        var success_callback = es.querySuccess(success, error_callback);
 
+        // make the call to the elasticsearch web service
         if (es.requestMethod === "get") {
             $.ajax({
                 type: "get",
                 url: search_url,
                 data: {source: querystring},
                 dataType: datatype,
-                success: es.querySuccess(success),
-                error: es.queryError(error),
+                success: success_callback,
+                error: error_callback,
                 complete: complete
             });
         } else if (es.requestMethod === "post") {
@@ -1497,8 +1500,8 @@ var es = {
                 data: querystring,
                 contentType: "application/json",
                 dataType: datatype,
-                success: es.querySuccess(success),
-                error: es.queryError(error),
+                success: success_callback,
+                error: error_callback,
                 complete: complete
             });
         } else {
@@ -1506,8 +1509,13 @@ var es = {
         }
     },
 
-    querySuccess : function(callback) {
+    querySuccess : function(callback, error_callback) {
         return function(data) {
+            if (data.hasOwnProperty("error")) {
+                error_callback(data);
+                return;
+            }
+
             var result = es.newResult({raw: data});
             callback(result);
         }
