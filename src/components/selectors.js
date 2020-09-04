@@ -583,7 +583,7 @@ $.extend(edges, {
                 }
 
                 // if all we did was remove terms that we're then going to re-add, just do nothing
-                if (filter.has_terms() && hadTermAlready == terms.length) {
+                if (filter.has_terms() && hadTermAlready === terms.length) {
                     return false;
                 } else if (!filter.has_terms()) {
                     nq.removeMust(es.newTermsFilter({field: this.field}));
@@ -1084,5 +1084,162 @@ $.extend(edges, {
             var url = this.urlTemplate.replace(this.placeholder, term);
             window.location.href = url;
         }
+    },
+
+    newTreeBrowser : function(params) {
+        return edges.instantiate(edges.TreeBrowser, params, edges.newComponent);
+    },
+    TreeBrowser : function(params) {
+        this.field = edges.getParam(params.field, false);
+
+        this.size = edges.getParam(params.size, 10);
+
+        this.tree = edges.getParam(params.tree, {});
+
+        this.nodeMatch = edges.getParam(params.nodeMatch, false);
+
+        this.filterMatch = edges.getParam(params.filterMatch, false);
+
+        this.syncTree = [];
+
+        this.contrib = function(query) {
+            var params = {
+                name: this.id,
+                field: this.field
+            };
+            if (this.size) {
+                params["size"] = this.size
+            }
+            query.addAggregation(
+                es.newTermsAggregation(params)
+            );
+        };
+
+        this.synchronise = function() {
+            this.syncTree = $.extend(true, [], this.tree);
+
+            var results = this.edge.result;
+            if (!results) {
+                return;
+            }
+
+            var selected = [];
+            var filters = this.edge.currentQuery.listMust(es.newTermsFilter({field: this.field}));
+            for (var i = 0; i < filters.length; i++) {
+                var vals = filters[i].values;
+                selected = selected.concat(vals);
+            }
+
+            var agg = results.aggregation(this.id);
+            var buckets = $.extend(true, [], agg.buckets);
+            var that = this;
+
+            function recurse(tree) {
+                var anySelected = false;
+                var childCount = 0;
+                for (var i = 0; i < tree.length; i++) {
+                    var node = tree[i];
+                    var idx = that.nodeMatch(node, buckets);
+
+                    if (idx === -1) {
+                        node.count = 0;
+                    } else {
+                        node.count = buckets[idx].doc_count;
+                        // buckets.splice(i, 1);
+                    }
+                    childCount += node.count;
+
+                    if (that.filterMatch(node, selected)) {
+                        node.selected = true;
+                        anySelected = true;
+                    }
+                    if (node.children) {
+                        var childReport = recurse(node.children);
+                        if (childReport.anySelected) {
+                            node.selected = true;
+                            anySelected = true;
+                        }
+                        childCount += childReport.childCount;
+                        node.childCount = childReport.childCount;
+                    } else {
+                        node.childCount = 0;
+                    }
+
+                }
+                return {anySelected: anySelected, childCount: childCount}
+            }
+            recurse(this.syncTree)
+        };
+
+        this.addFilter = function(params) {
+            var terms = [params.value];
+            var clearOthers = edges.getParam(params.clearOthers, false);
+
+            var nq = this.edge.cloneQuery();
+
+            // first find out if there was a terms filter already in place
+            var filters = nq.listMust(es.newTermsFilter({field: this.field}));
+
+            // if there is, just add the term to it
+            if (filters.length > 0) {
+                var filter = filters[0];
+                if (clearOthers) {
+                    filter.clear_terms();
+                }
+
+                var hadTermAlready = 0;
+                for (var i = 0; i < terms.length; i++) {
+                    var term = terms[i];
+                    if (filter.has_term(term)) {
+                        hadTermAlready++;
+                    } else {
+                        filter.add_term(term);
+                    }
+                }
+
+                // if all we did was remove terms that we're then going to re-add, just do nothing
+                if (filter.has_terms() && hadTermAlready === terms.length) {
+                    return false;
+                } else if (!filter.has_terms()) {
+                    nq.removeMust(es.newTermsFilter({field: this.field}));
+                }
+            } else {
+                // otherwise, set the Terms Filter
+                nq.addMust(es.newTermsFilter({
+                    field: this.field,
+                    values: terms
+                }));
+            }
+
+            // reset the search page to the start and then trigger the next query
+            nq.from = 0;
+            this.edge.pushQuery(nq);
+            this.edge.doQuery();
+
+            return true;
+        };
+
+        this.removeFilter = function(params) {
+            var term = params.value;
+            var nq = this.edge.cloneQuery();
+
+            // first find out if there was a terms filter already in place
+            var filters = nq.listMust(es.newTermsFilter({field: this.field}));
+
+            if (filters.length > 0) {
+                var filter = filters[0];
+                if (filter.has_term(term)) {
+                    filter.remove_term(term);
+                }
+                if (!filter.has_terms()) {
+                    nq.removeMust(es.newTermsFilter({field: this.field}));
+                }
+            }
+
+            // reset the search page to the start and then trigger the next query
+            nq.from = 0;
+            this.edge.pushQuery(nq);
+            this.edge.doQuery();
+        };
     }
 });
