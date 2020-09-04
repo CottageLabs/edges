@@ -1102,6 +1102,8 @@ $.extend(edges, {
 
         this.syncTree = [];
 
+        this.parentIndex = {};
+
         this.contrib = function(query) {
             var params = {
                 name: this.id,
@@ -1134,13 +1136,14 @@ $.extend(edges, {
             var buckets = $.extend(true, [], agg.buckets);
             var that = this;
 
-            function recurse(tree) {
+            function recurse(tree, path) {
                 var anySelected = false;
                 var childCount = 0;
                 for (var i = 0; i < tree.length; i++) {
                     var node = tree[i];
-                    var idx = that.nodeMatch(node, buckets);
+                    that.parentIndex[node.value] = $.extend(true, [], path);
 
+                    var idx = that.nodeMatch(node, buckets);
                     if (idx === -1) {
                         node.count = 0;
                     } else {
@@ -1154,7 +1157,9 @@ $.extend(edges, {
                         anySelected = true;
                     }
                     if (node.children) {
-                        var childReport = recurse(node.children);
+                        path.push(node.value);
+                        var childReport = recurse(node.children, path);
+                        path.pop();
                         if (childReport.anySelected) {
                             node.selected = true;
                             anySelected = true;
@@ -1168,10 +1173,13 @@ $.extend(edges, {
                 }
                 return {anySelected: anySelected, childCount: childCount}
             }
-            recurse(this.syncTree)
+            var path = [];
+            recurse(this.syncTree, path);
         };
 
         this.addFilter = function(params) {
+            var value = params.value;
+            var parents = this.parentIndex[value];
             var terms = [params.value];
             var clearOthers = edges.getParam(params.clearOthers, false);
 
@@ -1180,13 +1188,26 @@ $.extend(edges, {
             // first find out if there was a terms filter already in place
             var filters = nq.listMust(es.newTermsFilter({field: this.field}));
 
-            // if there is, just add the term to it
+            // if there is, just add the term to it (removing and parent terms along the way)
             if (filters.length > 0) {
                 var filter = filters[0];
+                var originalValues = $.extend(true, [], filter.values);
+                originalValues.sort();
+
+                // if this is an exclusive filter that clears all others, just do that
                 if (clearOthers) {
                     filter.clear_terms();
                 }
 
+                // next, if there are any terms left, remove all the parent terms
+                for (var i = 0; i < parents.length; i++) {
+                    var parent = parents[i];
+                    if (filter.has_term(parent)) {
+                        filter.remove_term(parent);
+                    }
+                }
+
+                // now add all the provided terms
                 var hadTermAlready = 0;
                 for (var i = 0; i < terms.length; i++) {
                     var term = terms[i];
@@ -1197,8 +1218,8 @@ $.extend(edges, {
                     }
                 }
 
-                // if all we did was remove terms that we're then going to re-add, just do nothing
-                if (filter.has_terms() && hadTermAlready === terms.length) {
+                // if, as a result of the all the operations, the values didn't change, then don't search
+                if (originalValues === filter.values.sort()) {
                     return false;
                 } else if (!filter.has_terms()) {
                     nq.removeMust(es.newTermsFilter({field: this.field}));
@@ -1228,9 +1249,39 @@ $.extend(edges, {
 
             if (filters.length > 0) {
                 var filter = filters[0];
+                var grandparents = this.parentIndex[term];
                 if (filter.has_term(term)) {
+                    // the filter we are being asked to remove is the actual selected one
                     filter.remove_term(term);
+                    if (grandparents.length > 0) {
+                        var immediate = grandparents[grandparents.length - 1];
+                        filter.add_term(immediate);
+                    }
+                } else {
+                    // the filter we are being asked to remove may be a parent of the actual selected one
+                    // first get all the parent sets of the values that are currently in force
+                    var removes = [];
+                    var adds = [];
+                    for (var i = 0; i < filter.values.length; i++) {
+                        var val = filter.values[i];
+                        var parentSet = this.parentIndex[val];
+                        if ($.inArray(term, parentSet) > -1) {
+                            removes.push(val);
+                            if (grandparents.length === 0) {
+                                break;
+                            }
+                            var immediate = grandparents[grandparents.length - 1];
+                            adds.push(immediate);
+                        }
+                    }
+                    for (var i = 0; i < removes.length; i++) {
+                        filter.remove_term(removes[i]);
+                    }
+                    for (var i = 0; i < adds.length; i++) {
+                        filter.add_term(adds[i]);
+                    }
                 }
+
                 if (!filter.has_terms()) {
                     nq.removeMust(es.newTermsFilter({field: this.field}));
                 }
