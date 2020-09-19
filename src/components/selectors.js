@@ -1100,6 +1100,8 @@ $.extend(edges, {
 
         this.filterMatch = edges.getParam(params.filterMatch, false);
 
+        this.nodeIndex = edges.getParam(params.nodeIndex, false);
+
         this.syncTree = [];
 
         this.parentIndex = {};
@@ -1148,7 +1150,6 @@ $.extend(edges, {
                         node.count = 0;
                     } else {
                         node.count = buckets[idx].doc_count;
-                        // buckets.splice(i, 1);
                     }
                     childCount += node.count;
 
@@ -1156,6 +1157,13 @@ $.extend(edges, {
                         node.selected = true;
                         anySelected = true;
                     }
+
+                    if (that.nodeIndex) {
+                        node.index = that.nodeIndex(node);
+                    } else {
+                        node.index = node.display;
+                    }
+
                     if (node.children) {
                         path.push(node.value);
                         var childReport = recurse(node.children, path);
@@ -1249,37 +1257,30 @@ $.extend(edges, {
 
             if (filters.length > 0) {
                 var filter = filters[0];
-                var grandparents = this.parentIndex[term];
+
                 if (filter.has_term(term)) {
                     // the filter we are being asked to remove is the actual selected one
                     filter.remove_term(term);
-                    if (grandparents.length > 0) {
-                        var immediate = grandparents[grandparents.length - 1];
-                        filter.add_term(immediate);
-                    }
                 } else {
                     // the filter we are being asked to remove may be a parent of the actual selected one
                     // first get all the parent sets of the values that are currently in force
                     var removes = [];
-                    var adds = [];
                     for (var i = 0; i < filter.values.length; i++) {
                         var val = filter.values[i];
                         var parentSet = this.parentIndex[val];
                         if ($.inArray(term, parentSet) > -1) {
                             removes.push(val);
-                            if (grandparents.length === 0) {
-                                break;
-                            }
-                            var immediate = grandparents[grandparents.length - 1];
-                            adds.push(immediate);
                         }
                     }
                     for (var i = 0; i < removes.length; i++) {
                         filter.remove_term(removes[i]);
                     }
-                    for (var i = 0; i < adds.length; i++) {
-                        filter.add_term(adds[i]);
-                    }
+                }
+
+                var grandparents = this.parentIndex[term];
+                if (grandparents.length > 0) {
+                    var immediate = grandparents[grandparents.length - 1];
+                    filter.add_term(immediate);
                 }
 
                 if (!filter.has_terms()) {
