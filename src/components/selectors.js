@@ -1102,21 +1102,35 @@ $.extend(edges, {
 
         this.nodeIndex = edges.getParam(params.nodeIndex, false);
 
+        this.lifecycle = edges.getParam(params.lifecycle, "init_only");
+
         this.syncTree = [];
 
         this.parentIndex = {};
 
-        this.contrib = function(query) {
-            var params = {
-                name: this.id,
-                field: this.field
-            };
-            if (this.size) {
-                params["size"] = this.size
+        this.init = function(edge) {
+            // first kick the request up to the superclass
+            edges.newSelector().init.call(this, edge);
+
+            // now trigger a request for the terms to present, if not explicitly provided
+            if (this.lifecycle === "init_only") {
+                this._pruneTree();
             }
-            query.addAggregation(
-                es.newTermsAggregation(params)
-            );
+        };
+
+        this.contrib = function(query) {
+            if (this.lifecycle === "update") {
+                var params = {
+                    name: this.id,
+                    field: this.field
+                };
+                if (this.size) {
+                    params["size"] = this.size
+                }
+                query.addAggregation(
+                    es.newTermsAggregation(params)
+                );
+            }
         };
 
         this.synchronise = function() {
@@ -1292,6 +1306,61 @@ $.extend(edges, {
             nq.from = 0;
             this.edge.pushQuery(nq);
             this.edge.doQuery();
+        };
+
+        this._pruneTree = function() {
+            // to list all possible terms, build off the base query
+            var bq = this.edge.cloneBaseQuery();
+            bq.clearAggregations();
+            bq.size = 0;
+
+            // now add the aggregation that we want
+            var params = {
+                name: this.id,
+                field: this.field
+            };
+            if (this.size) {
+                params["size"] = this.size
+            }
+            bq.addAggregation(
+                es.newTermsAggregation(params)
+            );
+
+            // issue the query to elasticsearch
+            this.edge.queryAdapter.doQuery({
+                edge: this.edge,
+                query: bq,
+                success: edges.objClosure(this, "_querySuccess", ["result"]),
+                error: edges.objClosure(this, "_queryFail")
+            });
+        };
+
+        this.querySuccess = function(params) {
+            var result = params.result;
+
+            // get the terms out of the aggregation
+            this.terms = [];
+            var buckets = result.buckets(this.id);
+            for (var i = 0; i < buckets.length; i++) {
+                var bucket = buckets[i];
+                this.terms.push({term: bucket.key, display: this._translate(bucket.key), count: bucket.doc_count});
+            }
+
+            // in case there's a race between this and another update operation, subsequently synchronise
+            this.synchronise();
+
+            // since this happens asynchronously, we may want to draw
+            this.draw();
+        };
+
+        this.queryFail = function() {
+            this.tree = [];
+
+            // in case there's a race between this and another update operation, subsequently synchronise
+            this.synchronise();
+
+            // since this happens asynchronously, we may want to draw
+            this.draw();
         };
     }
 });
