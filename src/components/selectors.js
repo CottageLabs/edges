@@ -1102,38 +1102,47 @@ $.extend(edges, {
 
         this.nodeIndex = edges.getParam(params.nodeIndex, false);
 
-        this.lifecycle = edges.getParam(params.lifecycle, "init_only");
+        this.pruneTree = edges.getParam(params.pruneTree, false);
 
         this.syncTree = [];
 
         this.parentIndex = {};
+        
+        this.pruned = false;
 
         this.init = function(edge) {
             // first kick the request up to the superclass
             edges.newSelector().init.call(this, edge);
 
             // now trigger a request for the terms to present, if not explicitly provided
-            if (this.lifecycle === "init_only") {
+            if (this.pruneTree) {
                 this._pruneTree();
             }
         };
 
         this.contrib = function(query) {
-            if (this.lifecycle === "update") {
-                var params = {
-                    name: this.id,
-                    field: this.field
-                };
-                if (this.size) {
-                    params["size"] = this.size
-                }
-                query.addAggregation(
-                    es.newTermsAggregation(params)
-                );
+            var params = {
+                name: this.id,
+                field: this.field
+            };
+            if (this.size) {
+                params["size"] = this.size
             }
+            query.addAggregation(
+                es.newTermsAggregation(params)
+            );
         };
 
         this.synchronise = function() {
+            // synchronise if:
+            // * we are not pruning the tree
+            // * we are pruning the tree, and it has now been pruned
+            if (!(!this.pruneTree || (this.pruneTree && this.pruned))) {
+                this.syncTree = [];
+                this.parentIndex = {};
+                return;
+            }
+
             this.syncTree = $.extend(true, [], this.tree);
 
             var results = this.edge.result;
@@ -1335,16 +1344,49 @@ $.extend(edges, {
             });
         };
 
-        this.querySuccess = function(params) {
+        this._querySuccess = function(params) {
             var result = params.result;
 
-            // get the terms out of the aggregation
-            this.terms = [];
-            var buckets = result.buckets(this.id);
-            for (var i = 0; i < buckets.length; i++) {
-                var bucket = buckets[i];
-                this.terms.push({term: bucket.key, display: this._translate(bucket.key), count: bucket.doc_count});
+            var agg = result.aggregation(this.id);
+            var buckets = $.extend(true, [], agg.buckets);
+            var that = this;
+
+            function recurse(tree) {
+                var treeCount = 0;
+                var newTree = [];
+                for (var i = 0; i < tree.length; i++) {
+                    var node = $.extend({}, tree[i]);
+                    var nodeCount = 0;
+
+                    var idx = that.nodeMatch(node, buckets);
+                    if (idx === -1) {
+                        nodeCount = 0;
+                    } else {
+                        nodeCount = buckets[idx].doc_count;
+                    }
+                    treeCount += nodeCount;
+
+                    if (node.children) {
+                        var childUpdate = recurse(node.children);
+                        treeCount += childUpdate.treeCount;
+                        nodeCount += childUpdate.treeCount;
+                        if (childUpdate.newTree.length > 0) {
+                            node.children = childUpdate.newTree;
+                        } else {
+                            delete node.children;
+                        }
+                    }
+
+                    if (nodeCount > 0) {
+                        newTree.push(node);
+                    }
+                }
+                return {newTree: newTree, treeCount: treeCount}
             }
+            var treeUpdate = recurse(this.tree);
+            this.tree = treeUpdate.newTree;
+
+            this.pruned = true;
 
             // in case there's a race between this and another update operation, subsequently synchronise
             this.synchronise();
@@ -1353,8 +1395,10 @@ $.extend(edges, {
             this.draw();
         };
 
-        this.queryFail = function() {
+        this._queryFail = function() {
+            console.log("pruneTree query failed");
             this.tree = [];
+            this.pruned = true;
 
             // in case there's a race between this and another update operation, subsequently synchronise
             this.synchronise();
