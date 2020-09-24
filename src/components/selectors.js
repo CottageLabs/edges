@@ -1110,6 +1110,8 @@ $.extend(edges, {
         
         this.pruned = false;
 
+        this.nodeCount = 0;
+
         this.init = function(edge) {
             // first kick the request up to the superclass
             edges.newSelector().init.call(this, edge);
@@ -1140,6 +1142,7 @@ $.extend(edges, {
             if (!(!this.pruneTree || (this.pruneTree && this.pruned))) {
                 this.syncTree = [];
                 this.parentIndex = {};
+                this.nodeCount = 0;
                 return;
             }
 
@@ -1164,8 +1167,11 @@ $.extend(edges, {
             function recurse(tree, path) {
                 var anySelected = false;
                 var childCount = 0;
+
                 for (var i = 0; i < tree.length; i++) {
                     var node = tree[i];
+                    that.nodeCount++;
+
                     that.parentIndex[node.value] = $.extend(true, [], path);
 
                     var idx = that.nodeMatch(node, buckets);
