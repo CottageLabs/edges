@@ -1139,10 +1139,10 @@ $.extend(edges, {
             // synchronise if:
             // * we are not pruning the tree
             // * we are pruning the tree, and it has now been pruned
+            this.nodeCount = 0;
             if (!(!this.pruneTree || (this.pruneTree && this.pruned))) {
                 this.syncTree = [];
                 this.parentIndex = {};
-                this.nodeCount = 0;
                 return;
             }
 
