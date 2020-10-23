@@ -1306,10 +1306,28 @@ $.extend(edges, {
                     }
                 }
 
+                // look to see if the term has a parent chain
                 var grandparents = this.parentIndex[term];
                 if (grandparents.length > 0) {
+                    // if it does, get a candidate value to add to the filter
                     var immediate = grandparents[grandparents.length - 1];
-                    filter.add_term(immediate);
+
+                    // we only want to add the candidate value to the filter if it is not a grandparent of any
+                    // of the existing filters
+                    var other_terms = filter.values;
+                    var tripwire = false;
+                    for (var i = 0; i < other_terms.length; i++) {
+                        var ot = other_terms[i];
+                        var other_parents = this.parentIndex[ot];
+                        if ($.inArray(immediate, other_parents) > -1) {
+                            tripwire = true;
+                            break;
+                        }
+                    }
+
+                    if (!tripwire) {
+                        filter.add_term(immediate);
+                    }
                 }
 
                 if (!filter.has_terms()) {
