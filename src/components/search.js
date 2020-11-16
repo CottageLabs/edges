@@ -287,7 +287,11 @@ $.extend(edges, {
             this.edge.doQuery();
         };
 
-        this.setSearchField = function (field) {
+        this.setSearchField = function (field, cycle) {
+            if (cycle === undefined) {
+                cycle = true;
+            }
+
             // track the search field, as this may not trigger a search
             this.searchField = field;
             if (!this.searchString || this.searchString === "") {
@@ -307,10 +311,16 @@ $.extend(edges, {
             // reset the search page to the start and then trigger the next query
             nq.from = 0;
             this.edge.pushQuery(nq);
-            this.edge.doQuery();
+            if (cycle) {
+                this.edge.doQuery();
+            }
         };
 
-        this.setSearchText = function (text) {
+        this.setSearchText = function (text, cycle) {
+            if (cycle === undefined) {
+                cycle = true;
+            }
+
             var nq = this.edge.cloneQuery();
 
             if (text !== "") {
@@ -331,7 +341,9 @@ $.extend(edges, {
             // reset the search page to the start and then trigger the next query
             nq.from = 0;
             this.edge.pushQuery(nq);
-            this.edge.doQuery();
+            if (cycle) {
+                this.edge.doQuery();
+            }
         };
 
         this.clearSearch = function () {
