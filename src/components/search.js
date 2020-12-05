@@ -313,6 +313,8 @@ $.extend(edges, {
             this.edge.pushQuery(nq);
             if (cycle) {
                 this.edge.doQuery();
+            } else {
+                this.searchField = field;
             }
         };
 
@@ -343,6 +345,8 @@ $.extend(edges, {
             this.edge.pushQuery(nq);
             if (cycle) {
                 this.edge.doQuery();
+            } else {
+                this.searchString = text;
             }
         };
 
