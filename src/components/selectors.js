@@ -396,7 +396,7 @@ $.extend(edges, {
             }
         };
 
-        this._synchroniseTerms = function(params) {
+        this.__synchroniseTerms = function(params) {
             var result = params.result;
 
             // mesh the terms in the aggregation with the terms in the terms list
@@ -416,6 +416,17 @@ $.extend(edges, {
                 if (!found) {
                     t.count = 0;
                 }
+            }
+        };
+
+        this._synchroniseTerms = function(params) {
+            var result = params.result;
+
+            this.terms = [];
+            var buckets = result.buckets(this.id);
+            for (var i = 0; i < buckets.length; i++) {
+                var bucket = buckets[i];
+                this.terms.push({term: bucket.key, display: this._translate(bucket.key), count: bucket.doc_count});
             }
         };
 
@@ -551,6 +562,7 @@ $.extend(edges, {
 
         this.doUpdateQueryFail = function() {
             // just do nothing, hopefully the next request will be successful
+            this.updating = false;
         };
 
         ///////////////////////////////////////////
