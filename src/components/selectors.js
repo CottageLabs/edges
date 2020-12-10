@@ -366,12 +366,17 @@ $.extend(edges, {
         // is the object currently updating itself
         this.updating = false;
 
+        this.reQueryAfterListAll = false;
+
         this.init = function(edge) {
             // first kick the request up to the superclass
             edges.newSelector().init.call(this, edge);
 
             // now trigger a request for the terms to present, if not explicitly provided
             if (!this.terms) {
+                if (this.edge.openingQuery || this.edge.urlQuery) {
+                    this.reQueryAfterListAll = true;
+                }
                 this.listAll();
             }
         };
@@ -477,8 +482,12 @@ $.extend(edges, {
             // in case there's a race between this and another update operation, subsequently synchronise
             this.synchronise();
 
-            // since this happens asynchronously, we may want to draw
-            this.draw();
+            if (this.reQueryAfterListAll) {
+                this.doUpdate();
+            } else {
+                // since this happens asynchronously, we may want to draw
+                this.draw();
+            }
         };
 
         this.listAllQueryFail = function() {
