@@ -328,6 +328,11 @@ $.extend(edges, {
         // throughout its lifecycle.  One of "update" or "static"
         this.lifecycle = edges.getParam(params.lifecycle, "static");
 
+        // if the update type is "update", then how should this component update the facet values
+        // * mergeInitial - always keep the initial list in the original order, and merge the bucket counts onto the correct terms
+        // * fresh - just use the values in the most recent aggregation, ignoring the initial values
+        this.updateType = edges.getParam(params.updateType, "mergeInitial");
+
         // which ordering to use term/count and asc/desc
         this.orderBy = edges.getParam(params.orderBy, "term");
         this.orderDir = edges.getParam(params.orderDir, "asc");
@@ -401,7 +406,7 @@ $.extend(edges, {
             }
         };
 
-        this.__synchroniseTerms = function(params) {
+        this._synchroniseTermsMergeInitial = function(params) {
             var result = params.result;
 
             // mesh the terms in the aggregation with the terms in the terms list
@@ -425,6 +430,14 @@ $.extend(edges, {
         };
 
         this._synchroniseTerms = function(params) {
+            if (this.updateType === "mergeInitial") {
+                this._synchroniseTermsMergeInitial(params);
+            } else {
+                this._synchroniseTermsFresh(params);
+            }
+        };
+
+        this._synchroniseTermsFresh = function(params) {
             var result = params.result;
 
             this.terms = [];
@@ -541,25 +554,6 @@ $.extend(edges, {
         this.doUpdateQuerySuccess = function(params) {
             var result = params.result;
 
-            /*
-            // mesh the terms in the aggregation with the terms in the terms list
-            var buckets = result.buckets(this.id);
-
-            for (var i = 0; i < this.terms.length; i++) {
-                var t = this.terms[i];
-                var found = false;
-                for (var j = 0; j < buckets.length; j++) {
-                    var b = buckets[j];
-                    if (t.term === b.key) {
-                        t.count = b.doc_count;
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found) {
-                    t.count = 0;
-                }
-            }*/
             this._synchroniseTerms({result: result});
 
             // turn off the update flag
