@@ -832,6 +832,8 @@ $.extend(edges, {
     SearchingNotification: function (params) {
         this.defaultRenderer = params.defaultRenderer || "newSearchingNotificationRenderer";
 
+        this.finishedEvent = edges.getParam(params.finishedEvent, "edges:query-success");
+
         this.searching = false;
 
         this.init = function (edge) {
@@ -839,7 +841,7 @@ $.extend(edges, {
             // this.__proto__.init.call(this, edge);
             edge.context.on("edges:pre-query", edges.eventClosure(this, "searchingBegan"));
             edge.context.on("edges:query-fail", edges.eventClosure(this, "searchingFinished"));
-            edge.context.on("edges:query-success", edges.eventClosure(this, "searchingFinished"));
+            edge.context.on(this.finishedEvent, edges.eventClosure(this, "searchingFinished"));
         };
 
         // specifically disable this function
