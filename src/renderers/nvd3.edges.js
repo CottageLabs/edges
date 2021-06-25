@@ -622,12 +622,26 @@ $.extend(edges, {
 
                     chart.xAxis
                         .axisLabel(outer.xAxisLabel)
-                        .tickFormat(d3.format(outer.xTickFormat));
+
+                    if (outer.xTickFormat) {
+                        var fn = outer.xTickFormat;
+                        if (typeof outer.xTickFormat === "string") {
+                            fn = d3.format(outer.xTickFormat);
+                        }
+                        chart.xAxis.tickFormat(fn);
+                    }
 
                     chart.yAxis
                         .axisLabel(outer.yAxisLabel)
-                        .tickFormat(d3.format(outer.yTickFormat))
                         .axisLabelDistance(outer.yAxisLabelDistance);
+
+                    if (outer.yTickFormat) {
+                        var fn = outer.yTickFormat;
+                        if (typeof outer.yTickFormat === "string") {
+                            fn = d3.format(outer.yTickFormat);
+                        }
+                        chart.yAxis.tickFormat(fn);
+                    }
 
                     if (outer.barColor) {
                         chart.barColor(outer.barColor);
