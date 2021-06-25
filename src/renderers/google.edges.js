@@ -24,19 +24,29 @@ $.extend(edges, {
             // initial map type
             this.mapType = params.mapType || "hybrid";
 
+            this.clusterByCount = edges.getParam(params.clusterByCount, false);
+            
+            this.reQueryOnBoundsChange = edges.getParam(params.reQueryOnBoundsChange, false);
+
+            this.clusterIcons = edges.getParam(params.clusterIcons, {
+                0:"https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m1.png"
+            })
+
             /////////////////////////////////////////////
             // internal state
 
             this.namespace = "edges-google-map-view";
             this.map = false;
             this.markers = [];
+            this.currentZoom = false;
+            this.currentBounds = false;
 
             this.draw = function() {
                 // just check that the maps library is loaded
                 try {google} catch(Exception) {return}
 
                 // now check if there are any geo points, and if there's anything we should do about it
-                if (this.component.locations.length == 0) {
+                if (this.component.locations.length === 0) {
                     if (this.onNoGeoPoints === "hide") {
                         this.component.context.html(this.mapHiddenText);
                         return;
@@ -62,10 +72,15 @@ $.extend(edges, {
                         mapTypeId: mapTypeId
                     };
                     this.map = new google.maps.Map(element, mapOptions);
-                }
 
-                // make sure we set the centre right
-                this.map.setCenter(centre);
+                    // make sure we set the centre right
+                    this.map.setCenter(centre);
+                }
+                
+                if (this.reQueryOnBoundsChange) {
+                    let onBoundsChanged = edges.objClosure(this, "boundsChanged")
+                    this.map.addListener("bounds_changed", onBoundsChanged)
+                }
 
                 // clear any existing markers
                 for (i = 0; i < this.markers.length; i++) {
@@ -76,13 +91,58 @@ $.extend(edges, {
                 for (var i = 0; i < this.component.locations.length; i++) {
                     var loc = this.component.locations[i];
                     var myLatlng = new google.maps.LatLng(loc.lat, loc.lon);
-                    var marker = new google.maps.Marker({
+                    let properties = {
                         position: myLatlng,
                         map: this.map
-                    });
+                    }
+                    let icon = this._getClusterIcon(loc.count)
+                    if (icon) {
+                        properties["icon"] = icon;
+                    }
+                    if (this.clusterByCount) {
+                        properties["label"] = {text: loc.count.toString()}
+                    }
+
+                    var marker = new google.maps.Marker(properties);
                     this.markers.push(marker);
                 }
 
+            }
+
+            this.boundsChanged = function() {
+                let bounds = this.map.getBounds();
+                let zoom = this.map.getZoom();
+
+                let ne = bounds.getNorthEast();
+                let sw = bounds.getSouthWest();
+                
+                let top_left = {
+                    lat: ne.lat(),
+                    lon: sw.lng()
+                }
+
+                let bottom_right = {
+                    lat: sw.lat(),
+                    lon: ne.lng()
+                }
+
+                this.component.boundsChanged({
+                    top_left: top_left,
+                    bottom_right: bottom_right,
+                    zoom: zoom
+                })
+            }
+            
+            this._getClusterIcon = function(count) {
+                let icon = false;
+                let highest = -1;
+                for (let limit in this.clusterIcons) {
+                    if (limit <= count && limit > highest) {
+                        icon = this.clusterIcons[limit];
+                        highest = limit
+                    }
+                }
+                return icon;
             }
         }
     }
