@@ -95,6 +95,7 @@ var es = {
         this.aggs = params.aggs || [];
         this.must = params.must || [];
         this.mustNot = params.mustNot || [];
+        this.trackTotalHits = true;   // FIXME: hard code this for the moment, we can introduce the ability to vary it later
 
         // defaults from properties that will be set through their setters (see the bottom
         // of the function)
@@ -563,6 +564,11 @@ var es = {
                 if (this.source.exclude.length > 0) {
                     q["_source"]["exclude"] = this.source.exclude;
                 }
+            }
+
+            // set whether to track the total
+            if (this.trackTotalHits) {
+                q["track_total_hits"] = true;
             }
 
             return q;
@@ -1399,6 +1405,7 @@ var es = {
         this.lt = es.getParam(params.lt, false);
         this.lte = es.getParam(params.lte, false);
         this.gte = es.getParam(params.gte, false);
+        this.format = es.getParam(params.format, false);
 
         // normalise the values to strings
         if (this.lt) { this.lt = this.lt.toString() }
@@ -1430,6 +1437,12 @@ var es = {
                 }
             }
 
+            if (other.format) {
+                if (other.format !== this.format) {
+                    return false;
+                }
+            }
+
             return true;
         };
 
@@ -1444,6 +1457,9 @@ var es = {
             }
             if (this.gte !== false) {
                 obj.range[this.field]["gte"] = this.gte;
+            }
+            if (this.format !== false) {
+                obj.range[this.field]["format"] = this.format;
             }
             return obj;
         };
@@ -1461,6 +1477,9 @@ var es = {
             }
             if (obj[this.field].gte !== undefined && obj[this.field].gte !== false) {
                 this.gte = obj[this.field].gte;
+            }
+            if (obj[this.field].format !== undefined && obj[this.field].format !== false) {
+                this.format = obj[this.field].format;
             }
         };
 

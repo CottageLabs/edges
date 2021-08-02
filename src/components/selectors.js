@@ -1012,6 +1012,7 @@ $.extend(edges, {
             if (to) {
                 params["lt"] = to;
             }
+            params["format"] = "epoch_millis"   // Required for ES7.x date ranges against dateOptionalTime formats
             nq.addMust(es.newRangeFilter(params));
 
             // reset the search page to the start and then trigger the next query
