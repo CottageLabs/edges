@@ -1,0 +1,49 @@
+/********************************************************
+* Default results display
+*/
+
+.edges-html5-panel-results-container {
+
+}
+
+.edges-html5-panel-results-record {
+
+}
+
+.edges-html5-panel-results-record:hover {
+
+}
+
+.edges-html5-panel-results-panel {
+    display: inline-block;
+    margin-bottom: 20px;
+    vertical-align: top;
+}
+
+.edges-html5-panel-results-panel img {
+
+}
+
+.edges-html5-panel-results-panel-row {
+
+}
+
+.edges-html5-panel-results-field {
+
+}
+
+.edges-html5-panel-results-value {
+
+}
+
+.edges-html5-panel-results-annotation {
+    padding-top: 5px;
+    overflow-y: hidden;
+    text-align: center;
+}
+
+.edges-html5-panel-results-annotate-row {
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
+}
