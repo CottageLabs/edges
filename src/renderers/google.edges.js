@@ -36,7 +36,7 @@ $.extend(edges, {
                 try {google} catch(Exception) {return}
 
                 // now check if there are any geo points, and if there's anything we should do about it
-                if (this.component.locations.length == 0) {
+                if (this.component.locations.length === 0) {
                     if (this.onNoGeoPoints === "hide") {
                         this.component.context.html(this.mapHiddenText);
                         return;
