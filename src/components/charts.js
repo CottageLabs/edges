@@ -97,6 +97,32 @@ $.extend(edges, {
         };
     },
     ChartDataFunctions : {
+        /**
+         * Takes a date histogram aggregation and turns it into a single data series
+         *
+         * @param params
+         * @returns {(function(*): ([]|[{values: *[], key: string}]))|*}
+         */
+        dateHistogram : function(params) {
+            
+            let agg = params.agg;
+            let seriesName = params.seriesName;
+
+            return function(component) {
+                let values = [];
+
+                if (!component.edge.result) {
+                    return []
+                }
+                let aggregation = component.edge.result.aggregation(agg);
+                for (let i = 0; i < aggregation.buckets.length; i++) {
+                    let bucket = aggregation.buckets[i];
+                    values.push({label: bucket.key, value: bucket.doc_count});
+                }
+                return [{key: seriesName, values: values}]
+            }
+        },
+
         // dataFunctionClosure
         terms : function(params) {
 

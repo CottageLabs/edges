@@ -94,6 +94,8 @@ var es = {
         this.fields = params.fields || [];
         this.aggs = params.aggs || [];
         this.must = params.must || [];
+        this.mustNot = params.mustNot || [];
+        this.trackTotalHits = true;   // FIXME: hard code this for the moment, we can introduce the ability to vary it later
 
         // defaults from properties that will be set through their setters (see the bottom
         // of the function)
@@ -104,7 +106,6 @@ var es = {
         // NOTE: once we implement these, they also need to be considered in merge()
         this.source = params.source || false;
         this.should = params.should || [];
-        this.mustNot = params.mustNot || [];
         this.partialFields = params.partialFields || false;
         this.scriptFields = params.scriptFields || false;
         this.minimumShouldMatch = params.minimumShouldMatch || false;
@@ -324,17 +325,44 @@ var es = {
             // return the count of filters that were removed
             return removes.length;
         };
-        this.clearMust = function() {};
+        this.clearMust = function() {
+            this.must = [];
+        };
+
+        this.addMustNot = function(filter) {
+            var existing = this.listMustNot(filter);
+            if (existing.length === 0) {
+                this.mustNot.push(filter);
+            }
+        };
+        this.listMustNot = function(template) {
+            return this.listFilters({boolType: "must_not", template: template});
+        };
+        this.removeMustNot = function(template) {
+            var removes = [];
+            for (var i = 0; i < this.mustNot.length; i++) {
+                var m = this.mustNot[i];
+                if (m.matches(template)) {
+                    removes.push(i);
+                }
+            }
+            removes = removes.sort().reverse();
+            for (var i = 0; i < removes.length; i++) {
+                this.mustNot.splice(removes[i], 1);
+            }
+            // return the count of filters that were removed
+            return removes.length;
+        };
+        this.clearMustNot = function() {
+            this.mustNot = [];
+        };
 
         this.addShould = function() {};
         this.listShould = function() {};
         this.removeShould = function() {};
         this.clearShould = function() {};
 
-        this.addMustNot = function() {};
-        this.listMustNot = function() {};
-        this.removeMustNot = function() {};
-        this.removeMustNot = function() {};
+
 
         /////////////////////////////////////////////////
         // interrogative functions
@@ -388,7 +416,8 @@ var es = {
             // this.from - take from source if set
             // this.fields - append any new ones from source
             // this.aggs - append any new ones from source, overwriting any with the same name
-            // this must - append any new ones from source
+            // this.must - append any new ones from source
+            // this.mustNot - append any new ones from source
             // this.queryString - take from source if set
             // this.sort - prepend any from source
             // this.source - append any new ones from source
@@ -412,6 +441,10 @@ var es = {
             var must = source.listMust();
             for (var i = 0; i < must.length; i++) {
                 this.addMust(must[i]);
+            }
+            let mustNot = source.listMustNot();
+            for (let i = 0; i < mustNot.length; i++) {
+                this.addMustNot(mustNot[i]);
             }
             if (source.getQueryString()) {
                 this.setQueryString(source.getQueryString())
@@ -461,6 +494,15 @@ var es = {
                         musts.push(m.objectify());
                     }
                     bool["must"] = musts;
+                }
+                // add any must_not filters
+                if (this.mustNot.length > 0) {
+                    let mustNots = [];
+                    for (var i = 0; i < this.mustNot.length; i++) {
+                        var m = this.mustNot[i];
+                        mustNots.push(m.objectify());
+                    }
+                    bool["must_not"] = mustNots;
                 }
             }
 
@@ -524,6 +566,11 @@ var es = {
                 }
             }
 
+            // set whether to track the total
+            if (this.trackTotalHits) {
+                q["track_total_hits"] = true;
+            }
+
             return q;
         };
 
@@ -544,6 +591,15 @@ var es = {
                         } else if (fil && type === "query_string") {
                             // FIXME: this will work fine as long as there are no nested bools
                             target.setQueryString(fil);
+                        }
+                    }
+                }
+                if (bool.must_not) {
+                    for (var i = 0; i < bool.must_not.length; i++) {
+                        var type = Object.keys(bool.must_not[i])[0];
+                        var fil = es.filterFactory(type, {raw: bool.must_not[i]});
+                        if (fil) {
+                            target.addMustNot(fil);
                         }
                     }
                 }
@@ -989,7 +1045,7 @@ var es = {
         };
 
         this.parse = function(obj) {
-            var body = this._parse_wrapper(obj, "range");
+            var body = this._parse_wrapper(obj, "geo_distance");
             this.field = body.field;
 
             // FIXME: only handles the lat/lon object - but there are several forms
@@ -1011,6 +1067,34 @@ var es = {
             }
 
             this.ranges = body.ranges;
+        };
+
+        if (params.raw) {
+            this.parse(params.raw);
+        }
+    },
+
+    newGeohashGridAggregation : function(params) {
+        if (!params) { params = {} }
+        es.GeohashGridAggregation.prototype = es.newAggregation(params);
+        return new es.GeohashGridAggregation(params);
+    },
+    GeohashGridAggregation : function(params) {
+        this.field = params.field || false;
+        this.precision = params.precision || 3;
+
+        this.objectify = function() {
+            var body = {
+                field: this.field,
+                precision: this.precision
+            };
+            return this._make_aggregation("geohash_grid", body);
+        };
+
+        this.parse = function(obj) {
+            var body = this._parse_wrapper(obj, "geohash_grid");
+            this.field = body.field;
+            this.precision = body.precision;
         };
 
         if (params.raw) {
@@ -1096,6 +1180,29 @@ var es = {
         }
     },
 
+    newFiltersAggregation : function(params) {
+        if (!params) { params = {} }
+        es.FiltersAggregation.prototype = es.newAggregation(params);
+        return new es.FiltersAggregation(params);
+    },
+    FiltersAggregation : function(params) {
+        this.filters = params.filters || {};
+
+        this.objectify = function() {
+            var body = {filters: this.filters};
+            return this._make_aggregation("filters", body);
+        };
+
+        this.parse = function(obj) {
+            var body = this._parse_wrapper(obj, "filters");
+            this.filters = body.filters;
+        };
+
+        if (params.raw) {
+            this.parse(params.raw);
+        }
+    },
+
     ///////////////////////////////////////////////////
     // Filters
 
@@ -1159,6 +1266,29 @@ var es = {
             }
             this.field = Object.keys(obj)[0];
             this.value = obj[this.field];
+        };
+
+        if (params.raw) {
+            this.parse(params.raw);
+        }
+    },
+
+    newExistsFilter : function(params) {
+        if (!params) { params = {} }
+        params.type_name = "term";
+        es.ExistsFilter.prototype = es.newFilter(params);
+        return new es.ExistsFilter(params);
+    },
+    ExistsFilter : function(params) {
+        this.objectify = function() {
+            return {exists : {field: this.field}};
+        };
+
+        this.parse = function(obj) {
+            if (obj.exists) {
+                obj = obj.exists;
+            }
+            this.field = obj.field;
         };
 
         if (params.raw) {
@@ -1275,6 +1405,7 @@ var es = {
         this.lt = es.getParam(params.lt, false);
         this.lte = es.getParam(params.lte, false);
         this.gte = es.getParam(params.gte, false);
+        this.format = es.getParam(params.format, false);
 
         // normalise the values to strings
         if (this.lt) { this.lt = this.lt.toString() }
@@ -1306,6 +1437,12 @@ var es = {
                 }
             }
 
+            if (other.format) {
+                if (other.format !== this.format) {
+                    return false;
+                }
+            }
+
             return true;
         };
 
@@ -1320,6 +1457,9 @@ var es = {
             }
             if (this.gte !== false) {
                 obj.range[this.field]["gte"] = this.gte;
+            }
+            if (this.format !== false) {
+                obj.range[this.field]["format"] = this.format;
             }
             return obj;
         };
@@ -1337,6 +1477,9 @@ var es = {
             }
             if (obj[this.field].gte !== undefined && obj[this.field].gte !== false) {
                 this.gte = obj[this.field].gte;
+            }
+            if (obj[this.field].format !== undefined && obj[this.field].format !== false) {
+                this.format = obj[this.field].format;
             }
         };
 
@@ -1412,6 +1555,53 @@ var es = {
                 this.gte = parts[0];
                 this.unit = parts[1];
             }
+        };
+
+        if (params.raw) {
+            this.parse(params.raw);
+        }
+    },
+
+    newGeoBoundingBoxFilter : function(params) {
+        if (!params) { params = {} }
+        params.type_name = "geo_bounding_box";
+        return edges.instantiate(es.GeoBoundingBoxFilter, params, es.newFilter);
+    },
+    GeoBoundingBoxFilter : function(params) {
+        this.top_left = params.top_left || false;
+        this.bottom_right = params.bottom_right || false;
+
+        this.matches = function(other) {
+            // ask the parent object first
+            var pm = Object.getPrototypeOf(this).matches.call(this, other);
+            if (!pm) {
+                return false;
+            }
+            if (other.top_left && other.top_left !== this.top_left) {
+                return false;
+            }
+            if (other.bottom_right && other.bottom_right !== this.bottom_right) {
+                return false;
+            }
+            return true;
+        };
+
+        this.objectify = function() {
+            var obj = {geo_bounding_box : {}};
+            obj.geo_bounding_box[this.field] = {
+                top_left: this.top_left,
+                bottom_right: this.bottom_right
+            };
+            return obj;
+        };
+
+        this.parse = function(obj) {
+            if (obj.geo_bounding_box) {
+                obj = obj.geo_bounding_box;
+            }
+            this.field = Object.keys(obj)[0];
+            this.top_left = obj[this.field].top_left;
+            this.bottom_right = obj[this.field].bottom_right;
         };
 
         if (params.raw) {

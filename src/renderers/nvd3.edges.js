@@ -495,7 +495,7 @@ $.extend(edges, {
                         // set it on the chart
                         var fn = that.valueFormat;
                         if (typeof that.valueFormat === "string") {
-                            fn = d3.format(that.xTickFormat);
+                            fn = d3.format(that.valueFormat);
                         }
                         chart.valueFormat(fn);
 
@@ -734,6 +734,92 @@ $.extend(edges, {
 
                     nv.utils.windowResize(chart.update);
 
+                    return chart;
+                });
+            }
+        },
+
+        newStackedAreaChartRenderer : function(params) {
+            return edges.instantiate(edges.nvd3.StackedAreaChartRenderer, params, edges.newRenderer);
+        },
+        StackedAreaChartRenderer : function(params) {
+
+            this.interactiveGuideline = params.interactiveGuideline || true;
+            this.xTickFormat = params.xTickFormat || false;
+            this.yTickFormat = params.yTickFormat || false;
+            this.transitionDuration = params.transitionDuration || 500;
+            this.showLegend = edges.getParam(params.showLegend, true);
+
+            this.xAxisLabel = params.xAxisLabel || "";
+            this.yAxisLabel = params.yAxisLabel || "";
+            this.yAxisLabelDistance = edges.getParam(params.yAxisLabelDistance, 0);
+
+            this.marginTop = edges.getParam(params.marginTop, 30);
+            this.marginRight = edges.getParam(params.marginRight, 60);
+            this.marginBottom = edges.getParam(params.marginBottom, 50);
+            this.marginLeft = edges.getParam(params.marginLeft, 60);
+
+            this.namespace = "edges-nvd3-stacked-area-chart";
+
+            this.draw = function() {
+                var displayClasses = edges.css_classes(this.namespace, "display", this);
+                var displayFrag = "";
+                if (this.component.display) {
+                    displayFrag = '<span class="' + displayClasses + '">' + this.component.display + '</span><br>';
+                }
+
+                var svgId = edges.css_id(this.namespace, "svg", this);
+                var svgSelector = edges.css_id_selector(this.namespace, "svg", this);
+                this.component.context.html(displayFrag + '<svg id="' + svgId + '"></svg>');
+
+                var data_series = this.component.dataSeries;
+                if (!data_series) {
+                    data_series = [];
+                }
+                var ds = edges.nvd3.DataSeriesConversions.toXY(data_series);
+                var outer = this;
+
+                nv.addGraph(function() {
+                    var chart = nv.models.stackedAreaChart()
+                        .useInteractiveGuideline(outer.useInteractiveGuideline)
+                        .showLegend(outer.showLegend)
+                        .margin({top: outer.marginTop, right: outer.marginRight, bottom: outer.marginBottom, left: outer.marginLeft})
+                        .rightAlignYAxis(true)
+                        .showControls(true)
+                        .clipEdge(true)
+                        .x(function(d) { return d.x })
+                        .y(function(d) { return d.y })
+
+                    if (outer.xTickFormat) {
+                        var fn = outer.xTickFormat;
+                        if (typeof outer.xTickFormat === "string") {
+                            fn = d3.format(outer.xTickFormat);
+                        }
+                        chart.xAxis.tickFormat(fn);
+                    }
+
+                    if (outer.yTickFormat) {
+                        var fn = outer.yTickFormat;
+                        if (typeof outer.yTickFormat === "string") {
+                            fn = d3.format(outer.yTickFormat);
+                        }
+                        chart.yAxis.tickFormat(fn);
+                    }
+
+                    chart.xAxis
+                        .axisLabel(outer.xAxisLabel)
+
+                    chart.yAxis
+                        .axisLabel(outer.yAxisLabel)
+                        .axisLabelDistance(outer.yAxisLabelDistance);
+
+                    d3.select(svgSelector)
+                      .datum(ds)
+                      .transition().duration(outer.transitionDuration)
+                      .call(chart);
+                
+                    nv.utils.windowResize(chart.update);
+                
                     return chart;
                 });
             }
