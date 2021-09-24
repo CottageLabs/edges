@@ -1,0 +1,83 @@
+{
+  "name": "edges",
+  "version": "2.0.0-SNAPSHOT",
+  "description": "Data Query and Visualisation Lifecycle Suite",
+  "source" : "src/edges.js",
+  "scripts": {
+    "jquery-external" : "cp dependencies/jquery/external.js dependencies/jquery.js",
+    "jquery-bundled" : "cp dependencies/jquery/bundled.js dependencies/jquery.js",
+
+    "es1x" : "cp dependencies/es/es1x.js dependencies/es.js",
+    "es-external" : "cp dependencies/es/external.js dependencies/es.js",
+
+    "clean" : "rm -rf ./.parcel-cache && rm -rf ./dist",
+    "clean-client" : "rm -rf ./.parcel-cache && rm -rf ./dist/client",
+    "clean-module" : "rm -rf ./.parcel-cache && rm -rf ./dist/module",
+    "clean-es1x": "rm -rf ./.parcel-cache && rm -rf ./dist/es1x",
+
+    "target-client" : "parcel build --target client",
+    "target-es1x" : "parcel build --target es1x",
+    "target-module" : "parcel build --target module",
+
+    "build-all" : "npm run build-client && npm run build-module && npm run build-es1x",
+    "build-client" : "npm run jquery-external && npm run es-external && npm run clean-client && npm run target-client",
+    "build-module" : "npm run jquery-bundled && npm run es-external && npm run clean-module && npm run target-module",
+    "build-es1x" : "npm run clean-es1x && npm run target-es1x",
+
+    "demo-standalone" : "npm run build-browser && npm run build-es1x && cp ./dist/client/* views/ && cp ./dist/es1x/* views/ && cp ./vendor/jquery-3.6.0/jquery-3.6.0.min.js views/",
+    "demo-serve": "npm run jquery-bundled && npm run es1x && npm run clean && parcel serve views/demo.html -p 8000"
+  },
+  "targets" : {
+    "client" : {
+      "source" : "src/edges.js",
+      "engines" : {
+        "browsers": "> 0.5%, last 2 versions, not dead"
+      },
+      "isLibrary": false,
+      "optimize": false,
+      "outputFormat" : "global"
+    },
+    "module" : {
+      "source" : "src/edges.js",
+      "outputFormat": "esmodule",
+      "isLibrary" : true
+    },
+    "es1x" : {
+      "source" : "builds/es1x.js",
+      "engines" : {
+        "browsers": "> 0.5%, last 2 versions, not dead"
+      },
+      "isLibrary": false,
+      "optimize": false,
+      "outputFormat" : "global"
+    }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CottageLabs/edges.git"
+  },
+  "keywords": [
+    "data",
+    "visualisation",
+    "faceted",
+    "browse",
+    "elastic"
+  ],
+  "author": "Richard Jones",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/CottageLabs/edges/issues"
+  },
+  "homepage": "https://github.com/CottageLabs/edges#readme",
+  "devDependencies": {
+    "@babel/core": "^7.15.5",
+    "@babel/plugin-transform-runtime": "^7.15.0",
+    "parcel": "latest",
+    "sass": "^1.39.2"
+  },
+  "dependencies": {
+    "@babel/runtime-corejs2": "^7.15.4",
+    "@swc/helpers": "^0.2.13",
+    "jquery": "^3.6.0"
+  }
+}

@@ -1,143 +1,107 @@
 # Edges
 
-Data Visualisation Suite.  
+2.0 Upgrade README TODO
 
-* Load data from a variety of sources: elastic, static data files
-* Query and filter data
-* Display data using a variety of components: filter selectors, search widgets, graphs and charts
-* Handle user interactions, and re-render visualisations
+## Build
 
-Extensible and flexible.
+Edges uses Parcel to build.  There are a number of build options, depending on your desired environment.
 
+### Client library
 
-## Sources and Dependencies
+If you want to use Edges as a client-only library, you can compile it so the library and all its resources
+are available to you in an `edges` global variable.
 
-Edges has a critical dependency on jQuery (tested to <= 0.12.x).
+To compile for this environment use:
 
-In addition, each component may have its own dependencies.  All dependencies that are needed by the current components can be found in `/vendor`
-
-Once you have your base dependencies chosen, you then need to include the core Edges library `/src/edges.js`
-
-Depending on your data sources, you will need one or both of the following
-
-* `/src/es.js` for elastic (or `es5x.js` if using version 5 or above)
-* `/src/edges.csv.js` for static csvs
-
-Components are then available in `/components` and renderers available in `/renderers`
-
-There is a full build available in `/build/releases/current`
-
-
-## Edges instance structure
-
-Each deployment of Edges consists of constructing the core Edges object around your parameters.  Parameters are documented inline
-so you should check the source for full details.
-
-The most basic setup would be something like this:
-
-```
-e = edges.newEdge({
-    selector: "#edges",
-    template: edges.bs3.newTabbed(),
-    
-    components: [
-        edges.newSimpleLineChart({
-            id: "line_chart",
-            display: "Line Chart",
-            dataSeries: [
-                {
-                    key: "Series 1",
-                    values: [
-                        {label: 1980, value: 100},
-                        {label: 1981, value: 120},
-                        {label: 1982, value: 122},
-                        {label: 1983, value: 130}
-                    ]
-                },
-                {
-                    key: "Series 2",
-                    values: [
-                        {label: 1980, value: 200},
-                        {label: 1981, value: 220},
-                        {label: 1982, value: 222},
-                        {label: 1983, value: 230}
-                    ]
-                }
-            ],
-            category: "tab",
-            renderer : edges.nvd3.newSimpleLineChartRenderer({
-                xTickFormat: '.0f',
-                yTickFormat: ',.0f'
-            })
-        })
-    ]
-});
+```bash
+npm run build-client
 ```
 
-This specifies a **selector** which identifies the HTML element into which the Edge will be inserted.  It then specifies a **template** which
-is an optional feature which will render an HTML template into the selected element.  If not specified, you are responsible for providing
-your own template explicitly in your own HTML.
+This will output `dist/client/edges.js` which you can use in an HTML page in the usual way:
 
-Finally it specifies a list of **components** which define the actual functionality of the Edge.  Each component, in turn, specifies
-a **renderer** which is responsible for visualising the data in the component.
-
-
-You can bind an Edge to one or more data sources as follows:
-
-For elastic:
-
-```
-e = edges.newEdge({
-    search_url: "http://localhost:9200/allapc/institutional/_search",
-    ...
-});
+```html
+<script src="edges.js"></script>
 ```
 
-For static CSVs:
+Note that if you compile Edges this way it **will not** include jQuery or the Elasticsearch dependencies in the
+package, you will be required to include them yourself, for example:
 
-```
-e4 = edges.newEdge({
-    staticFiles : [
-        {
-            id: "mycsv",
-            url: "http://localhost:5029/static/vendor/edges/docs/static.csv",
-            datatype: "text"
-        }
-    ]
-});
+```html
+<script src="jquery.js"></script>
+<script src="es1x.js"></script>
+<script src="edges.js"></script>
 ```
 
-You can see more detailed examples of how Edges is initialised in `/docs/example.js`
+You will probably want to compile your own Elasticsearch dependency, see the relevant section below for that.
+
+### ES Module
+
+If you want a module that is importable using the standard NPM approach, build as follows:
+
+```bash
+npm run build-module
+```
+
+This will output `dist/module/edges.js` which can be used in standard import statements.
 
 
-## Edges lifecycle
+### Development Server
 
-When a new Edge is constructed, the following processes happen:
+To build edges using the Demo application under the demo server you can use
 
-1. The page template is rendered (if provided)
-2. All components are instructed to draw themselves.  This means they can provide a "loading" state to the user at that point.
-3. Any static resources are loaded (if provided)
-4. Any initial elastic query is executed (if a search_url is available)
-    * After the initial query is executed, any secondary queries are constructed and executed
-5. All components are instructed to synchronise themselves with the core data
-6. All components are instructed to render themselves.
+```bash
+npm run demo-serve
+```
 
-At this point processing is paused, as the full visualisation will have been displayed to the user.  The user may then interact with
-any interactive components on the page.  The details of the interaction are dependent on the components involved, but any component may
-trigger a "cycle" of the core data, as follows:
-
-1. The component modifies one or more filtering/querying aspects of the Edge
-2. Any static resources have the new filters applied to them
-3. Any elastic binding has the new query run
-    * After this query has completed, any secondary queries are regenerated and executed
-5. All components are instructed to synchronise themselves with the core data
-6. All components are instructed to render themselves.
-
-The sequence can be re-executed as many times as the user desired, allowing the entire system to be a fully responsive visualisation
-environment which maintains complete consistency across all components for the data that the user is focused on.
+This will compile the demo application and make it available at http://localhost:3000
 
 
-## Working with Elastic
+### Stand-alone demo
+
+To see the demo application running as a pure client side application, outside the parcel server, use
+
+```bash
+npm run demo-standalone
+```
+
+This will compile `edges.js` and `es1x.js` and place them in the `view` directory along with jQuery, such that
+the file `demo-standalone.html` can be opened directly in your browser.
 
 
+### Elasticsearch dependencies
 
+If you are building for the client, you will need to import the elasticsearch binding dependencies in your HTML file.
+
+To do this, you will need to build the appropriate binding for your environment.  You can use:
+
+```bash
+npm run build-es1x
+```
+
+This will compile the ES 1.x binding library to `dist/es1x/es1x.js`.  You can then include this file in a `script`
+tag as normal:
+
+```html
+<script src="es1x.js"></script>
+```
+
+Note that this library has dependencies on jQuery which are not bundled, so you will also need to add a jQuery `script`
+tag to your HTML page
+
+```html
+<script src="jquery.js"></script>
+<script src="es1x.js"></script>
+```
+
+### Alternative build approaches
+
+The `package.json` file contains a number of scripts that you can run to compile alternative versions of edges 
+depending on your use case.  In particular it supports:
+
+* Bundling jQuery: use `npm run jquery-bundled` to set the library up to build with jQuery bundled, then `npm run target-client`
+to compile the client in that way.
+* Bundling es bindings: use `npm run es1x` to set the library up to build with es1x support bundled, then `npm run target-client` 
+to compile the client in that way
+  
+You can combine bundling external libraries any way you wish, and then compile the appropriate target to give you the
+desired build.

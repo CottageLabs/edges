@@ -1,0 +1,2 @@
+var $ = window.$;
+export {$};
