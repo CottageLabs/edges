@@ -1,6 +1,7 @@
 import {$} from '../dependencies/jquery';
+import {Component, Renderer} from "./core";
 
-function getParam(params, key, def) {
+export function getParam(params, key, def) {
     function _getDefault() {
         if (typeof def === 'function') {
             return def();
@@ -19,7 +20,7 @@ function getParam(params, key, def) {
     return params[key];
 }
 
-function getUrlParams() {
+export function getUrlParams() {
     var params = {};
     var url = window.location.href;
     var fragment = false;
@@ -82,7 +83,7 @@ function getUrlParams() {
 // results in a call to
 // this.function({one: arg1, two: arg2})
 //
-function objClosure(obj, fn, args, context_params) {
+export function objClosure(obj, fn, args, context_params) {
     return function() {
         if (args) {
             var params = {};
@@ -106,7 +107,24 @@ function objClosure(obj, fn, args, context_params) {
     }
 }
 
-class AsyncGroup {
+export function eventClosure(obj, fn, conditional, preventDefault) {
+    if (preventDefault === undefined) {
+        preventDefault = true;
+    }
+    return function(event) {
+        if (conditional) {
+            if (!conditional(event)) {
+                return;
+            }
+        }
+        if (preventDefault) {
+            event.preventDefault();
+        }
+        obj[fn](this, event);
+    }
+}
+
+export class AsyncGroup {
     constructor(params) {
         this.list = getParam(params, "list");
         this.successCallbackArgs = getParam(params, "successCallbackArgs");
@@ -189,4 +207,180 @@ class AsyncGroup {
     };
 }
 
-export {getParam, getUrlParams, objClosure, AsyncGroup}
+export function bem(block, element, modifier) {
+    let bemClass = block;
+    if (element) {
+        bemClass += "__" + element;
+    }
+    if (modifier) {
+        bemClass += "--" + modifier;
+    }
+    return bemClass;
+}
+
+export function styleClasses(namespace, field, instance_name) {
+    instance_name = _normaliseInstanceName(instance_name);
+    let cl = namespace;
+    if (field) {
+        cl += "_" + field
+    }
+    if (instance_name) {
+        let second = namespace + "_" + instance_name;
+        if (field) {
+            second += "_" + field;
+        }
+        cl += " " + second;
+    }
+    return cl;
+}
+
+export function jsClasses(namespace, field, instance_name) {
+    instance_name = _normaliseInstanceName(instance_name);
+    let styles = styleClasses(namespace, field, instance_name)
+    let jsClasses = "";
+    let bits = styles.split(" ")
+    for (let i = 0; i < bits.length; i++) {
+        let bit = bits[i];
+        jsClasses += " js-" + bit;
+    }
+    return jsClasses;
+}
+
+export function allClasses(namespace, field, instance_name) {
+    instance_name = _normaliseInstanceName(instance_name);
+    let styles = styleClasses(namespace, field, instance_name);
+    let js = jsClasses(namespace, field, instance_name);
+    return styles + " " + js;
+}
+
+export function jsClassSelector(namespace, field, instance_name) {
+    instance_name = _normaliseInstanceName(instance_name);
+    let sel = ".js-" + namespace;
+    if (instance_name) {
+        sel += "_" + instance_name;
+    }
+    if (field) {
+        sel += "_" + field;
+    }
+    return sel;
+}
+
+export function htmlID(namespace, field, instance_name) {
+    instance_name = _normaliseInstanceName(instance_name);
+    let id = namespace;
+    if (instance_name) {
+        id += "_" + instance_name;
+    }
+    if (field) {
+        id += "_" + field;
+    }
+    return id;
+}
+
+export function idSelector(namespace, field, instance_name) {
+    instance_name = _normaliseInstanceName(instance_name);
+    return "#" + htmlID(namespace, field, instance_name);
+}
+
+function _normaliseInstanceName(instance_name) {
+    if (typeof instance_name === "string") {
+        return instance_name;
+    }
+    // FIXME: check this doesn't cause a circular import issue
+    if (instance_name instanceof Component) {
+        return instance_name.id;
+    }
+
+    if (instance_name instanceof Renderer) {
+        return instance_name.component.id;
+    }
+}
+
+export function escapeHtml(unsafe, def) {
+    if (def === undefined) {
+        def = "";
+    }
+    if (unsafe === undefined || unsafe == null) {
+        return def;
+    }
+    try {
+        if (typeof unsafe.replace !== "function") {
+            return unsafe
+        }
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    } catch(err) {
+        return def;
+    }
+}
+
+//////////////////////////////////////////////////////////////////
+// Event binding utilities
+
+export function on(selector, event, caller, targetFunction, delay, conditional, preventDefault) {
+    if (preventDefault === undefined) {
+        preventDefault = true;
+    }
+    // if the caller has an inner component (i.e. it is a Renderer), use the component's id
+    // otherwise, if it has a namespace (which is true of Renderers or Templates) use that
+    if (caller.component && caller.component.id) {
+        event = event + "." + caller.component.id;
+    } else if (caller.namespace) {
+        event = event + "." + caller.namespace;
+    }
+
+    // create the closure to be called on the event
+    var clos = eventClosure(caller, targetFunction, conditional, preventDefault);
+
+    // now bind the closure directly or with delay
+    // if the caller has an inner component (i.e. it is a Renderer) use the components jQuery selector
+    // otherwise, if it has an inner, use the selector on that.
+    if (delay) {
+        if (caller.component) {
+            caller.component.jq(selector).bindWithDelay(event, clos, delay);
+        } else if (caller.edge) {
+            caller.edge.jq(selector).bindWithDelay(event, clos, delay);
+        } else {
+            $(selector).bindWithDelay(event, clos, delay);
+        }
+    } else {
+        if (caller.component) {
+            var element = caller.component.jq(selector);
+            element.off(event);
+            element.on(event, clos);
+        } else if (caller.edge) {
+            var element = caller.edge.jq(selector);
+            element.off(event);
+            element.on(event, clos);
+        } else {
+            var element = $(selector);
+            element.off(event);
+            element.on(event, clos);
+        }
+    }
+}
+
+export function off(selector, event, caller) {
+    // if the caller has an inner component (i.e. it is a Renderer), use the component's id
+    // otherwise, if it has a namespace (which is true of Renderers or Templates) use that
+    if (caller.component && caller.component.id) {
+        event = event + "." + caller.component.id;
+    } else if (caller.namespace) {
+        event = event + "." + caller.namespace;
+    }
+
+    if (caller.component) {
+        var element = caller.component.jq(selector);
+        element.off(event);
+    } else if (caller.edge) {
+        var element = caller.edge.jq(selector);
+        element.off(event);
+    } else {
+        var element = $(selector);
+        element.off(event);
+    }
+}

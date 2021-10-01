@@ -503,6 +503,19 @@ class Edge {
         }
     }
 
+    fullUrl() {
+        var args = this.fullQueryArgs();
+        var fragment = "";
+        if (args["#"]) {
+            fragment = "#" + args["#"];
+            delete args["#"];
+        }
+        var wloc = window.location.toString();
+        var bits = wloc.split("?");
+        var url = bits[0] + "?" + this._makeUrlQuery(args) + fragment;
+        return url;
+    };
+
     fullUrlQueryString() {
         return this._makeUrlQuery(this.fullQueryArgs())
     }
@@ -563,12 +576,137 @@ class Edge {
         }
     };
 
+    reset() {
+        // tell the world we're about to reset
+        this.trigger("edges:pre-reset");
+
+        // clone from the opening query
+        var requestedQuery = this.cloneOpeningQuery();
+
+        // request the components to contribute to the query
+        for (var i = 0; i < this.components.length; i++) {
+            var component = this.components[i];
+            component.contrib(requestedQuery);
+        }
+
+        // push the query, which will reconcile it with the baseQuery
+        this.pushQuery(requestedQuery);
+
+        // tell the world that we've done the reset
+        this.trigger("edges:post-reset");
+
+        // now execute the query
+        // this.doQuery();
+        this.cycle();
+    };
+
+    sleep() {
+        for (var i = 0; i < this.components.length; i++) {
+            var component = this.components[i];
+            component.sleep();
+        }
+    };
+
+    wake() {
+        for (var i = 0; i < this.components.length; i++) {
+            var component = this.components[i];
+            component.wake();
+        }
+    };
+
     trigger(event_name) {
         if (event_name in this.callbacks) {
             this.callbacks[event_name](this);
         }
         this.context.trigger(event_name);
     };
+
+    ////////////////////////////////////////////
+    // accessors
+
+    getComponent(params) {
+        var id = params.id;
+        for (var i = 0; i < this.components.length; i++) {
+            var component = this.components[i];
+            if (component.id === id) {
+                return component;
+            }
+        }
+        return false;
+    };
+
+    // return components in the requested category
+    category(cat) {
+        var comps = [];
+        for (var i = 0; i < this.components.length; i++) {
+            var component = this.components[i];
+            if (component.category === cat) {
+                comps.push(component);
+            }
+        }
+        return comps;
+    };
+
+    jq(selector) {
+        return $(selector, this.context);
+    };
 }
 
-export {Edge}
+class Template {
+    draw(edge) {}
+}
+
+class Component {
+    constructor(params) {
+        this.id = getParam(params, "id");
+        this.renderer = getParam(params, "renderer");
+        this.category = getParam(params, "category", false);
+    }
+
+    init(edge) {
+        this.edge = edge;
+        this.context = this.edge.jq("#" + this.id);
+        if (this.renderer) {
+            this.renderer.init(this);
+        }
+    }
+
+    draw() {
+        if (this.renderer) {
+            this.renderer.draw();
+        }
+    }
+
+    sleep() {
+        if (this.renderer) {
+            this.renderer.sleep();
+        }
+    }
+
+    wake() {
+        if (this.renderer) {
+            this.renderer.wake();
+        }
+    };
+
+    // convenience method for any renderer rendering a component
+    jq(selector) {
+        return this.edge.jq(selector);
+    }
+
+    // methods to be implemented by subclasses
+    contrib(query) {}
+    synchronise() {}
+}
+
+class Renderer {
+    init(component) {
+        this.component = component
+    }
+
+    draw() {};
+    sleep() {};
+    wake() {}
+}
+
+export {Edge, Template, Component, Renderer}
