@@ -1,0 +1,24 @@
+@charset "utf-8";
+
+/**
+ * This file serves to pull together ALL the available styles for the edges
+ * components.  This is mostly to demonstrate that they all work.  For your own
+ * project you should specify your own scss main file which pulls in the styles
+ * you need
+ */
+
+@import
+  "base/palette",
+  //"base/spacing",
+  //"base/typescale",
+  //"base/fonts",
+  //"base/body",
+  //"base/general",
+  //"base/grid",
+  //"base/utils",
+  //"base/logo",
+  //"base/highlight",
+
+  "renderers/bs3/refining-and-term-selector",
+  "renderers/bs3/results-fields-by-row"
+;

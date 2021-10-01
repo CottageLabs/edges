@@ -1,0 +1,23 @@
+/********************************************************
+* bs3/ResultsFieldsByRowRenderer.js
+*/
+
+$ns:".edges-bs3-results-fields-by-row";
+
+#{$ns}_record {
+  padding-bottom: 15px;
+  padding-top: 15px;
+  padding-left: 10px;
+  padding-right: 10px;
+  border-bottom: 1px dashed $component-border;
+  overflow-wrap: break-word;
+}
+
+#{$ns}_record:hover {
+  background-color: $component-highlight-row;
+}
+
+#{$ns}_field {
+  font-weight: bold;
+  padding-right: 10px;
+}

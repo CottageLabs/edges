@@ -1,0 +1,88 @@
+/********************************************************
+ *  bs3/RefiningANDTermSelectorRenderer.js
+ */
+
+$ns:".edges-bs3-refining-and-term-selector";
+
+#{$ns}_facet {
+  border-top: 1px solid $component-border;
+  border-bottom: 1px solid $component-border;
+}
+
+#{$ns}_header {
+  font-weight: bold;
+  padding-left: 5px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  background-color: $component-title-background;
+}
+
+#{$ns}_header a {
+  color: $component-link;
+}
+
+#{$ns}_header a:hover {
+  font-weight: bold;
+  text-decoration: none;
+}
+
+#{$ns}_tooltip {
+  padding: 2px 5px 2px 5px;
+  background-color: $component-title-background;
+}
+
+#{$ns}_controls {
+  padding-bottom: 5px;
+  padding-left: 5px;
+  border-bottom: 1px solid $component-border;
+  background-color: $component-title-background;
+}
+
+#{$ns}_result {
+  padding-left: 5px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+#{$ns}_result:nth-of-type(odd) {
+  background-color: $component-background;
+}
+
+#{$ns}_result:nth-of-type(even) {
+  background-color: $component-alt-row;
+}
+
+#{$ns}_result:hover {
+  background-color: $component-highlight-row;
+}
+
+#{$ns}_filter-remove {
+  color: $component-link;
+}
+
+#{$ns}_filter-remove:hover {
+  color: $component-link;
+}
+
+#{$ns}_results-list::-webkit-scrollbar {
+  -webkit-appearance: none;
+}
+
+#{$ns}_results-list::-webkit-scrollbar:vertical {
+  width: 8px;
+}
+
+#{$ns}_results-list::-webkit-scrollbar:horizontal {
+  height: 8px;
+}
+
+#{$ns}_results-list::-webkit-scrollbar-thumb {
+  border-radius: 8px;
+  border: 1px solid $component-scrollbar;
+  background-color: rgba(0, 0, 0, .4);
+}
+
+#{$ns}_results-list::-webkit-scrollbar-track {
+  background-color: $component-scrollbar;
+  border-radius: 8px;
+}
