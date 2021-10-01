@@ -2,7 +2,7 @@
 node_modules
 dependencies/jquery.js
 dependencies/es.js
-views/edges.*
-views/es1x.*
+views/standalone/*.js*
+views/standalone/*.css*
 .parcel-cache
 dist
