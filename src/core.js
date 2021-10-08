@@ -4,7 +4,7 @@ import {ESQueryAdapter} from "./adapters/es_adapter";
 import {es} from '../dependencies/es'
 import {$} from '../dependencies/jquery';
 
-class Edge {
+export class Edge {
     constructor(params) {
         /////////////////////////////////////////////
         // parameters that can be set via params arg
@@ -652,11 +652,11 @@ class Edge {
     };
 }
 
-class Template {
+export class Template {
     draw(edge) {}
 }
 
-class Component {
+export class Component {
     constructor(params) {
         this.id = getParam(params, "id");
         this.renderer = getParam(params, "renderer");
@@ -699,7 +699,7 @@ class Component {
     synchronise() {}
 }
 
-class Renderer {
+export class Renderer {
     init(component) {
         this.component = component
     }
@@ -708,5 +708,3 @@ class Renderer {
     sleep() {};
     wake() {}
 }
-
-export {Edge, Template, Component, Renderer}
