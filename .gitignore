@@ -2,6 +2,8 @@
 node_modules
 dependencies/jquery.js
 dependencies/es.js
+dependencies/nvd3.js
+dependencies/d3.js
 views/standalone/*.js*
 views/standalone/*.css*
 .parcel-cache

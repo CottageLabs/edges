@@ -8,6 +8,7 @@
     "jquery-bundled": "cp dependencies/jquery/bundled.js dependencies/jquery.js",
     "es1x": "cp dependencies/es/es1x.js dependencies/es.js",
     "es-external": "cp dependencies/es/external.js dependencies/es.js",
+    "nvd3-external": "cp dependencies/nvd3/external.js dependencies/nvd3.js",
     "clean": "rm -rf ./.parcel-cache && rm -rf ./dist",
     "clean-client": "rm -rf ./.parcel-cache && rm -rf ./dist/client",
     "clean-module": "rm -rf ./.parcel-cache && rm -rf ./dist/module",
