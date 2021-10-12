@@ -31,6 +31,15 @@ $.extend(edges, {
         this.valueMap = params.valueMap || false;
         this.valueFunction = params.valueFunction || false;
 
+        // function to parse the value selected (which will be a string) into whatever
+        // datatype the filter requires
+        this.parseSelectedValueString = edges.getParam(params.parseSelectedValueString, false);
+
+        // function to convert the filter value to the same type as the aggregation value, if they
+        // differ (e.g. if the filter is `true` but the agg value is `1` this function can convert
+        // between them.
+        this.filterToAggValue = edges.getParam(params.filterToAggValue, false);
+
         // due to a limitation in elasticsearch's clustered node facet counts, we need to inflate
         // the number of facet results we need to ensure that the results we actually want are
         // accurate.  This option tells us by how much.
@@ -99,8 +108,12 @@ $.extend(edges, {
             var filters = this.edge.currentQuery.listMust(es.newTermFilter({field: this.field}));
             for (var i = 0; i < filters.length; i++) {
                 var val = filters[i].value;
+                if (this.filterToAggValue) {
+                    val = this.filterToAggValue(val);
+                }
+                let term = val;
                 val = this._translate(val);
-                this.filters.push({display: val, term: filters[i].value});
+                this.filters.push({display: val, term: term});
             }
         };
 
@@ -138,7 +151,11 @@ $.extend(edges, {
                     var exclude = false;
                     for (var j = 0; j < predefined.length; j++) {
                         var f = predefined[j];
-                        if (bucket.key === f.value) {
+                        let filterValue = f.value;
+                        if (this.filterToAggValue) {
+                            filterValue = this.filterToAggValue(f.value)
+                        }
+                        if (bucket.key === filterValue) {
                             exclude = true;
                             break;
                         }
@@ -217,6 +234,10 @@ $.extend(edges, {
         // functions that can be called on this component to change its state
 
         this.selectTerm = function(term) {
+            if (this.parseSelectedValueString) {
+                term = this.parseSelectedValueString(term);
+            }
+
             var nq = this.edge.cloneQuery();
 
             // first make sure we're not double-selecting a term
@@ -246,6 +267,10 @@ $.extend(edges, {
         };
 
         this.removeFilter = function(term) {
+            if (this.parseSelectedValueString) {
+                term = this.parseSelectedValueString(term);
+            }
+
             var nq = this.edge.cloneQuery();
 
             nq.removeMust(es.newTermFilter({
