@@ -1,5 +1,107 @@
 import {$} from '../../dependencies/jquery';
 
+class Aggregation {
+    static type = "aggregation"
+
+    constructor(params) {
+        this.name = params.name;
+        this.aggs = params.aggs || [];
+    }
+
+    addAggregation(agg) {
+        for (var i = 0; i < this.aggs.length; i++) {
+            if (this.aggs[i].name === agg.name) {
+                return;
+            }
+        }
+        this.aggs.push(agg);
+    }
+
+    removeAggregation() {};
+    clearAggregations() {};
+
+    // for use by sub-classes, for their convenience in rendering
+    // the overall structure of the aggregation to an object
+    _make_aggregation(type, body) {
+        var obj = {};
+        obj[this.name] = {};
+        obj[this.name][type] = body;
+
+        if (this.aggs.length > 0) {
+            obj[this.name]["aggs"] = {};
+            for (var i = 0; i < this.aggs.length; i++) {
+                $.extend(obj[this.name]["aggs"], this.aggs[i].objectify())
+            }
+        }
+
+        return obj;
+    }
+
+    _parse_wrapper(obj, type) {
+        this.name = Object.keys(obj)[0];
+        var body = obj[this.name][type];
+
+        var aggs = obj[this.name].aggs ? obj[this.name].aggs : obj[this.name].aggregations;
+        if (aggs) {
+            var anames = Object.keys(aggs);
+            for (var i = 0; i < anames.length; i++) {
+                var name = anames[i];
+                var agg = aggs[anames[i]];
+                var subtype = Object.keys(agg)[0];
+                var raw = {};
+                raw[name] = agg;
+                var oa = es.aggregationFactory(subtype, {raw: raw});
+                if (oa) {
+                    this.addAggregation(oa);
+                }
+            }
+        }
+
+        return body;
+    }
+}
+
+class Filter {
+    static type = "filter"
+
+    constructor(params) {
+        this.field = params.field;
+        this.type_name = params.type_name;
+    }
+
+    matches(other) {
+        return this._baseMatch(other);
+    }
+
+    _baseMatch(other) {
+        // type must match
+        if (other.type_name !== this.type_name) {
+            return false;
+        }
+        // field (if set) must match
+        if (other.field && other.field !== this.field) {
+            return false;
+        }
+        // otherwise this matches
+        return true;
+    }
+
+    objectify() {};
+    parse() {};
+}
+
+function _classExtends(clazz, ref) {
+    if (clazz.__proto__ === null) {
+        return false;
+    }
+    if (clazz.__proto__ === ref) {
+        return true;
+    }
+    else {
+        return _classExtends(clazz.__proto__, ref);
+    }
+}
+
 /** @namespace */
 var es = {
 
@@ -28,38 +130,40 @@ var es = {
     // request method to be used throughout.  Set this before using the module if you want it different
     requestMethod : "get",
 
+    // add request headers (such as Auth) if you need to
+    requestHeaders : false,
+
+    Filter: Filter,
+    Aggregation: Aggregation,
+
     ////////////////////////////////////////////////////
 
     ////////////////////////////////////////////////////
     // object factories
 
     aggregationFactory : function(type, params) {
-        var constructors = {
-            terms: es.newTermsAggregation,
-            range: es.newRangeAggregation,
-            geo_distance: es.newGeoDistanceAggregation,
-            date_histogram: es.newDateHistogramAggregation,
-            stats: es.newStatsAggregation,
-            cardinality: es.newCardinalityAggregation
-        };
-
-        if (constructors[type]) {
-            return constructors[type](params);
+        for (const [key, value] of Object.entries(es)) {
+            if (_classExtends(es[key], Aggregation)) {
+                if (es[key].type === type) {
+                    return new es[key](params);
+                }
+            }
         }
-
     },
 
     filterFactory : function(type, params) {
-        var constructors = {
-            query_string: es.newQueryString,
-            term: es.newTermFilter,
-            terms: es.newTermsFilter,
-            range: es.newRangeFilter,
-            geo_distance_range: es.newGeoDistanceRangeFilter
-        };
+        // query string is a special case
+        if (type === "query_string") {
+            return new es.QueryString(params);
+        }
 
-        if (constructors[type]) {
-            return constructors[type](params);
+        // otherwise auto-detect
+        for (const [key, value] of Object.entries(es)) {
+            if (_classExtends(es[key], Filter)) {
+                if (es[key].type === type) {
+                    return new es[key](params);
+                }
+            }
         }
     },
 
@@ -82,77 +186,100 @@ var es = {
      * @param minimumShouldMatch ???
      * @param facets {String[]} for older versions of ES
      */
+    Query: class {
+        constructor(params) {
+            if (!params) { params = {}}
+            // properties that can be set directly (thought note that they may need to be read via their getters)
+            this.filtered = es.getParam(params.filtered, true);
+            this.trackTotalHits = true;   // FIXME: hard code this for the moment, we can introduce the ability to vary it later
 
-    newQuery : function(params) {
-        if (!params) { params = {} }
-        return new es.Query(params);
-    },
-    /** @class */
-    Query : function(params) {
-        // properties that can be set directly (thought note that they may need to be read via their getters)
-        this.filtered = params.filtered || true;
-        this.size = params.size !== undefined ? params.size : false;
-        this.from = params.from || false;
-        this.fields = params.fields || [];
-        this.aggs = params.aggs || [];
-        this.must = params.must || [];
+            this.size = es.getParam(params.size, false);
+            this.from = es.getParam(params.from, false);
+            this.fields = es.getParam(params.fields, []);
+            this.aggs = es.getParam(params.aggs, []);
+            this.must = es.getParam(params.must, []);
 
-        // defaults from properties that will be set through their setters (see the bottom
-        // of the function)
-        this.queryString = false;
-        this.sort = [];
-        this.source = params.source || false;
+            // defaults from properties that will be set through their setters (see the bottom
+            // of the function)
+            this.queryString = false;
+            this.sort = [];
 
-        // ones that we haven't used yet, so are awaiting implementation
-        // NOTE: once we implement these, they also need to be considered in merge()
-        this.should = params.should || [];
-        this.mustNot = params.mustNot || [];
-        this.partialFields = params.partialFields || false;
-        this.scriptFields = params.scriptFields || false;
-        this.minimumShouldMatch = params.minimumShouldMatch || false;
-        this.partialFields = params.partialFields || false;
-        this.scriptFields = params.scriptFields || false;
+            // ones that we haven't used yet, so are awaiting implementation
+            // NOTE: once we implement these, they also need to be considered in merge()
+            this.source = es.getParam(params.source, false);
+            this.mustNot = es.getParam(params.mustNot, []);
+            this.should = es.getParam(params.should, []);
+            this.partialFields = es.getParam(params.partialField, false);
+            this.scriptFields = es.getParam(params.scriptFields, false);
+            this.minimumShouldMatch = es.getParam(params.minimumShouldMatch, false);
+            this.partialFields = es.getParam(params.partialFields, false);
+            this.scriptFields = es.getParam(params.scriptFields, false);
 
-        // for old versions of ES, so are not necessarily going to be implemented
-        this.facets = params.facets || [];
+            // for old versions of ES, so are not necessarily going to be implemented
+            this.facets = es.getParam(params.facets, []);
 
-        this.getSize = function() {
+            ///////////////////////////////////////////////////////////
+            // final part of construction - set the dynamic properties
+            // via their setters
+
+            if (params.queryString) {
+                this.setQueryString(params.queryString);
+            }
+
+            if (params.sort) {
+                this.setSortBy(params.sort);
+            }
+
+            // finally, if we're given a raw query, parse it
+            if (params.raw) {
+                this.parse(params.raw)
+            }
+        }
+
+        /////////////////////////////////////////////////
+        // getters and setters
+
+        getSize() {
             if (this.size !== undefined && this.size !== false) {
                 return this.size;
             }
             return 10;
-        };
-        this.getFrom = function() {
+        }
+
+        getFrom() {
             if (this.from) {
                 return this.from
             }
             return 0;
-        };
-        this.addField = function(field) {
+        }
+
+        addField(field) {
             if ($.inArray(field, this.fields) === -1) {
                 this.fields.push(field);
             }
-        };
+        }
 
-        this.setQueryString = function(params) {
+        setQueryString(params) {
             var qs = params;
             if (!(params instanceof es.QueryString)) {
                 if ($.isPlainObject(params)) {
-                    qs = es.newQueryString(params);
+                    qs = new es.QueryString(params);
                 } else {
-                    qs = es.newQueryString({queryString: params});
+                    qs = new es.QueryString({queryString: params});
                 }
             }
             this.queryString = qs;
-        };
-        this.getQueryString = function() {
-            return this.queryString;
-        };
-        this.removeQueryString = function() {
-            this.queryString = false;
-        };
+        }
 
-        this.setSortBy = function(params) {
+        getQueryString() {
+            return this.queryString;
+        }
+
+        removeQueryString() {
+            this.queryString = false;
+        }
+
+        setSortBy(params) {
             // overwrite anything that was there before
             this.sort = [];
             // ensure we have a list of sort options
@@ -164,12 +291,13 @@ var es = {
             for (var i = 0; i < sorts.length; i++) {
                 this.addSortBy(sorts[i]);
             }
-        };
-        this.addSortBy = function(params) {
+        }
+
+        addSortBy(params) {
             // ensure we have an instance of es.Sort
             var sort = params;
             if (!(params instanceof es.Sort)) {
-                sort = es.newSort(params);
+                sort = new es.Sort(params);
             }
             // prevent repeated sort options being added
             for (var i = 0; i < this.sort.length; i++) {
@@ -180,21 +308,23 @@ var es = {
             }
             // add the sort option
             this.sort.push(sort);
-        };
-        this.prependSortBy = function(params) {
+        }
+
+        prependSortBy(params) {
             // ensure we have an instance of es.Sort
             var sort = params;
             if (!(params instanceof es.Sort)) {
-                sort = es.newSort(params);
+                sort = new es.Sort(params);
             }
             this.removeSortBy(sort);
             this.sort.unshift(sort);
-        };
-        this.removeSortBy = function(params) {
+        }
+
+        removeSortBy(params) {
             // ensure we have an instance of es.Sort
             var sort = params;
             if (!(params instanceof es.Sort)) {
-                sort = es.newSort(params);
+                sort = new es.Sort(params);
             }
             var removes = [];
             for (var i = 0; i < this.sort.length; i++) {
@@ -207,12 +337,13 @@ var es = {
             for (var i = 0; i < removes.length; i++) {
                 this.sort.splice(removes[i], 1);
             }
-        };
-        this.getSortBy = function() {
-            return this.sort;
-        };
+        }
 
-        this.setSourceFilters = function(params) {
+        getSortBy() {
+            return this.sort;
+        }
+
+        setSourceFilters(params) {
             if (!this.source) {
                 this.source = {include: [], exclude: []};
             }
@@ -222,9 +353,9 @@ var es = {
             if (params.exclude) {
                 this.source.exclude = params.exclude;
             }
-        };
+        }
 
-        this.addSourceFilters = function(params) {
+        addSourceFilters(params) {
             if (!this.source) {
                 this.source = {include: [], exclude: []};
             }
@@ -242,27 +373,23 @@ var es = {
                     this.source.include = params.include;
                 }
             }
-        };
+        }
 
-        this.getSourceIncludes = function() {
+        getSourceIncludes() {
             if (!this.source) {
                 return [];
             }
             return this.source.include;
-        };
+        }
 
-        this.getSourceExcludes = function() {
+        getSourceExcludes() {
             if (!this.source) {
                 return [];
             }
             return this.source.exclude;
         };
 
-        this.addFacet = function() {};
-        this.removeFacet = function() {};
-        this.clearFacets = function() {};
-
-        this.getAggregation = function(params) {
+        getAggregation(params) {
             var name = params.name;
             for (var i = 0; i < this.aggs.length; i++) {
                 var a = this.aggs[i];
@@ -270,8 +397,9 @@ var es = {
                     return a;
                 }
             }
-        };
-        this.addAggregation = function(agg, overwrite) {
+        }
+
+        addAggregation(agg, overwrite) {
             if (overwrite) {
                 this.removeAggregation(agg.name);
             } else {
@@ -282,8 +410,9 @@ var es = {
                 }
             }
             this.aggs.push(agg);
-        };
-        this.removeAggregation = function(name) {
+        }
+
+        removeAggregation(name) {
             var removes = [];
             for (var i = 0; i < this.aggs.length; i++) {
                 if (this.aggs[i].name === name) {
@@ -294,24 +423,28 @@ var es = {
             for (var i = 0; i < removes.length; i++) {
                 this.aggs.splice(removes[i], 1);
             }
-        };
-        this.clearAggregations = function() {
-            this.aggs = [];
-        };
-        this.listAggregations = function() {
-            return this.aggs;
-        };
+        }
 
-        this.addMust = function(filter) {
+        clearAggregations() {
+            this.aggs = [];
+        }
+
+        listAggregations() {
+            return this.aggs;
+        }
+
+        addMust(filter) {
             var existing = this.listMust(filter);
             if (existing.length === 0) {
                 this.must.push(filter);
             }
-        };
-        this.listMust = function(template) {
+        }
+
+        listMust(template) {
             return this.listFilters({boolType: "must", template: template});
-        };
-        this.removeMust = function(template) {
+        }
+
+        removeMust(template) {
             var removes = [];
             for (var i = 0; i < this.must.length; i++) {
                 var m = this.must[i];
@@ -325,29 +458,28 @@ var es = {
             }
             // return the count of filters that were removed
             return removes.length;
-        };
-        this.clearMust = function() {};
+        }
 
-        this.addShould = function() {};
-        this.listShould = function() {};
-        this.removeShould = function() {};
-        this.clearShould = function() {};
+        clearMust() {}
 
-        this.addMustNot = function() {};
-        this.listMustNot = function() {};
-        this.removeMustNot = function() {};
-        this.removeMustNot = function() {};
+        addMustNot(filter) {}
+
+        listMustNot(template) {}
+
+        removeMustNot(template) {}
+
+        clearMustNot() {}
 
         /////////////////////////////////////////////////
         // interrogative functions
 
-        this.hasFilters = function() {
+        hasFilters() {
             return this.must.length > 0 || this.should.length > 0 || this.mustNot.length > 0
-        };
+        }
 
         // in general better to use the listMust, listShould, listMustNot, directly.
         // those methods each use this method internally anyway
-        this.listFilters = function(params) {
+        listFilters(params) {
             var boolType = params.boolType || "must";
             var template = params.template || false;
 
@@ -375,12 +507,12 @@ var es = {
                 }
             }
             return l;
-        };
+        }
 
         ////////////////////////////////////////////////
         // create, parse, serialise functions
 
-        this.merge = function(source) {
+        merge(source) {
             // merge this query (in place) with the provided query, where the provided
             // query is dominant (i.e. any properties it has override this object)
             //
@@ -390,7 +522,7 @@ var es = {
             // this.from - take from source if set
             // this.fields - append any new ones from source
             // this.aggs - append any new ones from source, overwriting any with the same name
-            // this must - append any new ones from source
+            // this.must - append any new ones from source
             // this.queryString - take from source if set
             // this.sort - prepend any from source
             // this.source - append any new ones from source
@@ -428,9 +560,9 @@ var es = {
             var includes = source.getSourceIncludes();
             var excludes = source.getSourceExcludes();
             this.addSourceFilters({include: includes, exclude: excludes});
-        };
+        }
 
-        this.objectify = function(params) {
+        objectify(params) {
             if (!params) {
                 params = {};
             }
@@ -468,7 +600,7 @@ var es = {
 
             // add the bool to the query in the correct place (depending on filtering)
             if (this.filtered && this.hasFilters()) {
-                if (Object.keys(query_part).length == 0) {
+                if (Object.keys(query_part).length === 0) {
                     query_part["match_all"] = {};
                 }
                 q["query"] = {filtered : {filter : {bool : bool}, query : query_part}};
@@ -476,7 +608,7 @@ var es = {
                 if (this.hasFilters()) {
                     query_part["bool"] = bool;
                 }
-                if (Object.keys(query_part).length == 0) {
+                if (Object.keys(query_part).length === 0) {
                     query_part["match_all"] = {};
                 }
                 q["query"] = query_part;
@@ -528,14 +660,13 @@ var es = {
             }
 
             return q;
-        };
+        }
 
-        // When a query is requested as a string, dump via JSON.
-        es.Query.prototype.toString = function queryToString() {
+        toString() {
             return JSON.stringify(this.objectify())
-        };
+        }
 
-        this.parse = function(obj) {
+        parse(obj) {
 
             function parseBool(bool, target) {
                 if (bool.must) {
@@ -594,7 +725,7 @@ var es = {
             if (obj.sort) {
                 for (var i = 0; i < obj.sort.length; i++) {
                     var so = obj.sort[i];
-                    this.addSortBy(es.newSort({raw: so}));
+                    this.addSortBy(new es.Sort({raw: so}));
                 }
             }
 
@@ -634,44 +765,33 @@ var es = {
                 }
                 this.setSourceFilters({include: include, exclude: exclude});
             }
-        };
-
-        ///////////////////////////////////////////////////////////
-        // final part of construction - set the dynamic properties
-        // via their setters
-
-        if (params.queryString) {
-            this.setQueryString(params.queryString);
         }
 
-        if (params.sort) {
-            this.setSortBy(params.sort);
-        }
-
-        // finally, if we're given a raw query, parse it
-        if (params.raw) {
-            this.parse(params.raw)
+        clone() {
+            return new es.Query({raw: Object.assign({}, this.objectify())})
         }
     },
 
     ///////////////////////////////////////////////
     // Query String
 
-    newQueryString : function(params) {
-        if (!params) { params = {} }
-        return new es.QueryString(params);
-    },
-    QueryString : function(params) {
-        this.queryString = params.queryString || false;
-        this.defaultField = params.defaultField || false;
-        this.defaultOperator = params.defaultOperator || "OR";
+    QueryString : class {
+        constructor(params) {
+            this.queryString = params.queryString || false;
+            this.defaultField = params.defaultField || false;
+            this.defaultOperator = params.defaultOperator || "OR";
 
-        this.fuzzify = params.fuzzify || false;     // * or ~
-        this.escapeSet = params.escapeSet || es.specialCharsSubSet;
-        this.pairs = params.pairs || es.characterPairs;
-        this.unEscapeSet = params.unEscapeSet || es.specialChars;
+            this.fuzzify = params.fuzzify || false;     // * or ~
+            this.escapeSet = params.escapeSet || es.specialCharsSubSet;
+            this.pairs = params.pairs || es.characterPairs;
+            this.unEscapeSet = params.unEscapeSet || es.specialChars;
 
-        this.objectify = function() {
+            if (params.raw) {
+                this.parse(params.raw);
+            }
+        }
+
+        objectify() {
             var qs = this._escape(this._fuzzify(this.queryString));
             var obj = {query_string : {query : qs}};
             if (this.defaultOperator) {
@@ -681,9 +801,9 @@ var es = {
                 obj.query_string["default_field"] = this.defaultField;
             }
             return obj;
-        };
+        }
 
-        this.parse = function(obj) {
+        parse(obj) {
             if (obj.query_string) {
                 obj = obj.query_string;
             }
@@ -694,9 +814,9 @@ var es = {
             if (obj.default_field) {
                 this.defaultField = obj.default_field;
             }
-        };
+        }
 
-        this._fuzzify = function(str) {
+        _fuzzify(str) {
             if (!this.fuzzify || !(this.fuzzify === "*" || this.fuzzify === "~")) {
                 return str;
             }
@@ -711,31 +831,31 @@ var es = {
                 var oip = optparts[i];
                 if (oip.length > 0) {
                     oip = oip + this.fuzzify;
-                    this.fuzzify == "*" ? oip = "*" + oip : false;
+                    this.fuzzify === "*" ? oip = "*" + oip : false;
                     pq += oip + " ";
                 }
             }
             return pq;
         };
 
-        this._escapeRegExp = function(string) {
+        _escapeRegExp(string) {
             return string.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
         };
 
-        this._replaceAll = function(string, find, replace) {
+        _replaceAll(string, find, replace) {
             return string.replace(new RegExp(this._escapeRegExp(find), 'g'), replace);
         };
 
-        this._unReplaceAll = function(string, find) {
+        _unReplaceAll(string, find) {
             return string.replace(new RegExp("\\\\(" + this._escapeRegExp(find) + ")", 'g'), "$1");
         };
 
-        this._paired = function(string, pair) {
+        _paired(string, pair) {
             var matches = (string.match(new RegExp(this._escapeRegExp(pair), "g"))) || [];
             return matches.length % 2 === 0;
         };
 
-        this._escape = function(str) {
+        _escape(str) {
             // make a copy of the special characters (we may modify it in a moment)
             var scs = this.escapeSet.slice(0);
 
@@ -756,147 +876,85 @@ var es = {
             return str;
         };
 
-        this._unescape = function(str) {
+        _unescape(str) {
             for (var i = 0; i < this.unEscapeSet.length; i++) {
                 var char = this.unEscapeSet[i];
                 str = this._unReplaceAll(str, char)
             }
             return str;
         };
-
-        if (params.raw) {
-            this.parse(params.raw);
-        }
     },
 
     //////////////////////////////////////////////
     // Sort Option
 
-    newSort : function(params) {
-        if (!params) { params = {} }
-        return new es.Sort(params);
-    },
-    Sort : function(params) {
-        this.field = params.field || "_score";
-        this.order = params.order || "desc";
+    Sort : class {
+        constructor(params) {
+            this.field = params.field || "_score";
+            this.order = params.order || "desc";
 
-        this.objectify = function() {
+            if (params.raw) {
+                this.parse(params.raw);
+            }
+        }
+
+        objectify() {
             var obj = {};
             obj[this.field] = {order: this.order};
             return obj;
-        };
+        }
 
-        this.parse = function(obj) {
+        parse(obj) {
             this.field = Object.keys(obj)[0];
             if (obj[this.field].order) {
                 this.order = obj[this.field].order;
             }
-        };
-
-        if (params.raw) {
-            this.parse(params.raw);
         }
     },
 
     //////////////////////////////////////////////
     // Root Aggregation and aggregation implementations
 
-    newAggregation : function(params) {
-        if (!params) { params = {} }
-        return new es.Aggregation(params);
-    },
-    Aggregation : function(params) {
-        this.name = params.name;
-        this.aggs = params.aggs || [];
+    TermsAggregation : class extends Aggregation {
+        static type = "terms";
 
-        this.addAggregation = function(agg) {
-            for (var i = 0; i < this.aggs.length; i++) {
-                if (this.aggs[i].name === agg.name) {
-                    return;
+        constructor(params) {
+            super(params);
+            this.field = params.field || false;
+            this.size = params.size || 10;
+
+            // set the ordering for the first time
+            this.orderBy = "_count";
+            if (params.orderBy) {
+                this.orderBy = params.orderBy;
+                if (this.orderBy[0] !== "_") {
+                    this.orderBy = "_" + this.orderBy;
                 }
             }
-            this.aggs.push(agg);
-        };
-        this.removeAggregation = function() {};
-        this.clearAggregations = function() {};
+            this.orderDir = params.orderDir || "desc";
 
-        // for use by sub-classes, for their convenience in rendering
-        // the overall structure of the aggregation to an object
-        this._make_aggregation = function(type, body) {
-            var obj = {};
-            obj[this.name] = {};
-            obj[this.name][type] = body;
-
-            if (this.aggs.length > 0) {
-                obj[this.name]["aggs"] = {};
-                for (var i = 0; i < this.aggs.length; i++) {
-                    $.extend(obj[this.name]["aggs"], this.aggs[i].objectify())
-                }
-            }
-
-            return obj;
-        };
-
-        this._parse_wrapper = function(obj, type) {
-            this.name = Object.keys(obj)[0];
-            var body = obj[this.name][type];
-
-            var aggs = obj[this.name].aggs ? obj[this.name].aggs : obj[this.name].aggregations;
-            if (aggs) {
-                var anames = Object.keys(aggs);
-                for (var i = 0; i < anames.length; i++) {
-                    var name = anames[i];
-                    var agg = aggs[anames[i]];
-                    var subtype = Object.keys(agg)[0];
-                    var raw = {};
-                    raw[name] = agg;
-                    var oa = es.aggregationFactory(subtype, {raw: raw});
-                    if (oa) {
-                        this.addAggregation(oa);
-                    }
-                }
-            }
-
-            return body;
-        }
-    },
-
-    newTermsAggregation : function(params) {
-        if (!params) { params = {} }
-        es.TermsAggregation.prototype = es.newAggregation(params);
-        return new es.TermsAggregation(params);
-    },
-    TermsAggregation : function(params) {
-        this.field = params.field || false;
-        this.size = params.size || 10;
-
-        // set the ordering for the first time
-        this.orderBy = "_count";
-        if (params.orderBy) {
-            this.orderBy = params.orderBy;
-            if (this.orderBy[0] !== "_") {
-                this.orderBy = "_" + this.orderBy;
+            if (params.raw) {
+                this.parse(params.raw);
             }
         }
-        this.orderDir = params.orderDir || "desc";
 
         // provide a method to set and normalise the ordering in future
-        this.setOrdering = function(orderBy, orderDir) {
+        setOrdering(orderBy, orderDir) {
             this.orderBy = orderBy;
             if (this.orderBy[0] !== "_") {
                 this.orderBy = "_" + this.orderBy;
             }
             this.orderDir = orderDir;
-        };
+        }
 
-        this.objectify = function() {
+        objectify() {
             var body = {field: this.field, size: this.size, order: {}};
             body.order[this.orderBy] = this.orderDir;
-            return this._make_aggregation("terms", body);
-        };
+            return this._make_aggregation(es.TermsAggregation.type, body);
+        }
 
-        this.parse = function(obj) {
-            var body = this._parse_wrapper(obj, "terms");
+        parse(obj) {
+            var body = this._parse_wrapper(obj, es.TermsAggregation.type);
             this.field = body.field;
             if (body.size) {
                 this.size = body.size;
@@ -905,75 +963,75 @@ var es = {
                 this.orderBy = Object.keys(body.order)[0];
                 this.orderDir = body.order[this.orderBy];
             }
-        };
-
-        if (params.raw) {
-            this.parse(params.raw);
         }
     },
 
-    newCardinalityAggregation : function(params) {
-        if (!params) { params = {} }
-        es.CardinalityAggregation.prototype = es.newAggregation(params);
-        return new es.CardinalityAggregation(params);
-    },
-    CardinalityAggregation : function(params) {
-        this.field = es.getParam(params.field, false);
+    CardinalityAggregation : class extends Aggregation {
+        static type = "cardinality";
 
-        this.objectify = function() {
+        constructor(params) {
+            super(params);
+            this.field = es.getParam(params.field, false);
+
+            if (params.raw) {
+                this.parse(params.raw);
+            }
+        }
+
+        objectify() {
             var body = {field: this.field};
-            return this._make_aggregation("cardinality", body);
+            return this._make_aggregation(es.CardinalityAggregation.type, body);
         };
 
-        this.parse = function(obj) {
-            var body = this._parse_wrapper(obj, "cardinality");
+        parse(obj) {
+            var body = this._parse_wrapper(obj, es.CardinalityAggregation.type);
             this.field = body.field;
         };
+    },
 
-        if (params.raw) {
-            this.parse(params.raw);
+    RangeAggregation : class extends Aggregation {
+        static type = "range";
+
+        constructor(params) {
+            super(params);
+            this.field = params.field || false;
+            this.ranges = params.ranges || [];
+
+            if (params.raw) {
+                this.parse(params.raw);
+            }
         }
-    },
 
-    newRangeAggregation : function(params) {
-        if (!params) { params = {} }
-        es.RangeAggregation.prototype = es.newAggregation(params);
-        return new es.RangeAggregation(params);
-    },
-    RangeAggregation : function(params) {
-        this.field = params.field || false;
-        this.ranges = params.ranges || [];
-
-        this.objectify = function() {
+        objectify() {
             var body = {field: this.field, ranges: this.ranges};
-            return this._make_aggregation("range", body);
-        };
+            return this._make_aggregation(es.RangeAggregation.type, body);
+        }
 
-        this.parse = function(obj) {
-            var body = this._parse_wrapper(obj, "range");
+        parse(obj) {
+            var body = this._parse_wrapper(obj, es.RangeAggregation.type);
             this.field = body.field;
             this.ranges = body.ranges;
-        };
-
-        if (params.raw) {
-            this.parse(params.raw);
         }
     },
 
-    newGeoDistanceAggregation : function(params) {
-        if (!params) { params = {} }
-        es.GeoDistanceAggregation.prototype = es.newAggregation(params);
-        return new es.GeoDistanceAggregation(params);
-    },
-    GeoDistanceAggregation : function(params) {
-        this.field = params.field || false;
-        this.lat = params.lat || false;
-        this.lon = params.lon || false;
-        this.unit = params.unit || "m";
-        this.distance_type = params.distance_type || "sloppy_arc";
-        this.ranges = params.ranges || [];
+    GeoDistanceAggregation : class extends Aggregation {
+        static type = "geo_distance";
 
-        this.objectify = function() {
+        constructor(params) {
+            super(params);
+            this.field = params.field || false;
+            this.lat = params.lat || false;
+            this.lon = params.lon || false;
+            this.unit = params.unit || "m";
+            this.distance_type = params.distance_type || "sloppy_arc";
+            this.ranges = params.ranges || [];
+
+            if (params.raw) {
+                this.parse(params.raw);
+            }
+        }
+
+        objectify() {
             var body = {
                 field: this.field,
                 origin: {lat : this.lat, lon: this.lon},
@@ -981,11 +1039,11 @@ var es = {
                 distance_type : this.distance_type,
                 ranges: this.ranges
             };
-            return this._make_aggregation("geo_distance", body);
-        };
+            return this._make_aggregation(es.GeoDistanceAggregation.type, body);
+        }
 
-        this.parse = function(obj) {
-            var body = this._parse_wrapper(obj, "range");
+        parse(obj) {
+            var body = this._parse_wrapper(obj, es.GeoDistanceAggregation.type);
             this.field = body.field;
 
             // FIXME: only handles the lat/lon object - but there are several forms
@@ -1007,77 +1065,78 @@ var es = {
             }
 
             this.ranges = body.ranges;
-        };
-
-        if (params.raw) {
-            this.parse(params.raw);
         }
     },
 
-    newStatsAggregation : function(params) {
-        if (!params) { params = {} }
-        es.StatsAggregation.prototype = es.newAggregation(params);
-        return new es.StatsAggregation(params);
-    },
-    StatsAggregation : function(params) {
-        this.field = params.field || false;
+    StatsAggregation : class extends Aggregation {
+        static type = "stats";
 
-        this.objectify = function() {
+        constructor(params) {
+            super(params);
+            this.field = params.field || false;
+            if (params.raw) {
+                this.parse(params.raw);
+            }
+        }
+
+        objectify() {
             var body = {field: this.field};
-            return this._make_aggregation("stats", body);
-        };
-
-        this.parse = function(obj) {
-
-        };
-
-        if (params.raw) {
-            this.parse(params.raw);
+            return this._make_aggregation(es.StatsAggregation.type, body);
         }
+
+        parse(obj) {
+            var body = this._parse_wrapper(obj, es.StatsAggregation.type);
+            this.field = body.field;
+        };
     },
 
-    newSumAggregation : function(params) {
-        if (!params) { params = {} }
-        es.SumAggregation.prototype = es.newAggregation(params);
-        return new es.SumAggregation(params);
-    },
-    SumAggregation : function(params) {
-        this.field = params.field || false;
+    SumAggregation : class extends Aggregation {
+        static type = "sum";
 
-        this.objectify = function() {
+        constructor(params) {
+            super(params);
+            this.field = params.field || false;
+
+            if (params.raw) {
+                this.parse(params.raw);
+            }
+        }
+
+        objectify() {
             var body = {field: this.field};
-            return this._make_aggregation("sum", body);
-        };
+            return this._make_aggregation(es.SumAggregation.type, body);
+        }
 
-        this.parse = function(obj) {
-
-        };
-
-        if (params.raw) {
-            this.parse(params.raw);
+        parse(obj) {
+            var body = this._parse_wrapper(obj, es.SumAggregation.type);
+            this.field = body.field;
         }
     },
 
-    newDateHistogramAggregation : function(params) {
-        if (!params) { params = {} }
-        es.DateHistogramAggregation.prototype = es.newAggregation(params);
-        return new es.DateHistogramAggregation(params);
-    },
-    DateHistogramAggregation : function(params) {
-        this.field = params.field || false;
-        this.interval = params.interval || "month";
-        this.format = params.format || false;
+    DateHistogramAggregation : class extends Aggregation {
+        static type = "date_histogram";
 
-        this.objectify = function() {
+        constructor(params) {
+            super(params);
+            this.field = params.field || false;
+            this.interval = params.interval || "month";
+            this.format = params.format || false;
+
+            if (params.raw) {
+                this.parse(params.raw);
+            }
+        }
+
+        objectify() {
             var body = {field: this.field, interval: this.interval};
             if (this.format) {
                 body["format"] = this.format;
             }
-            return this._make_aggregation("date_histogram", body);
-        };
+            return this._make_aggregation(es.DateHistogramAggregation.type, body);
+        }
 
-        this.parse = function(obj) {
-            var body = this._parse_wrapper(obj, "date_histogram");
+        parse(obj) {
+            var body = this._parse_wrapper(obj, es.DateHistogramAggregation.type);
             this.field = body.field;
             if (body.interval) {
                 this.interval = body.interval;
@@ -1085,53 +1144,28 @@ var es = {
             if (body.format) {
                 this.format = body.format;
             }
-        };
-
-        if (params.raw) {
-            this.parse(params.raw);
         }
     },
 
     ///////////////////////////////////////////////////
     // Filters
 
-    newFilter : function(params) {
-        if (!params) { params = {} }
-        return new es.Filter(params);
-    },
-    Filter : function(params) {
-        this.field = params.field;
-        this.type_name = params.type_name;
-        this.matches = function(other) {
-            // type must match
-            if (other.type_name !== this.type_name) {
-                return false;
-            }
-            // field (if set) must match
-            if (other.field && other.field !== this.field) {
-                return false;
-            }
-            // otherwise this matches
-            return true;
-        };
-        this.objectify = function() {};
-        this.parse = function() {};
-    },
+    TermFilter : class extends Filter {
+        static type = "term";
 
-    newTermFilter : function(params) {
-        if (!params) { params = {} }
-        params.type_name = "term";
-        es.TermFilter.prototype = es.newFilter(params);
-        return new es.TermFilter(params);
-    },
-    TermFilter : function(params) {
-        // this.filter handled by superclass
-        this.value = params.value || false;
+        constructor(params) {
+            super(params);
+            // this.filter handled by superclass
+            this.value = params.value || false;
 
-        this.matches = function(other) {
+            if (params.raw) {
+                this.parse(params.raw);
+            }
+        }
+
+        matches(other) {
             // ask the parent object first
-            // var pm = this.__proto__.matches.call(this, other);
-            var pm = Object.getPrototypeOf(this).matches.call(this, other);
+            let pm = this._baseMatch(other);
             if (!pm) {
                 return false;
             }
@@ -1141,42 +1175,40 @@ var es = {
             }
 
             return true;
-        };
+        }
 
-        this.objectify = function() {
+        objectify() {
             var obj = {term : {}};
             obj.term[this.field] = this.value;
             return obj;
-        };
+        }
 
-        this.parse = function(obj) {
+        parse(obj) {
             if (obj.term) {
                 obj = obj.term;
             }
             this.field = Object.keys(obj)[0];
             this.value = obj[this.field];
-        };
-
-        if (params.raw) {
-            this.parse(params.raw);
         }
     },
 
-    newTermsFilter : function(params) {
-        if (!params) { params = {} }
-        params.type_name = "terms";
-        es.TermsFilter.prototype = es.newFilter(params);
-        return new es.TermsFilter(params);
-    },
-    TermsFilter : function(params) {
-        // this.field handled by superclass
-        this.values = params.values || false;
-        this.execution = params.execution || false;
+    TermsFilter : class extends Filter {
+        static type = "terms";
 
-        this.matches = function(other) {
+        constructor(params) {
+            super(params);
+            // this.field handled by superclass
+            this.values = params.values || false;
+            this.execution = params.execution || false;
+
+            if (params.raw) {
+                this.parse(params.raw);
+            }
+        }
+
+        matches(other) {
             // ask the parent object first
-            // var pm = this.__proto__.matches.call(this, other);
-            var pm = Object.getPrototypeOf(this).matches.call(this, other);
+            let pm = this._baseMatch(other);
             if (!pm) {
                 return false;
             }
@@ -1194,9 +1226,9 @@ var es = {
             }
 
             return true;
-        };
+        }
 
-        this.objectify = function() {
+        objectify() {
             var val = this.values || [];
             var obj = {terms : {}};
             obj.terms[this.field] = val;
@@ -1206,7 +1238,7 @@ var es = {
             return obj;
         };
 
-        this.parse = function(obj) {
+        parse(obj) {
             if (obj.terms) {
                 obj = obj.terms;
             }
@@ -1215,25 +1247,25 @@ var es = {
             if (obj.execution) {
                 this.execution = obj.execution;
             }
-        };
+        }
 
-        this.add_term = function(term) {
+        add_term(term) {
             if (!this.values) {
                 this.values = [];
             }
             if ($.inArray(term, this.values) === -1) {
                 this.values.push(term);
             }
-        };
+        }
 
-        this.has_term = function(term) {
+        has_term(term) {
             if (!this.values) {
                 return false;
             }
             return $.inArray(term, this.values) >= 0;
-        };
+        }
 
-        this.remove_term = function(term) {
+        remove_term(term) {
             if (!this.values) {
                 return;
             }
@@ -1241,46 +1273,51 @@ var es = {
             if (idx >= 0) {
                 this.values.splice(idx, 1);
             }
-        };
+        }
 
-        this.has_terms = function() {
+        has_terms() {
             return (this.values !== false && this.values.length > 0)
-        };
+        }
 
-        this.term_count = function() {
+        term_count() {
             return this.values === false ? 0 : this.values.length;
-        };
+        }
 
-        this.clear_terms = function() {
+        clear_terms() {
             this.values = false;
-        };
-
-        if (params.raw) {
-            this.parse(params.raw);
         }
     },
 
-    newRangeFilter : function(params) {
-        if (!params) { params = {} }
-        params.type_name = "range";
-        es.RangeFilter.prototype = es.newFilter(params);
-        return new es.RangeFilter(params);
-    },
-    RangeFilter : function(params) {
-        // this.field handled by superclass
-        this.lt = es.getParam(params.lt, false);
-        this.lte = es.getParam(params.lte, false);
-        this.gte = es.getParam(params.gte, false);
+    RangeFilter : class extends Filter {
+        static type = "range";
 
-        // normalise the values to strings
-        if (this.lt) { this.lt = this.lt.toString() }
-        if (this.lte) { this.lte = this.lte.toString() }
-        if (this.gte) { this.gte = this.gte.toString() }
+        constructor(params) {
+            super(params);
 
-        this.matches = function(other) {
+            // this.field handled by superclass
+            this.lt = es.getParam(params.lt, false);
+            this.lte = es.getParam(params.lte, false);
+            this.gte = es.getParam(params.gte, false);
+
+            // normalise the values to strings
+            if (this.lt) {
+                this.lt = this.lt.toString()
+            }
+            if (this.lte) {
+                this.lte = this.lte.toString()
+            }
+            if (this.gte) {
+                this.gte = this.gte.toString()
+            }
+
+            if (params.raw) {
+                this.parse(params.raw);
+            }
+        }
+
+        matches(other) {
             // ask the parent object first
-            // var pm = this.__proto__.matches.call(this, other);
-            var pm = Object.getPrototypeOf(this).matches.call(this, other);
+            let pm = super.matches(other);
             if (!pm) {
                 return false;
             }
@@ -1303,9 +1340,9 @@ var es = {
             }
 
             return true;
-        };
+        }
 
-        this.objectify = function() {
+        objectify() {
             var obj = {range: {}};
             obj.range[this.field] = {};
             if (this.lte !== false) {
@@ -1318,9 +1355,9 @@ var es = {
                 obj.range[this.field]["gte"] = this.gte;
             }
             return obj;
-        };
+        }
 
-        this.parse = function(obj) {
+        parse(obj) {
             if (obj.range) {
                 obj = obj.range;
             }
@@ -1334,28 +1371,28 @@ var es = {
             if (obj[this.field].gte !== undefined && obj[this.field].gte !== false) {
                 this.gte = obj[this.field].gte;
             }
-        };
-
-        if (params.raw) {
-            this.parse(params.raw);
         }
     },
 
-    newGeoDistanceRangeFilter : function(params) {
-        if (!params) { params = {} }
-        params.type_name = "geo_distance_range";
-        es.GeoDistanceRangeFilter.prototype = es.newFilter(params);
-        return new es.GeoDistanceRangeFilter(params);
-    },
-    GeoDistanceRangeFilter : function(params) {
-        // this.field is handled by superclass
-        this.lt = params.lt || false;
-        this.gte = params.gte || false;
-        this.lat = params.lat || false;
-        this.lon = params.lon || false;
-        this.unit = params.unit || "m";
+    GeoDistanceRangeFilter : class extends Filter {
+        static type = "geo_distance_range";
 
-        this.objectify = function() {
+        constructor(params) {
+            super(params);
+
+            // this.field is handled by superclass
+            this.lt = params.lt || false;
+            this.gte = params.gte || false;
+            this.lat = params.lat || false;
+            this.lon = params.lon || false;
+            this.unit = params.unit || "m";
+
+            if (params.raw) {
+                this.parse(params.raw);
+            }
+        }
+
+        objectify() {
             var obj = {geo_distance_range: {}};
             obj.geo_distance_range[this.field] = {lat: this.lat, lon: this.lon};
             if (this.lt) {
@@ -1365,9 +1402,9 @@ var es = {
                 obj.geo_distance_range["gte"] = this.gte + this.unit;
             }
             return obj;
-        };
+        }
 
-        this.parse = function(obj) {
+        parse(obj) {
             function endsWith(str, suffix) {
                 return str.indexOf(suffix, str.length - suffix.length) !== -1;
             }
@@ -1408,32 +1445,26 @@ var es = {
                 this.gte = parts[0];
                 this.unit = parts[1];
             }
-        };
-
-        if (params.raw) {
-            this.parse(params.raw);
         }
     },
 
     ////////////////////////////////////////////////////
     // The result object
 
-    newResult : function(params) {
-        if (!params) { params = {} }
-        return new es.Result(params);
-    },
-    Result : function(params) {
-        this.data = params.raw;
+    Result : class {
+        constructor(params) {
+            this.data = params.raw;
+        }
 
-        this.buckets = function(agg_name) {
+        buckets(agg_name) {
             return this.data.aggregations[agg_name].buckets;
-        };
+        }
 
-        this.aggregation = function(agg_name) {
+        aggregation(agg_name) {
             return this.data.aggregations[agg_name];
-        };
+        }
 
-        this.results = function() {
+        results() {
             var res = [];
             if (this.data.hits && this.data.hits.hits) {
                 for (var i = 0; i < this.data.hits.hits.length; i++) {
@@ -1448,16 +1479,15 @@ var es = {
                 }
             }
             return res;
-        };
+        }
 
-        this.total = function() {
+        total() {
             if (this.data.hits && this.data.hits.hasOwnProperty("total")) {
                 return parseInt(this.data.hits.total);
             }
             return false;
         }
     },
-
 
     ////////////////////////////////////////////////////
     // Primary functions for interacting with elasticsearch
@@ -1478,28 +1508,27 @@ var es = {
         var error_callback = es.queryError(error);
         var success_callback = es.querySuccess(success, error_callback);
 
+        let ajax = {
+            url: search_url,
+            headers: es.requestHeaders,
+            dataType: datatype,
+            success: success_callback,
+            error: error_callback,
+            complete: complete
+        }
+        if (datatype !== "jsonp") {
+            ajax.jsonp = false;
+        }
+
         // make the call to the elasticsearch web service
         if (es.requestMethod === "get") {
-            $.ajax({
-                type: "get",
-                url: search_url,
-                data: {source: querystring},
-                dataType: datatype,
-                success: success_callback,
-                error: error_callback,
-                complete: complete
-            });
+            ajax.type = "get";
+            ajax.data = {source: querystring};
+            $.ajax(ajax);
         } else if (es.requestMethod === "post") {
-            $.ajax({
-                type: "post",
-                url: search_url,
-                data: querystring,
-                contentType: "application/json",
-                dataType: datatype,
-                success: success_callback,
-                error: error_callback,
-                complete: complete
-            });
+            ajax.type = "post"
+            ajax.data = querystring;
+            $.ajax(ajax);
         } else {
             throw "es.requestMethod must be either 'get' or 'post";
         }
@@ -1512,7 +1541,7 @@ var es = {
                 return;
             }
 
-            var result = es.newResult({raw: data});
+            var result = new es.Result({raw: data});
             callback(result);
         }
     },
