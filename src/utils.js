@@ -60,6 +60,14 @@ export function getUrlParams() {
     return params;
 }
 
+export function isEmptyObject(obj) {
+    for(var key in obj) {
+        if(obj.hasOwnProperty(key))
+            return false;
+    }
+    return true;
+}
+
 //////////////////////////////////////////////////////////////////
 // Closures for integrating the object with other modules
 
@@ -123,6 +131,9 @@ export function eventClosure(obj, fn, conditional, preventDefault) {
         obj[fn](this, event);
     }
 }
+
+///////////////////////////////////////////////////
+// Group of asynchronous operations
 
 export class AsyncGroup {
     constructor(params) {
@@ -206,6 +217,9 @@ export class AsyncGroup {
         this.functions.carryOn();
     };
 }
+
+///////////////////////////////////////////////////
+// Style/CSS/HTML ID related functions
 
 export function bem(block, element, modifier) {
     let bemClass = block;
@@ -296,6 +310,9 @@ function _normaliseInstanceName(instance_name) {
     }
 }
 
+////////////////////////////////////////////////////
+// content wrangling
+
 export function escapeHtml(unsafe, def) {
     if (def === undefined) {
         def = "";
@@ -315,6 +332,72 @@ export function escapeHtml(unsafe, def) {
             .replace(/'/g, "&#039;");
     } catch(err) {
         return def;
+    }
+}
+
+export function numFormat(params) {
+    var reflectNonNumbers = getParam(params, "reflectNonNumbers", false);
+    var prefix = getParam(params, "prefix", "");
+    var zeroPadding = getParam(params, "zeroPadding", false);
+    var decimalPlaces = getParam(params, "decimalPlaces", false);
+    var thousandsSeparator = getParam(params, "thousandsSeparator", false);
+    var decimalSeparator = getParam(params, "decimalSeparator", ".");
+    var suffix = getParam(params, "suffix", "");
+
+    return function(number) {
+        // ensure this is really a number
+        var num = parseFloat(number);
+        if (isNaN(num)) {
+            if (reflectNonNumbers) {
+                return number;
+            } else {
+                return num;
+            }
+        }
+
+        // first off we need to convert the number to a string, which we can do directly, or using toFixed if that
+        // is suitable here
+        if (decimalPlaces !== false) {
+            num = num.toFixed(decimalPlaces);
+        } else {
+            num  = num.toString();
+        }
+
+        // now "num" is a string containing the formatted number that we can work on
+
+        var bits = num.split(".");
+
+        if (zeroPadding !== false) {
+            var zeros = zeroPadding - bits[0].length;
+            var pad = "";
+            for (var i = 0; i < zeros; i++) {
+                pad += "0";
+            }
+            bits[0] = pad + bits[0];
+        }
+
+        if (thousandsSeparator !== false) {
+            bits[0] = bits[0].replace(/\B(?=(\d{3})+(?!\d))/g, thousandsSeparator);
+        }
+
+        if (bits.length === 1) {
+            return prefix + bits[0] + suffix;
+        } else {
+            return prefix + bits[0] + decimalSeparator + bits[1] + suffix;
+        }
+    }
+}
+
+export function numParse(params) {
+    var commaRx = new RegExp(",", "g");
+
+    return function(num) {
+        num = num.trim();
+        num = num.replace(commaRx, "");
+        if (num === "") {
+            return 0.0;
+        }
+        return parseFloat(num);
     }
 }
 
