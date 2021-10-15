@@ -1,8 +1,8 @@
 import {Renderer} from "../../core";
-import {getParam, jsClasses, jsClassSelector} from "../../utils";
+import {getParam, allClasses, jsClassSelector} from "../../utils";
 import {google} from '../../../dependencies/google';
 
-export class MapViewRenderer extends Renderer {
+export class GoogleMapView extends Renderer {
     constructor(params) {
         super(params);
 
@@ -54,7 +54,7 @@ export class MapViewRenderer extends Renderer {
         var centre = new google.maps.LatLng(this.component.centre.lat, this.component.centre.lon);
 
         if (!this.map) {
-            var canvasClass = jsClasses(this.namespace, "canvas", this);
+            var canvasClass = allClasses(this.namespace, "canvas", this);
             var canvasSelector = jsClassSelector(this.namespace, "canvas", this);
             this.component.context.html('<div class="' + canvasClass + '"></div>');
             var element = this.component.jq(canvasSelector)[0];
