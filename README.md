@@ -251,3 +251,33 @@ npm run serve-[viewname]
 ```
 
 This should bring the dev server up at http://localhost:8000
+
+
+
+## Testing with local OpenSearch
+
+These are the settings we can use to test Edges talking directly to a locally running OpenSearch instance.
+
+DO NOT DO THIS IN PRODUCTION
+
+In `elasticsearch.yml`:
+
+```yaml
+opendistro_security.ssl.http.enabled: false
+http.cors.enabled: true
+http.cors.allow-origin: /https?:\/\/localhost(:[0-9]+)?/
+http.cors.allow-headers : Authorization, X-Requested-With,X-Auth-Token,Content-Type, Content-Length
+```
+
+This turns OFF https, and allows cross origin requests from `localhost:xxxx`.
+
+If you then need to authenticate with your OpenSearch instance, somewhere before you make your first call to the index
+include the code
+
+```js
+es.requestHeaders = {
+    "Authorization": "Basic " + btoa("admin:admin")
+}
+```
+
+Where `admin:admin` are the default auth credentials for out-of-the-box OpenSearch.

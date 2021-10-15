@@ -77,7 +77,7 @@ class RefiningANDTermSelector extends Component {
             params["size"] = this.size
         }
         query.addAggregation(
-            es.newTermsAggregation(params)
+            new es.TermsAggregation(params)
         );
     };
 
@@ -93,7 +93,7 @@ class RefiningANDTermSelector extends Component {
         this.filters = [];
 
         // extract all the filter values that pertain to this selector
-        let filters = this.edge.currentQuery.listMust(es.newTermFilter({field: this.field}));
+        let filters = this.edge.currentQuery.listMust(new es.TermFilter({field: this.field}));
         for (let i = 0; i < filters.length; i++) {
             let val = filters[i].value;
             val = this._translate(val);
@@ -118,7 +118,7 @@ class RefiningANDTermSelector extends Component {
         // list all of the pre-defined filters for this field from the baseQuery
         let predefined = [];
         if (this.excludePreDefinedFilters && this.edge.baseQuery) {
-            predefined = this.edge.baseQuery.listMust(es.newTermFilter({field: this.field}));
+            predefined = this.edge.baseQuery.listMust(new es.TermFilter({field: this.field}));
         }
 
         let realCount = 0;
@@ -182,7 +182,7 @@ class RefiningANDTermSelector extends Component {
             size: this.size
         };
         bq.addAggregation(
-            es.newTermsAggregation(params)
+            new es.TermsAggregation(params)
         );
 
         // issue the query to elasticsearch
@@ -217,7 +217,7 @@ class RefiningANDTermSelector extends Component {
         let nq = this.edge.cloneQuery();
 
         // first make sure we're not double-selecting a term
-        let removeCount = nq.removeMust(es.newTermFilter({
+        let removeCount = nq.removeMust(new es.TermFilter({
             field: this.field,
             value: term
         }));
@@ -229,7 +229,7 @@ class RefiningANDTermSelector extends Component {
 
         // just add a new term filter (the query builder will ensure there are no duplicates)
         // this means that the behaviour here is that terms are ANDed together
-        nq.addMust(es.newTermFilter({
+        nq.addMust(new es.TermFilter({
             field: this.field,
             value: term
         }));
@@ -245,7 +245,7 @@ class RefiningANDTermSelector extends Component {
     removeFilter(term) {
         let nq = this.edge.cloneQuery();
 
-        nq.removeMust(es.newTermFilter({
+        nq.removeMust(new es.TermFilter({
             field: this.field,
             value: term
         }));
@@ -263,7 +263,7 @@ class RefiningANDTermSelector extends Component {
             let nq = this.edge.cloneQuery();
             for (let i = 0; i < this.filters.length; i++) {
                 let filter = this.filters[i];
-                nq.removeMust(es.newTermFilter({
+                nq.removeMust(new es.TermFilter({
                     field: this.field,
                     value: filter.term
                 }));

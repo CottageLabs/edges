@@ -15,11 +15,12 @@ export class Edge {
         // the base search url which will respond to elasticsearch queries.  Generally ends with _search
         this.searchUrl = getParam(params, "searchUrl", false);
 
-        // datatype for ajax requests to use - overall recommend using jsonp
+        // datatype for ajax requests to use - overall recommend using jsonp and proxying ES requests
+        // through a back end that can provide that
         this.datatype = getParam(params, "datatype", "jsonp");
 
         // dictionary of queries to be run before the primary query is executed
-        // {"<preflight id>" : es.newQuery(....)}
+        // {"<preflight id>" : new es.Query(....)}
         // results will appear with the same ids in this.preflightResults
         // preflight queries are /not/ subject to the base query
         this.preflightQueries = getParam(params, "preflightQueries", false);
@@ -31,7 +32,7 @@ export class Edge {
         // query to use to initialise the search.  Use this to set your opening
         // values for things like page size, initial search terms, etc.  Any request to
         // reset the interface will return to this query
-        this.openingQuery = getParam(params, "openingQuery", () => typeof es !== 'undefined' ? es.newQuery() : false);
+        this.openingQuery = getParam(params, "openingQuery", () => typeof es !== 'undefined' ? new es.Query() : false);
 
         // dictionary of functions that will generate secondary queries which also need to be
         // run at the point that cycle() is called.  These functions and their resulting
@@ -142,7 +143,7 @@ export class Edge {
         if (this.manageUrl) {
             var urlParams = getUrlParams();
             if (this.urlQuerySource in urlParams) {
-                this.urlQuery = es.newQuery({raw : urlParams[this.urlQuerySource]});
+                this.urlQuery = new es.Query({raw : urlParams[this.urlQuerySource]});
                 delete urlParams[this.urlQuerySource];
             }
             this.urlParams = urlParams;
@@ -434,7 +435,7 @@ export class Edge {
 
     cloneQuery() {
         if (this.currentQuery) {
-            return $.extend(true, {}, this.currentQuery);
+            return this.currentQuery.clone();
         }
         return false;
     }
@@ -448,16 +449,16 @@ export class Edge {
 
     cloneBaseQuery() {
         if (this.baseQuery) {
-            return $.extend(true, {}, this.baseQuery);
+            return this.baseQuery.clone();
         }
-        return es.newQuery();
+        return new es.Query();
     }
 
     cloneOpeningQuery() {
         if (this.openingQuery) {
-            return $.extend(true, {}, this.openingQuery);
+            return this.openingQuery.clone();
         }
-        return es.newQuery();
+        return new es.Query();
     }
 
     queryFail(params) {
