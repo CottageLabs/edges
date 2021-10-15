@@ -1,5 +1,5 @@
 import {Renderer} from "../../core";
-import {getParam, allClasses, jsClassSelector} from "../../utils";
+import {getParam, allClasses, jsClassSelector, objClosure} from "../../utils";
 import {google} from '../../../dependencies/google';
 
 export class GoogleMapView extends Renderer {
@@ -76,7 +76,7 @@ export class GoogleMapView extends Renderer {
         }
 
         if (this.reQueryOnBoundsChange) {
-            let onBoundsChanged = edges.objClosure(this, "boundsChanged")
+            let onBoundsChanged = objClosure(this, "boundsChanged")
             this.map.addListener("bounds_changed", onBoundsChanged)
         }
 

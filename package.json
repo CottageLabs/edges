@@ -10,6 +10,7 @@
     "es7x": "cp dependencies/es/es7x.js dependencies/es.js",
     "es-external": "cp dependencies/es/external.js dependencies/es.js",
     "nvd3-external": "cp dependencies/nvd3/external.js dependencies/nvd3.js",
+    "d3-external": "cp dependencies/d3/external.js dependencies/d3.js",
     "google-external" : "cp dependencies/google/external.js dependencies/google.js",
     "clean": "rm -rf ./.parcel-cache && rm -rf ./dist",
     "clean-client": "rm -rf ./.parcel-cache && rm -rf ./dist/client",

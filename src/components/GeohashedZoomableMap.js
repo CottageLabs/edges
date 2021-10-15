@@ -1,3 +1,5 @@
+import {es} from '../../dependencies/es'
+
 import {Component} from "../core";
 import {getParam} from "../utils";
 import {pickFirst} from "./maputils";
@@ -12,7 +14,7 @@ export class GeohashedZoomableMap extends Component {
         // field in the data which is the geo_point type
         this.geoHashAggregation = getParam(params, "geoHashAggregation", "geohash");
 
-        this.calculateCentre = getParam(params, "calculateCentre", pickFirst);
+        this.calculateCentre = getParam(params, "calculateCentre", () => { return pickFirst });
 
         this.geoBoundingBoxFilterField = getParam(params, "geoBoundingBoxFilterField", "location")
 
