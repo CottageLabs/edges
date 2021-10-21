@@ -3,7 +3,7 @@ import {getParam, objClosure} from "../utils";
 
 import {es} from '../../dependencies/es'
 
-class RefiningANDTermSelector extends Component {
+export class RefiningANDTermSelector extends Component {
     constructor(params) {
         super(params);
 
@@ -311,5 +311,3 @@ class RefiningANDTermSelector extends Component {
         return term;
     };
 }
-
-export {RefiningANDTermSelector}
