@@ -7,6 +7,12 @@ export class ORTermSelector extends Component {
     constructor(params) {
         super(params);
 
+        // field upon which to build the selector
+        this.field = getParam(params, "field");
+
+        // whether the facet should be displayed at all (e.g. you may just want the data for a callback)
+        this.active = getParam(params, "active", true);
+
         // whether this component updates itself on every request, or whether it is static
         // throughout its lifecycle.  One of "update" or "static"
         this.lifecycle = getParam(params, "lifecycle", "static");

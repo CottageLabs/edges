@@ -4,6 +4,9 @@ import {allClasses, escapeHtml, getParam, htmlID, idSelector, jsClassSelector, s
 export class ORTermSelectorRenderer extends Renderer {
     constructor(params) {
         super(params);
+
+        this.title = getParam(params, "title", "Select");
+
         // whether the facet should be open or closed
         // can be initialised and is then used to track internal state
         this.open = getParam(params, "open", false);
@@ -138,7 +141,7 @@ export class ORTermSelectorRenderer extends Renderer {
         var iconClass = styleClasses(this.namespace, "icon", this);
 
         if (this.layout === "left") {
-            var tog = this.component.display;
+            var tog = this.title;
             if (this.togglable) {
                 tog = '<a href="#" id="' + toggleId + '"><i class="' + this.openIcon + '"></i>&nbsp;' + tog + "</a>";
             }
@@ -146,9 +149,9 @@ export class ORTermSelectorRenderer extends Renderer {
         } else if (this.layout === "right") {
             var tog = "";
             if (this.togglable) {
-                tog = '<a href="#" id="' + toggleId + '">' + this.component.display + '&nbsp;<i class="' + this.openIcon + ' ' + iconClass + '"></i></a>';
+                tog = '<a href="#" id="' + toggleId + '">' + this.title + '&nbsp;<i class="' + this.openIcon + ' ' + iconClass + '"></i></a>';
             } else {
-                tog = this.component.display;
+                tog = this.component.title;
             }
 
             return tog;
