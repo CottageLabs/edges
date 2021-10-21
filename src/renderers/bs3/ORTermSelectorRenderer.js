@@ -1,5 +1,5 @@
 import {Renderer} from "../../core";
-import {allClasses, escapeHtml, getParam, htmlID, idSelector, jsClassSelector, styleClasses} from "../../utils";
+import {allClasses, escapeHtml, getParam, htmlID, idSelector, jsClassSelector, styleClasses, on} from "../../utils";
 
 export class ORTermSelectorRenderer extends Renderer {
     constructor(params) {
@@ -129,11 +129,11 @@ export class ORTermSelectorRenderer extends Renderer {
         var toggleSelector = idSelector(namespace, "toggle", this);
 
         // for when a value in the facet is selected
-        edges.on(valueSelector, "click", this, "termSelected");
+        on(valueSelector, "click", this, "termSelected");
         // for when the open button is clicked
-        edges.on(toggleSelector, "click", this, "toggleOpen");
+        on(toggleSelector, "click", this, "toggleOpen");
         // for when a filter remove button is clicked
-        edges.on(filterRemoveSelector, "click", this, "removeFilter");
+        on(filterRemoveSelector, "click", this, "removeFilter");
     }
 
     headerLayout(params) {
