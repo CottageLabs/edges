@@ -60,3 +60,42 @@ export function dateHistogram(params) {
         return [{key: seriesName, values: values}]
     }
 }
+
+/**
+ * Takes a date histogram with a nested terms aggregation and turns it
+ * into a set of date based series, one per nested term
+ *
+ * @param params
+ */
+export function termSplitDateHistogram(params) {
+    let histogramAgg = params.histogramAgg;
+    let termsAgg = params.termsAgg;
+
+    return function(component) {
+        let series = {};
+
+        if (!component.edge.result) {
+            return []
+        }
+        let aggregation = component.edge.result.aggregation(histogramAgg);
+        for (let i = 0; i < aggregation.buckets.length; i++) {
+            let bucket = aggregation.buckets[i];
+            let terms = bucket[termsAgg];
+            for (let j = 0; j < terms.buckets.length; j++) {
+                let term = terms.buckets[j];
+                if (!(term.key in series)) {
+                    series[term.key] = [];
+                }
+                series[term.key].push({label: bucket.key, value: term.doc_count});
+            }
+        }
+
+        let dataSeries = [];
+        let seriesNames = Object.keys(series);
+        for (let i = 0; i < seriesNames.length; i++) {
+            let seriesName = seriesNames[i];
+            dataSeries.push({key: seriesName, values: series[seriesName]})
+        }
+        return dataSeries;
+    }
+}
