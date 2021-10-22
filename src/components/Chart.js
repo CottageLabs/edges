@@ -99,3 +99,62 @@ export function termSplitDateHistogram(params) {
         return dataSeries;
     }
 }
+
+/**
+ * Converts one or more terms aggregations (which may be nested in other aggregations)
+ * into data series.
+ *
+ * In the case of nested aggregations, use dot notation to indicate the path to the
+ * relevant terms aggregation (e.g. event.format)
+ *
+ * @param params
+ * @returns {(function(*): (*[]))|*}
+ */
+export function nestedTerms(params) {
+    let aggs = getParam(params, "aggs", []);
+
+    return function (component) {
+        // for each aggregation, get the results and add them to the data series
+        var data_series = [];
+        if (!component.edge.result) {
+            return data_series;
+        }
+
+        let context = component.edge.result.data.aggregations;
+
+        function recurse(aggs, context) {
+            let finalBuckets = []
+            for (let i = 0; i < aggs.length; i++) {
+                let agg = aggs[i];
+                if (typeof agg === "string") {
+                    return context[agg].buckets;
+                } else {
+                    let key = Object.keys(agg)[0];
+                    let nested = context[key].buckets;
+                    if (agg[key].keys) {
+                        nested = nested.filter(b => agg[key].keys.includes(b.key));
+                    }
+                    for (let j = 0; j < nested.length; j++) {
+                        let nest = nested[j];
+                        let bs = recurse(agg[key].aggs, nest);
+                        finalBuckets.push(...bs);
+                    }
+                }
+            }
+            return finalBuckets;
+        }
+        let bs = recurse(aggs, context);
+
+        var series = {};
+        series["key"] = "Series Test";
+        series["values"] = [];
+
+        for (let j = 0; j < bs.length; j++) {
+            let doccount = bs[j].doc_count;
+            let key = bs[j].key;
+            series.values.push({label: key, value: doccount});
+        }
+
+        return [series];
+    }
+}
