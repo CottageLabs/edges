@@ -301,7 +301,7 @@ export class ORTermSelector extends Component {
         // reset the search page to the start and then trigger the next query
         nq.from = 0;
         this.edge.pushQuery(nq);
-        this.edge.doQuery();
+        this.edge.cycle();
 
         return true;
     };
@@ -329,7 +329,7 @@ export class ORTermSelector extends Component {
         // reset the search page to the start and then trigger the next query
         nq.from = 0;
         this.edge.pushQuery(nq);
-        this.edge.doQuery();
+        this.edge.cycle();
     };
 
     clearFilters(params) {
@@ -343,7 +343,7 @@ export class ORTermSelector extends Component {
             this.edge.pushQuery(nq);
         }
         if (triggerQuery) {
-            this.edge.doQuery();
+            this.edge.cycle();
         }
     };
 
