@@ -112,6 +112,7 @@ export function termSplitDateHistogram(params) {
  */
 export function nestedTerms(params) {
     let aggs = getParam(params, "aggs", []);
+    let seriesName = getParam(params, "seriesName", "series");
 
     return function (component) {
         // for each aggregation, get the results and add them to the data series
@@ -146,7 +147,7 @@ export function nestedTerms(params) {
         let bs = recurse(aggs, context);
 
         var series = {};
-        series["key"] = "Series Test";
+        series["key"] = seriesName;
         series["values"] = [];
 
         for (let j = 0; j < bs.length; j++) {
