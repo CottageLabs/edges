@@ -335,6 +335,17 @@ export function escapeHtml(unsafe, def) {
     }
 }
 
+export function safeId(unsafe) {
+    return unsafe.replace(/&/g, "_")
+            .replace(/</g, "_")
+            .replace(/>/g, "_")
+            .replace(/"/g, "_")
+            .replace(/'/g, "_")
+            .replace(/\./gi,'_')
+            .replace(/\:/gi,'_')
+            .replace(/\s/gi,"_");
+}
+
 export function numFormat(params) {
     var reflectNonNumbers = getParam(params, "reflectNonNumbers", false);
     var prefix = getParam(params, "prefix", "");
