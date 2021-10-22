@@ -12,6 +12,8 @@ export class MultibarRenderer extends Renderer {
         this.xTickFormat = getParam(params, "xTickFormat", ",.2f");
         this.yTickFormat = getParam(params, "yTickFormat", ",.2f");
 
+        this.stacked = getParam(params, "stacked", false);
+        this.groupSpacing = getParam(params, "groupSpacing", 0.1);
         this.transitionDuration = getParam(params, "transitionDuration", 500);
         this.controls = getParam(params, "controls", false);
         this.barColor = getParam(params, "barColor", false);
@@ -66,7 +68,9 @@ export class MultibarRenderer extends Renderer {
         nv.addGraph(function () {
             var chart = nv.models.multiBarChart()
                 .showControls(that.controls)
-                .margin({top: that.marginTop, right: that.marginRight, bottom: that.marginBottom, left: that.marginLeft});
+                .margin({top: that.marginTop, right: that.marginRight, bottom: that.marginBottom, left: that.marginLeft})
+                .stacked(that.stacked)
+                .groupSpacing(that.groupSpacing);
 
             chart.xAxis
                 .axisLabel(that.xAxisLabel)
