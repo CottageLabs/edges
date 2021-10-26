@@ -957,6 +957,7 @@ $.extend(edges, {
         this.sortFunction = edges.getParam(params.sortFunction, false);
 
         this.displayFormatter = edges.getParam(params.displayFormatter, false);
+        this.defaultRenderer = params.renderer || "newDateHistogramSelectorRenderer";
 
         this.active = edges.getParam(params.active, true);
 

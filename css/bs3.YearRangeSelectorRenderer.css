@@ -2,24 +2,59 @@
  *  Year Range Selector Renderer
  */
 
-.edges-bs3-yearrangeselector-facet {
-    border-top: 1px solid #cccccc;
-    border-bottom: 1px solid #cccccc;
-}
-
 .edges-bs3-yearrangeselector-header {
-    font-weight: bold;
-    padding-left: 5px;
-    padding-top: 5px;
-    padding-bottom: 5px;
-    background-color: #eeeeee;
+    padding: 0;
+    font-weight: 400;
+    text-decoration: none;
 }
 
 .edges-bs3-yearrangeselector-header a {
     color: #000000;
+    text-decoration: none;
 }
 
 .edges-bs3-yearrangeselector-header a:hover {
-    font-weight: bold;
     text-decoration: none;
+}
+
+.edges-bs3-yearrangeselector-result {
+    padding-left: 5px;
+    padding-top: 2px;
+    padding-bottom: 2px;
+}
+
+.edges-bs3-yearrangeselector-filter-remove {
+    color: #000000;
+}
+
+.edges-bs3-yearrangeselector-filter-remove:hover {
+    color: #000000;
+}
+
+.edges-bs3-yearrangeselector-results-list::-webkit-scrollbar {
+    -webkit-appearance: none;
+}
+
+.edges-bs3-yearrangeselector-results-list::-webkit-scrollbar:vertical {
+    width: 8px;
+}
+
+.edges-bs3-yearrangeselector-results-list::-webkit-scrollbar:horizontal {
+    height: 8px;
+}
+
+.edges-bs3-yearrangeselector-results-list::-webkit-scrollbar-thumb {
+    border-radius: 8px;
+    border: 1px solid #c4d0d7;
+    background-color: rgba(0, 0, 0, .4);
+}
+
+.edges-bs3-yearrangeselector-results-list::-webkit-scrollbar-track {
+    background-color: #c4d0d7;
+    border-radius: 8px;
+}
+
+.edges-bs3-yearrangeselector-show-link {
+    text-align: center;
+    border-top: 1px dotted #cccccc;
 }

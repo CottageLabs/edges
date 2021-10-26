@@ -80,7 +80,6 @@ $.extend(true, edges, {
                         // if (val.lt) {
                         //     ltData = ' data-lt="' + edges.escapeHtml(val.lt) + '" ';
                         // }
-
                         // var id = edges.safeId(val.display.toString());
                         // results += '<li>\
                         //         <input class="' + checkboxClass + '" data-gte="' + edges.escapeHtml(val.gte) + '"' + ltData + ' id="' + id + '" type="checkbox" name="' + id + '">\
@@ -117,7 +116,7 @@ $.extend(true, edges, {
                         </div></div>';
 
                 // substitute in the component parts
-                frag = frag.replace(/{{RESULTS}}/g, results);
+                frag = frag.replace(/{{RESULTS}}/g, theform);
 
                 // now render it into the page
                 ts.context.html(frag);
