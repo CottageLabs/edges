@@ -960,6 +960,8 @@ $.extend(edges, {
         this.defaultRenderer = params.renderer || "newDateHistogramSelectorRenderer";
 
         this.active = edges.getParam(params.active, true);
+        this.initial_options = [];
+        this.update_options = params.update_options || true;
 
         //////////////////////////////////////////////
         // values to be rendered
@@ -979,22 +981,24 @@ $.extend(edges, {
 
         this.synchronise = function() {
             // reset the state of the internal variables
-            this.values = [];
+            //this.values = [];
             this.filters = [];
 
             if (this.edge.result) {
-                var buckets = this.edge.result.buckets(this.id);
-                for (var i = 0; i < buckets.length; i++) {
-                    var bucket = buckets[i];
-                    var key = bucket.key;
-                    if (this.displayFormatter) {
-                        key = this.displayFormatter(key);
+                if (this.values.length == 0) {
+                    var buckets = this.edge.result.buckets(this.id);
+                    for (var i = 0; i < buckets.length; i++) {
+                        var bucket = buckets[i];
+                        var key = bucket.key;
+                        if (this.displayFormatter) {
+                            key = this.displayFormatter(key);
+                        }
+                        var obj = {"display": key, "gte": bucket.key, "count": bucket.doc_count};
+                        if (i < buckets.length - 1) {
+                            obj["lt"] = buckets[i + 1].key;
+                        }
+                        this.values.push(obj);
                     }
-                    var obj = {"display" : key, "gte": bucket.key, "count" : bucket.doc_count};
-                    if (i < buckets.length - 1) {
-                        obj["lt"] = buckets[i+1].key;
-                    }
-                    this.values.push(obj);
                 }
             }
 
@@ -1011,7 +1015,8 @@ $.extend(edges, {
             // we can do, and it means that if you have both a date histogram and another range selector
             // for the same field, they may confuse eachother.
             if (this.edge.currentQuery) {
-                var filters = this.edge.currentQuery.listMust(es.newRangeFilter({field: this.field}));
+                this.filters = this.edge.currentQuery.listMust(es.newRangeFilter({field: this.field}));
+
                 // var min_filter = filters.reduce(function(prev, curr) {
                 //     return prev.gte < curr.gte ? prev : curr;
                 // });
@@ -1021,21 +1026,21 @@ $.extend(edges, {
                 // });
                 //
                 // this.filters = {"gte": min_filter.gte, "from": max_filter, "field": filters.field}
-                for (var i = 0; i < filters.length; i++) {
-                    var from = filters[i].gte;
-                    for (var j = 0; j < this.values.length; j++) {
-                        var val = this.values[j];
-                        if (val.gte.toString() === from) {
-                            this.filters = [val];
-                        }
-                    }
-                }
+                // for (var i = 0; i < filters.length; i++) {
+                //     var from = filters[i].gte;
+                //     for (var j = 0; j < this.values.length; j++) {
+                //         var val = this.values[j];
+                //         if (val.gte.toString() === from) {
+                //             this.filters = [val];
+                //         }
+                //     }
+                // }
             }
         };
 
         this.selectRange = function(params) {
-            var from = params.gte;
-            var to = params.lt;
+            var from = Math.min(params.gte, params.lt);
+            var to = Math.max(params.gte, params.lt);
 
             var nq = this.edge.cloneQuery();
 
@@ -1047,11 +1052,11 @@ $.extend(edges, {
                 params["gte"] = from;
             }
             if (to) {
-                params["lt"] = to;
+                //we need to add one for users to see results INCLUDING the "to" year
+                params["lt"] = to + 1;
             }
             params["format"] = "epoch_millis"   // Required for ES7.x date ranges against dateOptionalTime formats
             nq.addMust(es.newRangeFilter(params));
-
             // reset the search page to the start and then trigger the next query
             nq.from = 0;
             this.edge.pushQuery(nq);
@@ -1070,7 +1075,7 @@ $.extend(edges, {
                 params["gte"] = from;
             }
             if (to) {
-                params["lt"] = to;
+                params["lt"] = to+1;
             }
             nq.removeMust(es.newRangeFilter(params));
 

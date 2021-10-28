@@ -156,18 +156,18 @@ $.extend(true, edges, {
             };
 
             this.setUIFrom = function () {
-                if (this.component.filters.gte) {
+                if (this.component.filters.length !== 0) {
                     var fromName = edges.css_id_selector(this.namespace, "from", this);
                     var fromSel = this.component.jq(fromName);
-                    fromSel.val(this.component.filters.from);
+                    fromSel.val(this.component.filters[0].gte);
                 }
             };
 
             this.setUITo = function () {
-                if (this.component.filters.lt) {
+                if (this.component.filters.length !== 0) {
                     var toName = edges.css_id_selector(this.namespace, "to", this);
                     var toSel = this.component.jq(toName);
-                    toSel.val(this.component.filters.from);
+                    toSel.val(this.component.filters[0].lt-1);
                 }
             };
 
