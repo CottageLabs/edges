@@ -1012,12 +1012,21 @@ $.extend(edges, {
             // for the same field, they may confuse eachother.
             if (this.edge.currentQuery) {
                 var filters = this.edge.currentQuery.listMust(es.newRangeFilter({field: this.field}));
+                // var min_filter = filters.reduce(function(prev, curr) {
+                //     return prev.gte < curr.gte ? prev : curr;
+                // });
+                //
+                // var max_filter = filters.reduce(function(prev, curr) {
+                //     return prev.lt > curr.lt ? prev : curr;
+                // });
+                //
+                // this.filters = {"gte": min_filter.gte, "from": max_filter, "field": filters.field}
                 for (var i = 0; i < filters.length; i++) {
                     var from = filters[i].gte;
                     for (var j = 0; j < this.values.length; j++) {
                         var val = this.values[j];
                         if (val.gte.toString() === from) {
-                            this.filters.push(val);
+                            this.filters = [val];
                         }
                     }
                 }
@@ -1031,6 +1040,8 @@ $.extend(edges, {
             var nq = this.edge.cloneQuery();
 
             // just add a new range filter (the query builder will ensure there are no duplicates)
+            //remove all filters for this field
+            nq.removeMust(es.newRangeFilter({field: this.field}));
             var params = {field: this.field};
             if (from) {
                 params["gte"] = from;
@@ -1076,7 +1087,6 @@ $.extend(edges, {
             var qargs = {field: this.field};
             nq.removeMust(es.newRangeFilter(qargs));
             this.edge.pushQuery(nq);
-
             if (triggerQuery) {
                 this.edge.doQuery();
             }

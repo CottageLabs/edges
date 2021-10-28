@@ -47,6 +47,7 @@ $.extend(true, edges, {
                 var facetClass = edges.css_classes(this.namespace, "facet", this);
                 var labelClass = edges.css_classes(this.namespace, "label", this);
                 var selectClass = edges.css_classes(this.namespace, "select", this);
+                var dropdownClass = edges.css_classes(this.namespace, "dropdown", this);
 
                 var toggleId = edges.css_id(namespace, "toggle", this);
                 var resultsId = edges.css_id(namespace, "results", this);
@@ -76,23 +77,14 @@ $.extend(true, edges, {
                         }
 
                         options += '<option value="' + val.display.toString() + '">' + val.display.toString() + count + '</option>';
-                        // var ltData = "";
-                        // if (val.lt) {
-                        //     ltData = ' data-lt="' + edges.escapeHtml(val.lt) + '" ';
-                        // }
-                        // var id = edges.safeId(val.display.toString());
-                        // results += '<li>\
-                        //         <input class="' + checkboxClass + '" data-gte="' + edges.escapeHtml(val.gte) + '"' + ltData + ' id="' + id + '" type="checkbox" name="' + id + '">\
-                        //         <label for="' + id + '" class="filter__label">' + edges.escapeHtml(val.display) + count + '</label>\
-                        //     </li>';
                     }
 
                     theform += '<form><div class="row"><div class="col-md-4"><span class="' + labelClass + '">' + this.fromText + '</span></div>';
-                    theform += '<div class="col-md-8"><select name="' + fromName + '" id="' + fromName + '" class="form-control ' + selectClass + '">' + options + '</select></div>';
+                    theform += '<div class="col-md-8 ' + dropdownClass + '"><select name="' + fromName + '" id="' + fromName + '" class="form-control ' + selectClass + '">' + options + '</select></div>';
                     theform += '</div>';
 
                     theform += '<div class="row"><div class="col-md-4"><span class="' + labelClass + '">' + this.toText + '</span></div>';
-                    theform += '<div class="col-md-8"><select name="' + toName + '" id="' + toName + '" class="form-control ' + selectClass + '">' + options + '</select></div>';
+                    theform += '<div class="col-md-8 ' + dropdownClass + '"><select name="' + toName + '" id="' + toName + '" class="form-control ' + selectClass + '">' + options + '</select></div>';
                     theform += '</div></div></form>';
                 }
 
@@ -164,20 +156,18 @@ $.extend(true, edges, {
             };
 
             this.setUIFrom = function () {
-                // FIXME: this won't work yet
-                if (this.component.from) {
+                if (this.component.filters.gte) {
                     var fromName = edges.css_id_selector(this.namespace, "from", this);
                     var fromSel = this.component.jq(fromName);
-                    fromSel.val(this.component.from);
+                    fromSel.val(this.component.filters.from);
                 }
             };
 
             this.setUITo = function () {
-                // FIXME: this won't work yet
-                if (this.component.to) {
+                if (this.component.filters.lt) {
                     var toName = edges.css_id_selector(this.namespace, "to", this);
                     var toSel = this.component.jq(toName);
-                    toSel.val(this.component.to);
+                    toSel.val(this.component.filters.from);
                 }
             };
 
@@ -194,13 +184,13 @@ $.extend(true, edges, {
                 var to = parseInt(toSel.val());
 
                 // if the from is greater than the to, update it
-                if (from > to) {
-                    to = from;
-                    toSel.val(from);
-                }
+                // if (from > to) {
+                //     to = from;
+                //     toSel.val(from);
+                // }
 
                 // now kick it up to the component
-                this.component.selectRange(from, to);
+                this.component.selectRange({gte: from, lt: to});
             };
 
             this.toChanged = function (element) {
@@ -213,13 +203,13 @@ $.extend(true, edges, {
                 var from = parseInt(fromSel.val());
 
                 // if the from is greater than the to, update it
-                if (to < from) {
-                    from = to;
-                    fromSel.val(to);
-                }
+                // if (to < from) {
+                //     from = to;
+                //     fromSel.val(to);
+                // }
 
                 // now kick it up to the component
-                this.component.selectRange(from, to);
+                this.component.selectRange({gte: from, lt: to});
             };
 
             this.toggleOpen = function (element) {
