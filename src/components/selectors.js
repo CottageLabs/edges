@@ -957,6 +957,143 @@ $.extend(edges, {
         this.sortFunction = edges.getParam(params.sortFunction, false);
 
         this.displayFormatter = edges.getParam(params.displayFormatter, false);
+
+        this.active = edges.getParam(params.active, true);
+
+        //////////////////////////////////////////////
+        // values to be rendered
+
+        this.values = [];
+        this.filters = [];
+
+        this.contrib = function(query) {
+            query.addAggregation(
+                es.newDateHistogramAggregation({
+                    name: this.id,
+                    field: this.field,
+                    interval: this.interval
+                })
+            );
+        };
+
+        this.synchronise = function() {
+            // reset the state of the internal variables
+            this.values = [];
+            this.filters = [];
+
+            if (this.edge.result) {
+                var buckets = this.edge.result.buckets(this.id);
+                for (var i = 0; i < buckets.length; i++) {
+                    var bucket = buckets[i];
+                    var key = bucket.key;
+                    if (this.displayFormatter) {
+                        key = this.displayFormatter(key);
+                    }
+                    var obj = {"display" : key, "gte": bucket.key, "count" : bucket.doc_count};
+                    if (i < buckets.length - 1) {
+                        obj["lt"] = buckets[i+1].key;
+                    }
+                    this.values.push(obj);
+                }
+            }
+
+            if (this.sortFunction) {
+                this.values = this.sortFunction(this.values);
+            }
+
+            // now check to see if there are any range filters set on this field
+            // this works in a very specific way: if there is a filter on this field, and it
+            // starts from the date of a filter in the result list, then we make they assumption
+            // that they are a match.  This is because a date histogram either has all the results
+            // or only one date bin, if that date range has been selected.  And once a range is selected
+            // there will be no "lt" date field to compare the top of the range to.  So, this is the best
+            // we can do, and it means that if you have both a date histogram and another range selector
+            // for the same field, they may confuse eachother.
+            if (this.edge.currentQuery) {
+                var filters = this.edge.currentQuery.listMust(es.newRangeFilter({field: this.field}));
+                for (var i = 0; i < filters.length; i++) {
+                    var from = filters[i].gte;
+                    for (var j = 0; j < this.values.length; j++) {
+                        var val = this.values[j];
+                        if (val.gte.toString() === from) {
+                            this.filters.push(val);
+                        }
+                    }
+                }
+            }
+        };
+
+        this.selectRange = function(params) {
+            var from = params.gte;
+            var to = params.lt;
+
+            var nq = this.edge.cloneQuery();
+
+            // just add a new range filter (the query builder will ensure there are no duplicates)
+            var params = {field: this.field};
+            if (from) {
+                params["gte"] = from;
+            }
+            if (to) {
+                params["lt"] = to;
+            }
+            nq.addMust(es.newRangeFilter(params));
+
+            // reset the search page to the start and then trigger the next query
+            nq.from = 0;
+            this.edge.pushQuery(nq);
+            this.edge.doQuery();
+        };
+
+        this.removeFilter = function(params) {
+            var from = params.gte;
+            var to = params.lt;
+
+            var nq = this.edge.cloneQuery();
+
+            // just add a new range filter (the query builder will ensure there are no duplicates)
+            var params = {field: this.field};
+            if (from) {
+                params["gte"] = from;
+            }
+            if (to) {
+                params["lt"] = to;
+            }
+            nq.removeMust(es.newRangeFilter(params));
+
+            // reset the search page to the start and then trigger the next query
+            nq.from = 0;
+            this.edge.pushQuery(nq);
+            this.edge.doQuery();
+        };
+
+        this.clearFilters = function(params) {
+            var triggerQuery = edges.getParam(params.triggerQuery, true);
+
+            var nq = this.edge.cloneQuery();
+            var qargs = {field: this.field};
+            nq.removeMust(es.newRangeFilter(qargs));
+            this.edge.pushQuery(nq);
+
+            if (triggerQuery) {
+                this.edge.doQuery();
+            }
+        };
+    },
+
+    newYearRangeSelector : function(params) {
+        if (!params) { params = {} }
+        edges.YearRangeSelector.prototype = edges.newSelector(params);
+        return new edges.YearRangeSelector(params);
+    },
+    YearRangeSelector : function(params) {
+        // "year, quarter, month, week, day, hour, minute ,second"
+        // period to use for date histogram
+        this.interval = params.interval || "year";
+
+        this.sortFunction = edges.getParam(params.sortFunction, false);
+
+        this.displayFormatter = edges.getParam(params.displayFormatter, false);
         this.defaultRenderer = params.renderer || "newDateHistogramSelectorRenderer";
 
         this.active = edges.getParam(params.active, true);
@@ -1078,7 +1215,9 @@ $.extend(edges, {
                 params["lt"] = to+1;
             }
             nq.removeMust(es.newRangeFilter(params));
-
+            this.filters = this.filters.filter(function(item) {
+                return item.field !== this.field && item.lt !== to && item.to !== to;
+            })
             // reset the search page to the start and then trigger the next query
             nq.from = 0;
             this.edge.pushQuery(nq);
@@ -1086,6 +1225,7 @@ $.extend(edges, {
         };
 
         this.clearFilters = function(params) {
+            this.filters = [];
             var triggerQuery = edges.getParam(params.triggerQuery, true);
 
             var nq = this.edge.cloneQuery();
