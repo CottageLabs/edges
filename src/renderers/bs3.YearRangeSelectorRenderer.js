@@ -163,11 +163,27 @@ $.extend(true, edges, {
                 }
             };
 
+            this._getFrom = function() {
+                var fromName = edges.css_id_selector(this.namespace, "from", this);
+                var fromSel = this.component.jq(fromName);
+                return fromSel.val();
+            }
+
             this.setUITo = function () {
                 if (this.component.filters.length !== 0) {
                     var toName = edges.css_id_selector(this.namespace, "to", this);
                     var toSel = this.component.jq(toName);
                     toSel.val(this.component.filters[0].lt-1);
+                    var opts = $(toName + ' option');
+                    var options = $.map(opts, function(option){
+                        return option;
+                    });
+                    var from = parseInt(this._getFrom());
+                    for (let i = 0; i < options.length; i++){
+                        if (parseInt(options[i].value) < from){
+                            options[i].hidden = "true";
+                        }
+                    }
                 }
             };
 
