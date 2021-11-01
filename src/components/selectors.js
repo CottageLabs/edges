@@ -1122,7 +1122,7 @@ $.extend(edges, {
             this.filters = [];
 
             if (this.edge.result) {
-                if (this.values.length == 0) {
+                if (this.values.length === 0) {
                     var buckets = this.edge.result.buckets(this.id);
                     for (var i = 0; i < buckets.length; i++) {
                         var bucket = buckets[i];
@@ -1142,36 +1142,8 @@ $.extend(edges, {
             if (this.sortFunction) {
                 this.values = this.sortFunction(this.values);
             }
-
-            // now check to see if there are any range filters set on this field
-            // this works in a very specific way: if there is a filter on this field, and it
-            // starts from the date of a filter in the result list, then we make they assumption
-            // that they are a match.  This is because a date histogram either has all the results
-            // or only one date bin, if that date range has been selected.  And once a range is selected
-            // there will be no "lt" date field to compare the top of the range to.  So, this is the best
-            // we can do, and it means that if you have both a date histogram and another range selector
-            // for the same field, they may confuse eachother.
             if (this.edge.currentQuery) {
                 this.filters = this.edge.currentQuery.listMust(es.newRangeFilter({field: this.field}));
-
-                // var min_filter = filters.reduce(function(prev, curr) {
-                //     return prev.gte < curr.gte ? prev : curr;
-                // });
-                //
-                // var max_filter = filters.reduce(function(prev, curr) {
-                //     return prev.lt > curr.lt ? prev : curr;
-                // });
-                //
-                // this.filters = {"gte": min_filter.gte, "from": max_filter, "field": filters.field}
-                // for (var i = 0; i < filters.length; i++) {
-                //     var from = filters[i].gte;
-                //     for (var j = 0; j < this.values.length; j++) {
-                //         var val = this.values[j];
-                //         if (val.gte.toString() === from) {
-                //             this.filters = [val];
-                //         }
-                //     }
-                // }
             }
         };
 
@@ -1184,16 +1156,16 @@ $.extend(edges, {
             // just add a new range filter (the query builder will ensure there are no duplicates)
             //remove all filters for this field
             nq.removeMust(es.newRangeFilter({field: this.field}));
-            var params = {field: this.field};
+            var par = {field: this.field};
             if (from) {
-                params["gte"] = from;
+                par["gte"] = from;
             }
             if (to) {
                 //we need to add one for users to see results INCLUDING the "to" year
-                params["lt"] = to + 1;
+                par["lt"] = to + 1;
             }
-            params["format"] = "epoch_millis"   // Required for ES7.x date ranges against dateOptionalTime formats
-            nq.addMust(es.newRangeFilter(params));
+            par["format"] = "epoch_millis"   // Required for ES7.x date ranges against dateOptionalTime formats
+            nq.addMust(es.newRangeFilter(par));
             // reset the search page to the start and then trigger the next query
             nq.from = 0;
             this.edge.pushQuery(nq);
@@ -1207,15 +1179,15 @@ $.extend(edges, {
             var nq = this.edge.cloneQuery();
 
             // just add a new range filter (the query builder will ensure there are no duplicates)
-            var params = {field: this.field};
+            var par = {field: this.field};
             if (from) {
-                params["gte"] = from;
+                par["gte"] = from;
             }
             if (to) {
-                params["lt"] = to+1;
+                par["lt"] = to+1;
             }
-            nq.removeMust(es.newRangeFilter(params));
-            this.filters = this.filters.filter(function(item) {
+            nq.removeMust(es.newRangeFilter(par));
+            this.filters = this.filters.filter((item) => {
                 return item.field !== this.field && item.lt !== to && item.to !== to;
             })
             // reset the search page to the start and then trigger the next query
