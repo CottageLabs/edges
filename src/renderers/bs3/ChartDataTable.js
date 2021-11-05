@@ -5,6 +5,7 @@ export class ChartDataTable extends Renderer {
     constructor(params) {
         super();
 
+        this.includeHeaderRow = getParam(params, "includeHeaderRow", true);
         this.valueFormat = getParam(params, "valueFormat", false);
         this.labelFormat = getParam(params, "labelFormat", false);
         this.headerFormat = getParam(params, "headerFormat", false);
@@ -21,9 +22,12 @@ export class ChartDataTable extends Renderer {
         let tableData = this._dataSeriesToTable();
 
         let headFrag = "";
-        for (let i = 0; i < tableData.head.length; i++) {
-            let header = tableData.head[i];
-            headFrag += "<tr><td>" + header.join("</td><td>") + "</td></tr>";
+        if (this.includeHeaderRow) {
+            for (let i = 0; i < tableData.head.length; i++) {
+                let header = tableData.head[i];
+                headFrag += "<tr><td>" + header.join("</td><td>") + "</td></tr>";
+            }
+            headFrag = `<thead>${headFrag}</thead>`;
         }
 
         let bodyFrag = "";
@@ -36,7 +40,7 @@ export class ChartDataTable extends Renderer {
 
         let frag = `
             <table class="${tableClass}">
-                <thead>${headFrag}</thead>
+                ${headFrag}
                 <tbody>${bodyFrag}</tbody>
             </table>
         `;
