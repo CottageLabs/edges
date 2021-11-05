@@ -388,9 +388,9 @@ export class Edge {
             var entry = {};
             entry["query"] = this.secondaryQueries[key](this);
             entry["id"] = key;
-            entry["search_url"] = this.searchUrl;
+            entry["searchUrl"] = this.searchUrl;
             if (this.secondaryUrls !== false && this.secondaryUrls.hasOwnProperty(key)) {
-                entry["search_url"] = this.secondaryUrls[key]
+                entry["searchUrl"] = this.secondaryUrls[key]
             }
             entries.push(entry);
             this.realisedSecondaryQueries[key] = entry.query;
