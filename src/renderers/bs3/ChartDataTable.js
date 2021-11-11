@@ -9,6 +9,7 @@ export class ChartDataTable extends Renderer {
         this.valueFormat = getParam(params, "valueFormat", false);
         this.labelFormat = getParam(params, "labelFormat", false);
         this.headerFormat = getParam(params, "headerFormat", false);
+        this.seriesOrderFunction = getParam(params, "seriesOrderFunction", false);
 
         this.namespace = "edges-bs3-chartdatatable";
     }
@@ -53,6 +54,10 @@ export class ChartDataTable extends Renderer {
         let table = {head: [], body: []};
         if (!ds || ds.length === 0) {
             return table;
+        }
+
+        if (this.seriesOrderFunction) {
+            ds = this.seriesOrderFunction(ds);
         }
 
         let headers = [""];
