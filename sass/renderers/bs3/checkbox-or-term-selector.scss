@@ -1,0 +1,54 @@
+/********************************************************
+ *  OR Term Selector
+ */
+
+$ns:".edges-bs3-checkboxortermselector";
+
+#{$ns}_facet {
+  border-top: 1px solid $component-border;
+  border-bottom: 1px solid $component-border;
+}
+
+#{$ns}_header {
+  font-weight: bold;
+  padding-left: 5px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  background-color: $component-title-background;
+}
+
+#{$ns}_header a {
+  color: $component-link;
+}
+
+#{$ns}_header a:hover {
+  font-weight: bold;
+  text-decoration: none;
+}
+
+#{$ns}_body {
+  padding-left: 5px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+}
+
+#{$ns}_body:nth-of-type(odd) {
+  background-color: $component-background;
+}
+
+#{$ns}_body:nth-of-type(even) {
+  background-color: $component-alt-row;
+}
+
+#{$ns}_body:hover {
+  background-color: $component-highlight-row;
+}
+
+#{$ns}_list {
+  list-style: none;
+  padding-left: 0;
+}
+
+#{$ns}_label {
+  font-weight: normal;
+}

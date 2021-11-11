@@ -165,8 +165,8 @@ export class AsyncGroup {
         for (let i = 0; i < this.list.length; i++) {
             let context = {index: i};
 
-            let success_callback = edges.objClosure(this, "_actionSuccess", this.successCallbackArgs, context);
-            let error_callback = edges.objClosure(this, "_actionError", this.successCallbackArgs, context);
+            let success_callback = objClosure(this, "_actionSuccess", this.successCallbackArgs, context);
+            let error_callback = objClosure(this, "_actionError", this.successCallbackArgs, context);
             let complete_callback = false;
 
             this.functions.action({entry: this.list[i],
@@ -333,6 +333,17 @@ export function escapeHtml(unsafe, def) {
     } catch(err) {
         return def;
     }
+}
+
+export function safeId(unsafe) {
+    return unsafe.replace(/&/g, "_")
+            .replace(/</g, "_")
+            .replace(/>/g, "_")
+            .replace(/"/g, "_")
+            .replace(/'/g, "_")
+            .replace(/\./gi,'_')
+            .replace(/\:/gi,'_')
+            .replace(/\s/gi,"_");
 }
 
 export function numFormat(params) {

@@ -2,7 +2,7 @@ import {nv} from "../../../dependencies/nvd3"
 import {d3} from "../../../dependencies/d3"
 
 import {Renderer} from "../../core";
-import {getParam, htmlID, idSelector} from "../../utils";
+import {getParam, htmlID, idSelector, styleClasses} from "../../utils";
 import {hasData, wrapLabels} from "./nvd3utils";
 
 export class HorizontalMultibarRenderer extends Renderer {
@@ -18,6 +18,7 @@ export class HorizontalMultibarRenderer extends Renderer {
         this.legend = getParam(params, "legend", true);
 
         this.color = getParam(params, "color", false);
+        this.barColor = getParam(params, "barColor", false);
         this.noDataMessage = getParam(params, "noDataMessage", false);
 
         this.transitionDuration = getParam(params, "transitionDuration", 500);
@@ -30,7 +31,9 @@ export class HorizontalMultibarRenderer extends Renderer {
         this.yTickFormat = getParam(params, "yTickFormat", ",.0f");
         this.xTickFormat = getParam(params, "xTickFormat", false);
         this.valueFormat = getParam(params, "valueFormat", false);
-
+        
+        this.showXAxis = getParam(params, "showXAxis", true);
+        this.showYAxis - getParam(params, "showYAxes", true);
         this.xAxisLabel = getParam(params, "xAxisLabel", false);
         this.yAxisLabel = getParam(params, "yAxisLabel", false);
         this.xAxisLabelWrap = getParam(params, "xAxisLabelWrap", false);
@@ -46,6 +49,7 @@ export class HorizontalMultibarRenderer extends Renderer {
         this.hideIfNoData = getParam(params, "hideIfNoData", false);
         this.onHide = getParam(params, "onHide", false);
         this.onShow = getParam(params, "onShow", false);
+        this.onUpdate = getParam(params, "onUpdate", false);
 
         this.namespace = "edges-nvd3-horizontal-multibar";
 
@@ -95,7 +99,8 @@ export class HorizontalMultibarRenderer extends Renderer {
 
             var title = "";
             if (this.title !== false) {
-                title = this.title;
+                let titleClass = styleClasses(this.namespace, "title", this);
+                title = `<h4 class="${titleClass}">${this.title}</h4>`;
             }
 
             var svgId = htmlID(this.namespace, "svg", this);
@@ -115,7 +120,9 @@ export class HorizontalMultibarRenderer extends Renderer {
                     .showValues(that.showValues)
                     .tooltips(that.toolTips)
                     .showControls(that.controls)
-                    .showLegend(that.legend);
+                    .showLegend(that.legend)
+                    .showXAxis(that.showXAxis)
+                    .showYAxis(that.showYAxis);
 
                 if (that.stacked) {
                     chart.multibar.stacked(that.stacked)
@@ -186,6 +193,10 @@ export class HorizontalMultibarRenderer extends Renderer {
                     });
                 }
 
+                if (that.onUpdate) {
+                    that.onUpdate();
+                }
+
                 function updateChart() {
                     chart.update();
                     if (that.xAxisLabelWrap) {
@@ -194,6 +205,9 @@ export class HorizontalMultibarRenderer extends Renderer {
                             maxWidth: that.marginLeft - 5,
                             maxHeight: that.barHeight
                         });
+                    }
+                    if (that.onUpdate) {
+                        that.onUpdate();
                     }
                 }
 

@@ -5,8 +5,8 @@
 $ns:".edges-bs3-or-term-selector";
 
 #{$ns}_facet {
-  border-top: 1px solid #cccccc;
-  border-bottom: 1px solid #cccccc;
+  border-top: 1px solid $component-border;
+  border-bottom: 1px solid $component-border;
 }
 
 #{$ns}_header {
@@ -14,11 +14,11 @@ $ns:".edges-bs3-or-term-selector";
   padding-left: 5px;
   padding-top: 5px;
   padding-bottom: 5px;
-  background-color: #eeeeee;
+  background-color: $component-title-background;
 }
 
 #{$ns}_header a {
-  color: #000000;
+  color: $component-link;
 }
 
 #{$ns}_header a:hover {
@@ -33,25 +33,25 @@ $ns:".edges-bs3-or-term-selector";
 }
 
 #{$ns}_result:nth-of-type(odd) {
-  background-color: #ffffff;
+  background-color: $component-background;
 }
 
 #{$ns}_result:nth-of-type(even) {
-  background-color: #f4f4f4;
+  background-color: $component-alt-row;
 }
 
 #{$ns}_result:hover {
-  background-color: #eeeeee;
+  background-color: $component-highlight-row;
 }
 
 .edges-bs3-or-term-selector-value {}
 
 #{$ns}_filter-remove {
-  color: #000000;
+  color: $component-link;
 }
 
 #{$ns}_filter-remove:hover {
-  color: #000000;
+  color: $component-link;
 }
 
 #{$ns}_selections {

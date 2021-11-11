@@ -17,6 +17,7 @@ export class MultibarRenderer extends Renderer {
         this.transitionDuration = getParam(params, "transitionDuration", 500);
         this.controls = getParam(params, "controls", false);
         this.barColor = getParam(params, "barColor", false);
+        this.color = getParam(params, "color", false);
         this.showLegend = getParam(params, "showLegend", true);
         this.xAxisLabel = getParam(params, "xAxisLabel", "");
         this.yAxisLabel = getParam(params, "yAxisLabel", "");
@@ -54,10 +55,11 @@ export class MultibarRenderer extends Renderer {
 
                 return;
             }
-        }
-        this.component.context.show();
-        if (this.onShow) {
-            this.onShow();
+            
+            this.component.context.show();
+            if (this.onShow) {
+                this.onShow();
+            }
         }
 
         let svgId = htmlID(this.namespace, "svg", this);
@@ -97,6 +99,10 @@ export class MultibarRenderer extends Renderer {
 
             if (that.barColor) {
                 chart.barColor(that.barColor);
+            }
+
+            if (that.color) {
+                chart.color(that.color);
             }
 
             chart.showLegend(that.showLegend);

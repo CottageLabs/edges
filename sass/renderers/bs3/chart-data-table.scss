@@ -1,0 +1,26 @@
+/********************************************************
+ *  Chart Data Table
+ */
+
+$ns:".edges-bs3-chartdatatable";
+
+
+#{$ns}_table {
+  width: 100%;
+  border-top: 3px solid $component-border;
+  border-bottom: 3px solid $component-border;
+
+  thead {
+    font-weight: bold;
+    text-transform: uppercase;
+    background: $component-title-background;
+  }
+
+  tbody tr {
+    border-top: 1px solid $component-border;
+
+    td {
+      padding: 5px;
+    }
+  }
+}
