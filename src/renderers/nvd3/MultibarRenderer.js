@@ -55,10 +55,11 @@ export class MultibarRenderer extends Renderer {
 
                 return;
             }
-        }
-        this.component.context.show();
-        if (this.onShow) {
-            this.onShow();
+            
+            this.component.context.show();
+            if (this.onShow) {
+                this.onShow();
+            }
         }
 
         let svgId = htmlID(this.namespace, "svg", this);
