@@ -1,0 +1,19 @@
+/********************************************************
+ *  Relative Size Bars
+ */
+
+$ns:".edges-html-relativesizebars";
+
+
+#{$ns}_table {
+  width: 100%;
+
+  progress {
+    width: 100%;
+    height: 30px;
+  }
+
+  td {
+    padding-bottom: 20px;
+  }
+}
