@@ -23,13 +23,60 @@ export class Chart extends Component {
         // function which will generate the data series, which will be
         // written to this.dataSeries if that is not provided
         this.dataFunction = getParam(params, "dataFunction", false);
+
+        // should we enforce a rectangular shape on the data series for when there is
+        // more than one series to be displayed?
+        this.rectangulate = getParam(params, "rectangulate", false);
+
+        // function which will sort the values of a series, used when rectangulate is
+        // set to true
+        this.seriesSort = getParam(params, "seriesSort", false);
     }
 
     synchronise () {
         if (this.dataFunction) {
             this.dataSeries = this.dataFunction(this);
         }
-    };
+        if (this.rectangulate) {
+            this._rectangulate();
+        }
+    }
+
+    _rectangulate() {
+        if (this.dataSeries.length === 1) {
+            // if there's only one series, it is rectangular by definition
+            return;
+        }
+
+        // first index all the keys in the data series values for all
+        // data series
+        let allLabels = [];
+        for (let i = 0; i < this.dataSeries.length; i++) {
+            let series = this.dataSeries[i];
+            for (let j = 0; j < series.values.length; j++) {
+                let point = series.values[j];
+                if (!allLabels.includes(point.label)) {
+                    allLabels.push(point.label);
+                }
+            }
+        }
+
+        // now we have a full list of labels, check they are all present
+        // in each series, and if not set a default value of 0
+        for (let i = 0; i < this.dataSeries.length; i++) {
+            let series = this.dataSeries[i];
+            let currentLabels = series.values.map((x) => x.label)
+            for (let j = 0; j < allLabels.length; j++) {
+                let considerLabel = allLabels[j];
+                if (!currentLabels.includes(considerLabel)) {
+                    series.values.push({label: considerLabel, value: 0});   // NOTE: there is no sorting here, have to see what impact that has
+                }
+            }
+            if (this.seriesSort) {
+                series.values = this.seriesSort(series.values);
+            }
+        }
+    }
 }
 
 ////////////////////////////////////////////////////////////

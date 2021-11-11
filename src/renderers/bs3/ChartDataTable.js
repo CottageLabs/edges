@@ -51,6 +51,9 @@ export class ChartDataTable extends Renderer {
     _dataSeriesToTable() {
         let ds = this.component.dataSeries;
         let table = {head: [], body: []};
+        if (!ds || ds.length === 0) {
+            return table;
+        }
 
         let headers = [""];
         for(let i = 0; i < ds.length; i++) {
