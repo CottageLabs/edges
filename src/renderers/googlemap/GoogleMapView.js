@@ -1,5 +1,7 @@
 import {Renderer} from "../../core";
 import {getParam, allClasses, jsClassSelector, objClosure} from "../../utils";
+
+import { MarkerClusterer } from "@googlemaps/markerclusterer";
 import {google} from '../../../dependencies/google';
 
 export class GoogleMapView extends Renderer {
@@ -24,7 +26,10 @@ export class GoogleMapView extends Renderer {
         // initial map type
         this.mapType = getParam(params, "mapType", "hybrid");
 
-        this.clusterByCount = getParam(params, "clusterByCount", false);
+        this.labelFunction = getParam(params, "label", false);
+
+        // should we be using the google maps clustering features
+        this.cluster = getParam(params, "cluster", false);
 
         this.reQueryOnBoundsChange = getParam(params, "reQueryOnBoundsChange", false);
 
@@ -38,6 +43,7 @@ export class GoogleMapView extends Renderer {
         this.namespace = "edges-google-map-view";
         this.map = false;
         this.markers = [];
+        this.markerCluster = false;
         this.currentZoom = false;
         this.currentBounds = false;
     }
@@ -93,18 +99,25 @@ export class GoogleMapView extends Renderer {
                 position: myLatlng,
                 map: this.map
             }
-            let icon = this._getClusterIcon(loc.count)
-            if (icon) {
-                properties["icon"] = icon;
+
+            if (this.cluster) {
+                let icon = this._getClusterIcon(loc.count)
+                if (icon) {
+                    properties["icon"] = icon;
+                }
             }
-            if (this.clusterByCount) {
-                properties["label"] = {text: loc.count.toString()}
+            
+            if (this.labelFunction) {
+                properties["label"] = {text: this.labelFunction(loc)} // e.g. loc.count.toString()
             }
 
             var marker = new google.maps.Marker(properties);
             this.markers.push(marker);
         }
 
+        if (this.cluster) {
+            this.markerCluster = new MarkerClusterer({map: this.map, markers: this.markers})
+        }
     }
 
     boundsChanged() {

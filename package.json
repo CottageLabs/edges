@@ -11,7 +11,7 @@
     "es-external": "cp dependencies/es/external.js dependencies/es.js",
     "nvd3-external": "cp dependencies/nvd3/external.js dependencies/nvd3.js",
     "d3-external": "cp dependencies/d3/external.js dependencies/d3.js",
-    "google-external" : "cp dependencies/google/external.js dependencies/google.js",
+    "google-external": "cp dependencies/google/external.js dependencies/google.js",
     "clean": "rm -rf ./.parcel-cache && rm -rf ./dist",
     "clean-client": "rm -rf ./.parcel-cache && rm -rf ./dist/client",
     "clean-module": "rm -rf ./.parcel-cache && rm -rf ./dist/module",
@@ -94,6 +94,7 @@
   },
   "dependencies": {
     "@babel/runtime-corejs2": "^7.15.4",
+    "@googlemaps/markerclusterer": "^1.0.12",
     "@parcel/transformer-sass": "^2.0.0-rc.0",
     "@swc/helpers": "^0.2.13",
     "jquery": "^3.6.0",
