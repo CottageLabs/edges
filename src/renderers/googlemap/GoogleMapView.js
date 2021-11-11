@@ -26,7 +26,7 @@ export class GoogleMapView extends Renderer {
         // initial map type
         this.mapType = getParam(params, "mapType", "hybrid");
 
-        this.labelFunction = getParam(params, "label", false);
+        this.labelFunction = getParam(params, "labelFunction", false);
 
         // should we be using the google maps clustering features
         this.cluster = getParam(params, "cluster", false);
@@ -36,6 +36,8 @@ export class GoogleMapView extends Renderer {
         this.clusterIcons = getParam(params, "clusterIcons", {
             0: "https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m1.png"
         });
+
+        this.renderCluster = getParam(params, "renderCluster", false);
 
         /////////////////////////////////////////////
         // internal state
@@ -97,7 +99,10 @@ export class GoogleMapView extends Renderer {
             var myLatlng = new google.maps.LatLng(loc.lat, loc.lon);
             let properties = {
                 position: myLatlng,
-                map: this.map
+            }
+            if (!this.cluster) {
+                // otherwise the mapping clusterer will deal with it
+                properties["map"] = this.map;
             }
 
             if (this.cluster) {
@@ -116,7 +121,14 @@ export class GoogleMapView extends Renderer {
         }
 
         if (this.cluster) {
-            this.markerCluster = new MarkerClusterer({map: this.map, markers: this.markers})
+            let props = {
+                map: this.map,
+                markers: this.markers
+            }
+            if (this.renderCluster) {
+                props["renderer"]  = this.renderCluster;
+            }
+            this.markerCluster = new MarkerClusterer(props);
         }
     }
 
