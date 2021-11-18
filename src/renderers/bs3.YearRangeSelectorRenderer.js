@@ -76,7 +76,11 @@ $.extend(true, edges, {
                             count = ' (' + count + ')';
                         }
 
-                        options += '<option value="' + val.display.toString() + '">' + val.display.toString() + count + '</option>';
+                        var ltData = "";
+                        if (val.lt) {
+                            ltData = ' data-lt="' + edges.escapeHtml(val.lt) + '" ';
+                        }
+                        options += '<option value="' + val.gte.toString() + '" data-gte="' + edges.escapeHtml(val.gte) + '"' + ltData + '>' + val.display.toString() + count + '</option>';
                     }
 
                     theform += '<form><div class="row"><div class="col-md-4"><span class="' + labelClass + '">' + this.fromText + '</span></div>';
@@ -156,10 +160,15 @@ $.extend(true, edges, {
             };
 
             this.setUIFrom = function () {
+                var fromName = edges.css_id_selector(this.namespace, "from", this);
+                var fromSel = this.component.jq(fromName);
+
                 if (this.component.filters.length !== 0) {
-                    var fromName = edges.css_id_selector(this.namespace, "from", this);
-                    var fromSel = this.component.jq(fromName);
                     fromSel.val(this.component.filters[0].gte);
+                } else {
+                    if (this.component.values.length > 0) {
+                        fromSel.val(this.component.values[this.component.values.length - 1].gte);
+                    }
                 }
             };
 
@@ -170,9 +179,9 @@ $.extend(true, edges, {
             }
 
             this.setUITo = function () {
+                var toName = edges.css_id_selector(this.namespace, "to", this);
+                var toSel = this.component.jq(toName);
                 if (this.component.filters.length !== 0) {
-                    var toName = edges.css_id_selector(this.namespace, "to", this);
-                    var toSel = this.component.jq(toName);
                     toSel.val(this.component.filters[0].lt-1);
                     var opts = $(toName + ' option');
                     var options = $.map(opts, function(option){
@@ -183,6 +192,10 @@ $.extend(true, edges, {
                         if (parseInt(options[i].value) < from){
                             options[i].hidden = "true";
                         }
+                    }
+                } else {
+                    if (this.component.values.length > 0) {
+                        toSel.val(this.component.values[0].gte);
                     }
                 }
             };

@@ -1031,6 +1031,8 @@ $.extend(edges, {
 
             // just add a new range filter (the query builder will ensure there are no duplicates)
             var params = {field: this.field};
+            nq.removeMust(es.newRangeFilter(params));
+
             if (from) {
                 params["gte"] = from;
             }
