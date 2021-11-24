@@ -32,6 +32,7 @@ $.extend(true, edges, {
             this.namespace = "edges-bs3-yearrangeselector";
 
             this.draw = function () {
+                this.open=true;
                 // for convenient short references ...
                 var ts = this.component;
                 var namespace = this.namespace;
@@ -182,17 +183,17 @@ $.extend(true, edges, {
                 var toName = edges.css_id_selector(this.namespace, "to", this);
                 var toSel = this.component.jq(toName);
                 if (this.component.filters.length !== 0) {
-                    toSel.val(this.component.filters[0].lt-1);
-                    var opts = $(toName + ' option');
-                    var options = $.map(opts, function(option){
-                        return option;
-                    });
-                    var from = parseInt(this._getFrom());
-                    for (let i = 0; i < options.length; i++){
-                        if (parseInt(options[i].value) < from){
-                            options[i].hidden = "true";
-                        }
-                    }
+                    toSel.val(this.component.filters[0].lt);
+                    // var opts = $(toName + ' option');
+                    // var options = $.map(opts, function(option){
+                    //     return option;
+                    // });
+                    // var from = parseInt(this._getFrom());
+                    // for (let i = 0; i < options.length; i++){
+                    //     if (parseInt(options[i].value) < from){
+                    //         options[i].hidden = "true";
+                    //     }
+                    // }
                 } else {
                     if (this.component.values.length > 0) {
                         toSel.val(this.component.values[0].gte);

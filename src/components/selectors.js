@@ -980,18 +980,37 @@ $.extend(edges, {
             // reset the state of the internal variables
             this.values = [];
             this.filters = [];
+            var filters = null;
+            if (this.edge.currentQuery) {
+                filters = this.edge.currentQuery.listMust(es.newRangeFilter({field: this.field}));
+            }
 
             if (this.edge.result) {
+                var nq = this.edge.cloneQuery();
+
+                nq.removeMust(es.newRangeFilter(par));
+
+                // reset the search page to the start and then trigger the next query
+                nq.from = 0;
+                this.edge.pushQuery(nq);
+                this.edge.doQuery();
                 var buckets = this.edge.result.buckets(this.id);
+                var to = -1;
+                if (filters !== null && filters.length !== 0) {
+                    to = filters[0].lt;
+                }
                 for (var i = 0; i < buckets.length; i++) {
                     var bucket = buckets[i];
                     var key = bucket.key;
                     if (this.displayFormatter) {
                         key = this.displayFormatter(key);
                     }
-                    var obj = {"display" : key, "gte": bucket.key, "count" : bucket.doc_count};
-                    if (i < buckets.length - 1) {
-                        obj["lt"] = buckets[i+1].key;
+                    if (to === -1 && i < buckets.length - 1) {
+                        to = buckets[i + 1].key;
+                    }
+                    var obj = {"display": key, "gte": bucket.key, "count": bucket.doc_count};
+                    if (to !== null) {
+                        obj["lt"] = Number(to);
                     }
                     this.values.push(obj);
                 }
@@ -1010,7 +1029,6 @@ $.extend(edges, {
             // we can do, and it means that if you have both a date histogram and another range selector
             // for the same field, they may confuse eachother.
             if (this.edge.currentQuery) {
-                var filters = this.edge.currentQuery.listMust(es.newRangeFilter({field: this.field}));
                 for (var i = 0; i < filters.length; i++) {
                     var from = filters[i].gte;
                     for (var j = 0; j < this.values.length; j++) {
@@ -1030,16 +1048,16 @@ $.extend(edges, {
             var nq = this.edge.cloneQuery();
 
             // just add a new range filter (the query builder will ensure there are no duplicates)
-            var params = {field: this.field};
-            nq.removeMust(es.newRangeFilter(params));
+            var par = {field: this.field};
+            nq.removeMust(es.newRangeFilter(par));
 
             if (from) {
-                params["gte"] = from;
+                par["gte"] = from;
             }
             if (to) {
-                params["lt"] = to;
+                par["lt"] = to;
             }
-            nq.addMust(es.newRangeFilter(params));
+            nq.addMust(es.newRangeFilter(par));
 
             // reset the search page to the start and then trigger the next query
             nq.from = 0;
@@ -1054,14 +1072,14 @@ $.extend(edges, {
             var nq = this.edge.cloneQuery();
 
             // just add a new range filter (the query builder will ensure there are no duplicates)
-            var params = {field: this.field};
+            var par = {field: this.field};
             if (from) {
-                params["gte"] = from;
+                par["gte"] = from;
             }
             if (to) {
-                params["lt"] = to;
+                par["lt"] = to;
             }
-            nq.removeMust(es.newRangeFilter(params));
+            nq.removeMust(es.newRangeFilter(par));
 
             // reset the search page to the start and then trigger the next query
             nq.from = 0;
@@ -1164,7 +1182,7 @@ $.extend(edges, {
             }
             if (to) {
                 //we need to add one for users to see results INCLUDING the "to" year
-                par["lt"] = to + 1;
+                par["lt"] = to;
             }
             par["format"] = "epoch_millis"   // Required for ES7.x date ranges against dateOptionalTime formats
             nq.addMust(es.newRangeFilter(par));
