@@ -163,8 +163,8 @@ $.extend(true, edges, {
                 var fromName = edges.css_id_selector(this.namespace, "from", this);
                 var fromSel = this.component.jq(fromName);
 
-                if (this.component.filters.length !== 0) {
-                    fromSel.val(this.component.filters[0].gte);
+                if (this.component.gte) {
+                    fromSel.val(this.component.gte);
                 } else {
                     if (this.component.values.length > 0) {
                         fromSel.val(this.component.values[this.component.values.length - 1].gte);
@@ -181,18 +181,18 @@ $.extend(true, edges, {
             this.setUITo = function () {
                 var toName = edges.css_id_selector(this.namespace, "to", this);
                 var toSel = this.component.jq(toName);
-                if (this.component.filters.length !== 0) {
-                    toSel.val(this.component.filters[0].lt-1);
-                    var opts = $(toName + ' option');
-                    var options = $.map(opts, function(option){
-                        return option;
-                    });
-                    var from = parseInt(this._getFrom());
-                    for (let i = 0; i < options.length; i++){
-                        if (parseInt(options[i].value) < from){
-                            options[i].hidden = "true";
-                        }
-                    }
+                if (this.component.lt) {
+                    toSel.val(this.component.lt);
+                    // var opts = $(toName + ' option');
+                    // var options = $.map(opts, function(option){
+                    //     return option;
+                    // });
+                    // var from = parseInt(this._getFrom());
+                    // for (let i = 0; i < options.length; i++){
+                    //     if (parseInt(options[i].value) < from){
+                    //         options[i].hidden = "true";
+                    //     }
+                    // }
                 } else {
                     if (this.component.values.length > 0) {
                         toSel.val(this.component.values[0].gte);
@@ -205,12 +205,16 @@ $.extend(true, edges, {
 
             this.fromChanged = function (element) {
                 // get the value we've been asked for
-                var from = parseInt($(element).val());
+                var from = parseInt($(element).find("option").filter(":selected").attr("data-gte"));
 
                 // get what the current to value is
                 var toSelector = edges.css_id_selector(this.namespace, "to", this);
                 var toSel = this.component.jq(toSelector);
-                var to = parseInt(toSel.val());
+                let dataLt = toSel.find("option").filter(":selected").attr("data-lt");
+                let to = false;
+                if (dataLt) {
+                    to = parseInt(dataLt);
+                }
 
                 // if the from is greater than the to, update it
                 // if (from > to) {
