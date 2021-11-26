@@ -124,6 +124,10 @@ export class HorizontalMultibarRenderer extends Renderer {
                     .showXAxis(that.showXAxis)
                     .showYAxis(that.showYAxis);
 
+                if (that.barColor) {
+                    chart.barColor(that.barColor);
+                }
+
                 if (that.stacked) {
                     chart.multibar.stacked(that.stacked)
                 }

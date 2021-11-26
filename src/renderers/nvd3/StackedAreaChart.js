@@ -14,6 +14,7 @@ export class StackedAreaChart extends Renderer {
         this.transitionDuration = getParam(params, "transitionDuration", 500);
         this.showLegend = getParam(params, "showLegend", true);
         this.controls = getParam(params, "controls", true);
+        this.color = getParam(params, "color", false);
 
         this.xAxisLabel = getParam(params, "xAxisLabel", "");
         this.yAxisLabel = getParam(params, "yAxisLabel", "");
@@ -55,6 +56,10 @@ export class StackedAreaChart extends Renderer {
                 .clipEdge(true)
                 .x(function(d) { return d.x })
                 .y(function(d) { return d.y })
+
+            if (outer.color) {
+                chart.color(outer.color);
+            }
 
             if (outer.xTickFormat) {
                 var fn = outer.xTickFormat;
