@@ -48,6 +48,10 @@ export class GoogleMapView extends Renderer {
         this.markerCluster = false;
         this.currentZoom = false;
         this.currentBounds = false;
+
+        // for reasons unknown, on draw the map generates 2 idle events in rapid succession.  This allows us
+        // to squash responding to them
+        this.skipIdleEvent = 2;
     }
 
     draw() {
@@ -58,6 +62,7 @@ export class GoogleMapView extends Renderer {
                 return;
             }
         }
+        this.skipIdleEvent = 2;
 
         var centre = new google.maps.LatLng(this.component.centre.lat, this.component.centre.lon);
 
@@ -82,12 +87,7 @@ export class GoogleMapView extends Renderer {
             // make sure we set the centre right
             this.map.setCenter(centre);
         }
-
-        if (this.reQueryOnBoundsChange) {
-            let onBoundsChanged = objClosure(this, "boundsChanged")
-            this.map.addListener("bounds_changed", onBoundsChanged)
-        }
-
+        
         // clear any existing markers
         for (i = 0; i < this.markers.length; i++) {
             this.markers[i].setMap(null);
@@ -130,9 +130,21 @@ export class GoogleMapView extends Renderer {
             }
             this.markerCluster = new MarkerClusterer(props);
         }
+
+        if (this.reQueryOnBoundsChange) {
+            let onBoundsChanged = objClosure(this, "boundsChanged")
+            this.map.addListener("idle", onBoundsChanged)
+        }
     }
 
     boundsChanged() {
+        // prevent the idle event from triggering a re-query the first time, as it does
+        // this on load
+        if (this.skipIdleEvent > 0) {
+            this.skipIdleEvent--;
+            return;
+        }
+
         let bounds = this.map.getBounds();
         let zoom = this.map.getZoom();
 
