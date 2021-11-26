@@ -44,6 +44,10 @@ export class ORTermSelector extends Component {
         //////////////////////////////////////////
         // properties used to store internal state
 
+        // a place to store the raw result from the last query made for data
+        this.latestQuery = false;
+        this.latestResult = false;
+
         // an explicit list of terms to be displayed.  If this is not passed in, then a query
         // will be issues which will populate this with the values
         // of the form
@@ -156,6 +160,8 @@ export class ORTermSelector extends Component {
             new es.TermsAggregation(params)
         );
 
+        this.latestQuery = bq;
+
         // issue the query to elasticsearch
         this.edge.queryAdapter.doQuery({
             edge: this.edge,
@@ -167,6 +173,7 @@ export class ORTermSelector extends Component {
 
     listAllQuerySuccess(params) {
         var result = params.result;
+        this.latestResult = result;
 
         // get the terms out of the aggregation
         this.terms = [];
@@ -229,6 +236,8 @@ export class ORTermSelector extends Component {
             new es.TermsAggregation(params)
         );
 
+        this.latestQuery = bq;
+
         // issue the query to elasticsearch
         this.edge.queryAdapter.doQuery({
             edge: this.edge,
@@ -240,6 +249,7 @@ export class ORTermSelector extends Component {
 
     doUpdateQuerySuccess(params) {
         var result = params.result;
+        this.latestResult = result;
 
         this._synchroniseTerms({result: result});
 
