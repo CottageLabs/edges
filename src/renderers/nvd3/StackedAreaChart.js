@@ -8,7 +8,7 @@ export class StackedAreaChart extends Renderer {
 
         this.title = getParam(params, "title", false);
 
-        this.interactiveGuideline = getParam(params, "interactiveGuideline", true);
+        this.useInteractiveGuideline = getParam(params, "useInteractiveGuideline", true);
         this.xTickFormat = getParam(params, "xTickFormat", false);
         this.yTickFormat = getParam(params, "yTickFormat", false);
         this.transitionDuration = getParam(params, "transitionDuration", 500);
