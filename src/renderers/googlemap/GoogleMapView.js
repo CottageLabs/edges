@@ -88,7 +88,11 @@ export class GoogleMapView extends Renderer {
             this.map.setCenter(centre);
         }
         
-        // clear any existing markers
+        // clear any existing markers/clusters
+        if (this.cluster && this.markerCluster) {
+            this.markerCluster.clearMarkers();
+            this.markerCluster = false;
+        }
         for (i = 0; i < this.markers.length; i++) {
             this.markers[i].setMap(null);
         }
