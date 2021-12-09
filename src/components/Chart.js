@@ -117,6 +117,7 @@ export function dateHistogram(params) {
 export function termSplitDateHistogram(params) {
     let histogramAgg = params.histogramAgg;
     let termsAgg = params.termsAgg;
+    let seriesNameMap = params.seriesNameMap;
 
     return function(component) {
         let series = {};
@@ -141,7 +142,8 @@ export function termSplitDateHistogram(params) {
         let seriesNames = Object.keys(series);
         for (let i = 0; i < seriesNames.length; i++) {
             let seriesName = seriesNames[i];
-            dataSeries.push({key: seriesName, values: series[seriesName]})
+            let displaySeriesName = seriesNameMap ? seriesNameMap[seriesName] || seriesName : seriesName
+            dataSeries.push({key: displaySeriesName, values: series[seriesName]})
         }
         return dataSeries;
     }
