@@ -70,7 +70,7 @@ export class CheckboxORTermSelector extends Renderer {
                 var filt = ts.selected[i];
                 var def = this._getFilterDef(filt);
                 if (def) {
-                    var display = this.component._translate(filt);
+                    var display = this.component.translate(filt);
                     let id = safeId(filt);
                     var count = "";
                     if (this.showCount) {
