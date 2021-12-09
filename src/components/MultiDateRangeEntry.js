@@ -37,6 +37,9 @@ export class MultiDateRangeEntry extends Component {
         // default latest date to use in all cases (defaults to now)
         this.defaultLatest = getParam(params, "defaultLatest", new Date());
 
+        // use this to force a latest date, even if the auto lookup on the range is set
+        this.forceLatest = getParam(params, "forceLatest", false);
+
         ///////////////////////////////////////////////
         // fields used to track internal state
 
@@ -83,7 +86,7 @@ export class MultiDateRangeEntry extends Component {
                 if (agg.min !== null) {
                     min = new Date(agg.min);
                 }
-                if (agg.max !== null) {
+                if (agg.max !== null && !this.forceLatest) {
                     max = new Date(agg.max);
                 }
 
@@ -101,7 +104,7 @@ export class MultiDateRangeEntry extends Component {
                 this.currentField = field;
                 var filter = filters[0];
                 this.fromDate = filter.gte;
-                this.toDate = filter.lt;
+                this.toDate = filter.lte;
             }
         }
 
@@ -195,6 +198,7 @@ export class MultiDateRangeEntry extends Component {
 
             return true;
         }
+        return false;
     }
 
     formatDateForQuery(date) {

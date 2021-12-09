@@ -47,20 +47,16 @@ export class MultiDateRangeCombineSelector extends Renderer {
         this.rangeId = htmlID(this.namespace, dre.id + "_range", this);
         var pluginId = htmlID(this.namespace, dre.id + "_plugin", this);
 
-        var options = "";
-        for (var i = 0; i < dre.fields.length; i++) {
-            var field = dre.fields[i];
-            var selected = dre.currentField === field.field ? ' selected="selected" ' : "";
-            options += '<option value="' + field.field + '"' + selected + '>' + field.display + '</option>';
-        }
-
         var frag = '<div class="form-inline">';
-
-        if (dre.display) {
-            frag += '<span class="' + prefixClass + '">' + dre.display + '</span>';
+        if (dre.fields.length > 1) {
+            var options = "";
+            for (var i = 0; i < dre.fields.length; i++) {
+                var field = dre.fields[i];
+                var selected = dre.currentField === field.field ? ' selected="selected" ' : "";
+                options += '<option value="' + field.field + '"' + selected + '>' + field.display + '</option>';
+            }
+            frag += '<div class="form-group"><select class="' + selectClass + ' form-control" name="' + this.selectId + '" id="' + this.selectId + '">' + options + '</select></div>';
         }
-
-        frag += '<div class="form-group"><select class="' + selectClass + ' form-control" name="' + this.selectId + '" id="' + this.selectId + '">' + options + '</select></div>';
 
         frag += '<div id="' + this.rangeId + '" class="' + inputClass + ' form-control">\
             <i class="glyphicon glyphicon-calendar"></i>&nbsp;\
@@ -125,7 +121,9 @@ export class MultiDateRangeCombineSelector extends Renderer {
             date_type = this.selectJq.val();
         }
 
-        this.component.changeField(date_type);
+        if (date_type) {
+            this.component.changeField(date_type);
+        }
 
         this.component.setFrom(start.toDate());
         this.component.setTo(end.toDate());
