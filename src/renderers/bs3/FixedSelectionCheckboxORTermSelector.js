@@ -59,9 +59,11 @@ export class FixedSelectionCheckboxORTermSelector extends Renderer {
         let results = "";
         for (let i = 0; i < this.fixedTerms.length; i++) {
             let ft = this.fixedTerms[i];
+            let found = false;
             for (let j = 0; j < ts.terms.length; j++) {
                 let val = ts.terms[j];
                 if (val.term === ft) {
+                    found = true;
                     let active = $.inArray(val.term.toString(), ts.selected) > -1;
                     let checked = "";
                     if (active) {
@@ -77,6 +79,14 @@ export class FixedSelectionCheckboxORTermSelector extends Renderer {
                         <label for="' + id + '" class="' + labelClass + '">' + escapeHtml(val.display) + count + '</label>\
                     </li>';
                 }
+            }
+            if (!found) {
+                let display = this.component.translate(ft);
+                let id = safeId(ft);
+                results += '<li>\
+                    <input class="' + checkboxClass + '" data-key="' + escapeHtml(ft) + '" id="' + id + '" type="checkbox" name="' + id + '" disabled="disabled">\
+                    <label for="' + id + '" class="' + labelClass + '">' + escapeHtml(display) + '</label>\
+                </li>';
             }
         }
 
@@ -191,7 +201,12 @@ export class FixedSelectionCheckboxORTermSelector extends Renderer {
         if (checked) {
             this.component.selectTerm(term);
         } else {
-            this.component.removeFilter(term);
+            // if the last fixed term is removed, then all the fixed terms are re-selected
+            if (this.component.selected.length === 1 && this.component.selected.includes(term)) {
+                this.component.selectTerms({terms: this.fixedTerms});
+            } else {
+                this.component.removeFilter(term);
+            }
         }
     }
 
