@@ -81,8 +81,8 @@ export class CheckboxORTermSelector extends Renderer {
                         count = ' <span class="' + countClass + '">(' + cv + ')</span>';
                     }
                     filterFrag += '<li>\
-                        <input class="' + checkboxClass + '" data-key="' + escapeHtml(filt) + '" id="' + id + '" type="checkbox" name="' + id + '" checked="checked">\
-                        <label for="' + id + '" class="' + labelClass + '">' + escapeHtml(display) + count + '</label>\
+                        <input class="' + checkboxClass + ' css-checkbox brand" data-key="' + escapeHtml(filt) + '" id="' + id + '" type="checkbox" name="' + id + '" checked="checked">\
+                        <label for="' + id + '" class="' + labelClass + ' css-label brand">' + escapeHtml(display) + count + '</label>\
                     </li>';
                 }
             }
