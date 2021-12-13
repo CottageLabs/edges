@@ -75,8 +75,8 @@ export class FixedSelectionCheckboxORTermSelector extends Renderer {
                     }
                     var id = safeId(val.term);
                     results += '<li>\
-                        <input class="' + checkboxClass + ' css-checkbox green" data-key="' + escapeHtml(val.term) + '" id="' + id + '" type="checkbox" name="' + id + '"' + checked + '>\
-                        <label for="' + id + '" class="' + labelClass + ' css-label green">' + escapeHtml(val.display) + count + '</label>\
+                        <input class="' + checkboxClass + '" data-key="' + escapeHtml(val.term) + '" id="' + id + '" type="checkbox" name="' + id + '"' + checked + '>\
+                        <label for="' + id + '" class="' + labelClass + '">' + escapeHtml(val.display) + count + '</label>\
                     </li>';
                 }
             }
