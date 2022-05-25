@@ -66,7 +66,6 @@ class Filter {
 
     constructor(params) {
         this.field = params.field;
-        this.type_name = params.type_name;
     }
 
     matches(other) {
@@ -75,7 +74,7 @@ class Filter {
 
     _baseMatch(other) {
         // type must match
-        if (other.type_name !== this.type_name) {
+        if (other.type !== this.type) {
             return false;
         }
         // field (if set) must match
@@ -199,6 +198,8 @@ var es = {
             this.aggs = es.getParam(params.aggs, []);
             this.must = es.getParam(params.must, []);
             this.mustNot = es.getParam(params.mustNot, []);
+            this.should = es.getParam(params.should, []);
+            this.minimumShouldMatch = es.getParam(params.minimumShouldMatch, false);
 
             // defaults from properties that will be set through their setters (see the bottom
             // of the function)
@@ -208,10 +209,8 @@ var es = {
             // ones that we haven't used yet, so are awaiting implementation
             // NOTE: once we implement these, they also need to be considered in merge()
             this.source = es.getParam(params.source, false);
-            this.should = es.getParam(params.should, []);
             this.partialFields = es.getParam(params.partialField, false);
             this.scriptFields = es.getParam(params.scriptFields, false);
-            this.minimumShouldMatch = es.getParam(params.minimumShouldMatch, false);
             this.partialFields = es.getParam(params.partialFields, false);
             this.scriptFields = es.getParam(params.scriptFields, false);
 
@@ -495,6 +494,37 @@ var es = {
             this.mustNot = [];
         }
 
+        addShould(filter) {
+            var existing = this.listShould(filter);
+            if (existing.length === 0) {
+                this.should.push(filter);
+            }
+        }
+
+        listShould(template) {
+            return this.listFilters({boolType: "should", template: template});
+        }
+
+        removeShould(template) {
+            var removes = [];
+            for (var i = 0; i < this.should.length; i++) {
+                var m = this.should[i];
+                if (m.matches(template)) {
+                    removes.push(i);
+                }
+            }
+            removes = removes.sort().reverse();
+            for (var i = 0; i < removes.length; i++) {
+                this.should.splice(removes[i], 1);
+            }
+            // return the count of filters that were removed
+            return removes.length;
+        }
+
+        clearShould() {
+            this.should = [];
+        }
+
         /////////////////////////////////////////////////
         // interrogative functions
 
@@ -549,6 +579,8 @@ var es = {
             // this.aggs - append any new ones from source, overwriting any with the same name
             // this.must - append any new ones from source
             // this.mustNot - append any new ones from source
+            // this.should - append any new ones from source
+            // this.minimumShouldMatch - take from source if set
             // this.queryString - take from source if set
             // this.sort - prepend any from source
             // this.source - append any new ones from source
@@ -576,6 +608,13 @@ var es = {
             let mustNot = source.listMustNot();
             for (let i = 0; i < mustNot.length; i++) {
                 this.addMustNot(mustNot[i]);
+            }
+            let should = source.listShould();
+            for (let i = 0; i < should.length; i++) {
+                this.addShould(should[i]);
+            }
+            if (source.minimumShouldMatch !== false) {
+                this.minimumShouldMatch = source.minimumShouldMatch;
             }
             if (source.getQueryString()) {
                 this.setQueryString(source.getQueryString())
@@ -634,6 +673,18 @@ var es = {
                         mustNots.push(m.objectify());
                     }
                     bool["must_not"] = mustNots;
+                }
+                // add any should filters
+                if (this.should.length > 0) {
+                    let should = [];
+                    for (var i = 0; i < this.should.length; i++) {
+                        var m = this.should[i];
+                        should.push(m.objectify());
+                    }
+                    bool["should"] = should;
+                }
+                if (this.minimumShouldMatch !== false) {
+                    bool["minimum_should_match"] = this.minimumShouldMatch;
                 }
             }
 
@@ -732,6 +783,18 @@ var es = {
                             target.addMustNot(fil);
                         }
                     }
+                }
+                if (bool.should) {
+                    for (var i = 0; i < bool.should.length; i++) {
+                        var type = Object.keys(bool.should[i])[0];
+                        var fil = es.filterFactory(type, {raw: bool.should[i]});
+                        if (fil) {
+                            target.addShould(fil);
+                        }
+                    }
+                }
+                if (bool.minimum_should_match) {
+                    target.minimumShouldMatch = bool.minimum_should_match;
                 }
             }
 
@@ -1259,6 +1322,89 @@ var es = {
 
     ///////////////////////////////////////////////////
     // Filters
+
+    BoolFilter : class extends Filter {
+        static type = "bool";
+
+        constructor(params) {
+            params["field"] = "_bool"; // this filter does not have a field, so we set a placeholder
+            super(params);
+
+            // FIXME: for the moment this only supports must_not as it's all we need
+            // at the time of implementation
+            this.mustNot = es.getParam(params.mustNot, []);
+
+            if (params.raw) {
+                this.parse(params.raw);
+            }
+        }
+
+        objectify() {
+            let obj = {bool : {}};
+            if (this.mustNot.length > 0) {
+                let mustNots = [];
+                for (var i = 0; i < this.mustNot.length; i++) {
+                    var m = this.mustNot[i];
+                    mustNots.push(m.objectify());
+                }
+                obj.bool["must_not"] = mustNots;
+            }
+            return obj;
+        }
+
+        parse(obj) {
+            if (obj.bool.must_not) {
+                for (var i = 0; i < obj.bool.must_not.length; i++) {
+                    var type = Object.keys(obj.bool.must_not[i])[0];
+                    var fil = es.filterFactory(type, {raw: obj.bool.must_not[i]});
+                    if (fil) {
+                        this.addMustNot(fil);
+                    }
+                }
+            }
+        }
+
+        addMustNot(filter) {
+            var existing = this.listMustNot(filter);
+            if (existing.length === 0) {
+                this.mustNot.push(filter);
+            }
+        }
+
+        listMustNot(template) {
+            return this.listFilters({boolType: "must_not", template: template});
+        }
+
+        listFilters(params) {
+            var boolType = params.boolType || "must";
+            var template = params.template || false;
+
+            //var field = params.field || false;
+            //var filterType = params.filterType || false;
+
+            // first get the boolean filter field that we're going to look in
+            var bool = [];
+            if (boolType === "must") {
+                bool = this.must;
+            } else if (boolType === "should") {
+                bool = this.should;
+            } else if (boolType === "must_not") {
+                bool = this.mustNot;
+            }
+
+            if (!template) {
+                return bool;
+            }
+            var l = [];
+            for (var i = 0; i < bool.length; i++) {
+                var m = bool[i];
+                if (m.matches(template)) {
+                    l.push(m);
+                }
+            }
+            return l;
+        }
+    },
 
     TermFilter : class extends Filter {
         static type = "term";
