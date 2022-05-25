@@ -21,6 +21,8 @@ export class FixedSelectionCheckboxORTermSelector extends Renderer {
 
         this.fixedTerms = getParam(params, "fixedTerms", []);
 
+        this.valueToolTips = getParam(params, "valueToolTips", {});
+
         this.openIcon = getParam(params, "openIcon", "glyphicon glyphicon-plus");
 
         this.closeIcon = getParam(params, "closeIcon", "glyphicon glyphicon-minus");
@@ -74,18 +76,26 @@ export class FixedSelectionCheckboxORTermSelector extends Renderer {
                         count = ' <span class="' + countClass + '">(' + this._formatCount(val.count) + ')</span>';
                     }
                     var id = safeId(val.term);
+                    let tooltip = "";
+                    if (val.term in this.valueToolTips) {
+                        tooltip = ` title="${this.valueToolTips[val.term]}" `;
+                    }
                     results += '<li>\
                         <input class="' + checkboxClass + '" data-key="' + escapeHtml(val.term) + '" id="' + id + '" type="checkbox" name="' + id + '"' + checked + '>\
-                        <label for="' + id + '" class="' + labelClass + '" id="' + id +'_label"">' + escapeHtml(val.display) + count + '</label>\
+                        <label for="' + id + '" class="' + labelClass + '" id="' + id +'_label"' + tooltip + '>' + escapeHtml(val.display) + count + '</label>\
                     </li>';
                 }
             }
             if (!found) {
                 let display = this.component.translate(ft);
                 let id = safeId(ft);
+                let tooltip = "";
+                    if (ft in this.valueToolTips) {
+                        tooltip = ` title="${this.valueToolTips[ft]}" `;
+                    }
                 results += '<li>\
                     <input class="' + checkboxClass + '" data-key="' + escapeHtml(ft) + '" id="' + id + '" type="checkbox" name="' + id + '" disabled="disabled">\
-                    <label for="' + id + '" class="' + labelClass + '">' + escapeHtml(display) + '</label>\
+                    <label for="' + id + '" class="' + labelClass + '"' + tooltip + '>' + escapeHtml(display) + '</label>\
                 </li>';
             }
         }
