@@ -8,6 +8,7 @@ export class RelativeSizeBars extends Renderer {
         this.title = getParam(params, "title", false);
         this.countFormat = getParam(params, "countFormat", false);
         this.noResultsText = getParam(params, "noResultsText", "No data to display")
+        this.valueMap = getParam(params, "valueMap", false);
 
         this.namespace = "edges-html-relativesizebars";
     }
@@ -49,7 +50,13 @@ export class RelativeSizeBars extends Renderer {
             if (this.countFormat) {
                 count = this.countFormat(count);
             }
-            let label = `${value.label} (${count})`;
+            let valueLabel = value.label;
+            if (this.valueMap) {
+                if (valueLabel in this.valueMap) {
+                    valueLabel = this.valueMap[valueLabel];
+                }
+            }
+            let label = `${valueLabel} (${count})`;
             rows += `<tr><td>
                 <progress value="${prog}" max="100">${prog}</progress><br>
                 ${label}
