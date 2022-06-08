@@ -1,0 +1,43 @@
+/********************************************************
+ *  Selected Filters display
+ */
+$ns:".edges-bs3-selected-filters";
+
+#{$ns}_container {
+    border: 1px dotted #cccccc;
+    padding: 10px 10px 10px 10px;
+    -moz-border-radius: 5px;
+    -webkit-border-radius: 5px;
+    border-radius: 5px;
+    background-color: #f4f4f4;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+#{$ns}_field {
+    margin-right: 15px;
+}
+
+#{$ns}_fieldname {
+    font-weight: bold;
+    padding-right: 3px;
+}
+
+#{$ns}_value {
+
+}
+
+#{$ns}_remove {
+    color: #000000;
+    padding-left: 3px;
+}
+
+#{$ns}-remove:hover {
+    color: #000000;
+}
+
+#{$ns}_rel {
+    font-weight: bold;
+    padding-left: 5px;
+    padding-right: 5px;
+}
