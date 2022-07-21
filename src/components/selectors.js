@@ -1221,6 +1221,35 @@ $.extend(edges, {
         this.defaultRenderer = params.defaultRenderer || "newAutocompleteTermSelectorRenderer";
     },
 
+    newTextFilterSetter : function(params) {
+        return edges.instantiate(edges.TextFilterSetter, params, edges.newComponent);
+    },
+    TextFilterSetter : function(params) {
+        this.field = edges.getParam(params.field, false);
+
+        this.text = "";
+
+        this.synchronise = function() {
+            this.text = "";
+
+            let musts = this.edge.currentQuery.listMust(es.newTermFilter({field: this.field}));
+            if (musts.length === 0) {
+                return;
+            }
+
+            this.text = musts[0].value;
+        }
+
+        this.setText = function(value) {
+            this.text = value;
+            let nq = this.edge.cloneQuery();
+            nq.removeMust(es.newTermFilter({field: this.field}));
+            nq.addMust(es.newTermFilter({field: this.field, value: this.text}));
+            this.edge.pushQuery(nq);
+            this.edge.cycle();
+        }
+    },
+
     newNavigationTermList : function(params) {
         return edges.instantiate(edges.NavigationTermList, params, edges.newComponent);
     },
