@@ -29,8 +29,16 @@ $.extend(true, edges, {
 
                 let onward = edges.objClosure(this, "draw2");
                 let obj = this.component.text;
-                if (!this.lastSelected && this.component.text && this.objectFromText) {
-                    this.objectFromText(obj, onward);
+                if (!this.lastSelected) {
+                    if (this.component.text) {
+                        if (this.objectFromText) {
+                            this.objectFromText(obj, onward)
+                        } else {
+                            this.draw2(obj)
+                        }
+                    } else {
+                        this.draw2(obj)
+                    }
                 } else {
                     obj = this.lastSelected;
                     this.draw2(obj);
