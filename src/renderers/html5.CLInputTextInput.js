@@ -20,8 +20,6 @@ $.extend(true, edges, {
 
             this.clinput = false;
 
-            this.lastSelected = false;
-
             this.draw = function () {
                 let inputClass = edges.css_classes(this.namespace, "input", this);
                 let frag = `<div class="${inputClass}"></div>`;
@@ -31,19 +29,15 @@ $.extend(true, edges, {
 
                 let onward = edges.objClosure(this, "draw2");
                 let obj = this.component.text;
-                if (!this.lastSelected) {
-                    if (this.component.text) {
-                        if (this.objectFromText) {
-                            this.objectFromText(obj, onward)
-                        } else {
-                            this.draw2(obj)
-                        }
+
+                if (this.component.text) {
+                    if (this.objectFromText) {
+                        this.objectFromText(obj, onward)
                     } else {
                         this.draw2(obj)
                     }
                 } else {
-                    obj = this.lastSelected;
-                    this.draw2(obj);
+                    this.draw2(obj)
                 }
             };
 
@@ -112,7 +106,6 @@ $.extend(true, edges, {
             }
 
             this.objSelected = function(obj) {
-                this.lastSelected = obj;
                 if (this.textFromObject) {
                     this.component.setText(this.textFromObject(obj))
                 } else {
@@ -121,7 +114,6 @@ $.extend(true, edges, {
             }
 
             this.clearText = function() {
-                this.lastSelected = false;
                 this.component.clearText();
             }
         }
