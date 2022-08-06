@@ -1248,6 +1248,14 @@ $.extend(edges, {
             this.edge.pushQuery(nq);
             this.edge.cycle();
         }
+
+        this.clearText = function() {
+            this.text = "";
+            let nq = this.edge.cloneQuery();
+            nq.removeMust(es.newTermFilter({field: this.field}));
+            this.edge.pushQuery(nq);
+            this.edge.cycle();
+        }
     },
 
     newNavigationTermList : function(params) {

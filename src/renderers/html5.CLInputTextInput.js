@@ -12,6 +12,8 @@ $.extend(true, edges, {
             this.textFromObject = edges.getParam(params.textFromObject, false);
             this.objectFromText = edges.getParam(params.objectFromText, false);
 
+            this.logState = edges.getParam(params.logState, false);
+
             //////////////////////////////////////////////
             // variables for internal state
             this.namespace = "edges-html5-clinput";
@@ -74,8 +76,9 @@ $.extend(true, edges, {
                     element: params.element,
                     id: params.inputId,
                     label: "",
-                    value: params.value,
+                    initialSelection: params.value,
                     inputAttributes: params.inputAttributes,
+                    logState: that.logState,
                     options: (text, callback) => {
                         if (that.optionsFunction) {
                             that.optionsFunction(text, callback);
@@ -98,9 +101,12 @@ $.extend(true, edges, {
                         }
                     },
                     newValue: allowValue,
-                    onChoice: function(e, idx) {
-                        let obj = that.clinput.selectedObject;
+                    onChoose: function(e, idx) {
+                        let obj = that.clinput.currentSelection();
                         that.objSelected(obj);
+                    },
+                    onClear: function(e, idx) {
+                        that.clearText();
                     }
                 })
             }
@@ -112,6 +118,11 @@ $.extend(true, edges, {
                 } else {
                     this.component.setText(obj);
                 }
+            }
+
+            this.clearText = function() {
+                this.lastSelected = false;
+                this.component.clearText();
             }
         }
     }
