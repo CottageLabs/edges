@@ -21,12 +21,6 @@ $.extend(true, edges, {
             this.clinput = false;
 
             this.draw = function () {
-                let inputClass = edges.css_classes(this.namespace, "input", this);
-                let frag = `<div class="${inputClass}"></div>`;
-
-                // and render into the page
-                this.component.context.html(frag);
-
                 let onward = edges.objClosure(this, "draw2");
                 let obj = this.component.text;
 
@@ -42,8 +36,14 @@ $.extend(true, edges, {
             };
 
             this.draw2 = function(obj) {
+                // and render into the page
+                let inputClass = edges.css_classes(this.namespace, "input", this);
                 let inputSelector = edges.css_class_selector(this.namespace, "input", this);
                 let inputId = edges.css_id(this.namespace, this.component.id + "-input", this);
+
+                let frag = `<div class="${inputClass}"></div>`;
+                this.component.context.html(frag);
+
                 this.clinput = this._makeInput({
                     element: $(inputSelector)[0],
                     inputId: inputId,
