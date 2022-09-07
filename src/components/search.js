@@ -1,5 +1,41 @@
 $.extend(edges, {
     //////////////////////////////////////////////////
+    // Component that allows text filters to be added by field
+
+    newAddFieldTextFilter : function(params) {
+        return edges.instantiate(edges.AddFieldTextFilter, params, edges.newComponent);
+    },
+    AddFieldTextFilter : function(params) {
+        this.addFilter = function(params) {
+            let field = params.field;
+            let value = params.value;
+
+            let nq = this.edge.cloneQuery();
+
+            let musts = nq.listMust(es.newTermsFilter({field: field}));
+            if (musts.length === 0) {
+                let filter = es.newTermsFilter({field: field, values: [value]})
+                nq.addMust(filter);
+            } else {
+                let filter = musts[0]
+                if (!filter.has_term(value)) {
+                    filter.add_term(value)
+                }
+            }
+
+            this.edge.pushQuery(nq);
+            this.edge.cycle();
+        }
+
+        this.clearFilters = function() {
+            let nq = this.edge.cloneQuery();
+            nq.clearMust()
+            this.edge.pushQuery(nq);
+            this.edge.cycle();
+        }
+    },
+
+    //////////////////////////////////////////////////
     // Arbitrary filter-selector
 
     newFilterSetter : function(params) {

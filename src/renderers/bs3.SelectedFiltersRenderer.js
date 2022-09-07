@@ -13,6 +13,8 @@ $.extend(true, edges, {
 
             this.allowRemove = edges.getParam(params.allowRemove, true);
 
+            this.removeLinkText = edges.getParam(params.removeLinkText, '<i class="glyphicon glyphicon-black glyphicon-remove"></i>')
+
             this.showSearchString = edges.getParam(params.showSearchString, false);
 
             this.ifNoFilters = edges.getParam(params.ifNoFilters, false);
@@ -64,15 +66,15 @@ $.extend(true, edges, {
                         // the remove block looks different, depending on the kind of filter to remove
                         if (this.allowRemove) {
                             var removeClass = edges.css_classes(ns, "remove", this);
-                            if (def.filter == "term" || def.filter === "terms") {
+                            if (def.filter === "term" || def.filter === "terms") {
                                 filters += '<a class="' + removeClass + '" data-bool="must" data-filter="' + def.filter + '" data-field="' + field + '" data-value="' + val.val + '" alt="Remove" title="Remove" href="#">';
-                                filters += '<i class="glyphicon glyphicon-black glyphicon-remove"></i>';
+                                filters += this.removeLinkText;
                                 filters += "</a>";
                             } else if (def.filter === "range") {
                                 var from = val.from ? ' data-' + val.fromType + '="' + val.from + '" ' : "";
                                 var to = val.to ? ' data-' + val.toType + '="' + val.to + '" ' : "";
                                 filters += '<a class="' + removeClass + '" data-bool="must" data-filter="' + def.filter + '" data-field="' + field + '" ' + from + to + ' alt="Remove" title="Remove" href="#">';
-                                filters += '<i class="glyphicon glyphicon-black glyphicon-remove"></i>';
+                                filters += this.removeLinkText;
                                 filters += "</a>";
                             }
                         }

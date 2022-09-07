@@ -1258,6 +1258,50 @@ $.extend(edges, {
         }
     },
 
+    newMultiTextFilterSetter : function(params) {
+        return edges.instantiate(edges.MultiTextFilterSetter, params, edges.newComponent);
+    },
+    MultiTextFilterSetter : function(params) {
+        this.field = edges.getParam(params.field, false);
+
+        this.texts = [];
+
+        this.synchronise = function() {
+            this.texts = [];
+
+            let musts = this.edge.currentQuery.listMust(es.newTermsFilter({field: this.field}));
+            if (musts.length === 0) {
+                return;
+            }
+
+            this.texts = musts[0].values;
+        }
+
+        this.addText = function(value) {
+            this.texts.push(value);
+            let nq = this.edge.cloneQuery();
+            nq.removeMust(es.newTermsFilter({field: this.field}));
+            nq.addMust(es.newTermsFilter({field: this.field, values: this.texts}));
+            this.edge.pushQuery(nq);
+            this.edge.cycle();
+        }
+
+        this.removeText = function(value) {
+            let idx = this.texts.indexOf(value);
+            if (idx > -1) {
+                this.texts.splice(idx, 1);
+            }
+        }
+
+        this.clearText = function() {
+            this.texts = [];
+            let nq = this.edge.cloneQuery();
+            nq.removeMust(es.newTermsFilter({field: this.field}));
+            this.edge.pushQuery(nq);
+            this.edge.cycle();
+        }
+    },
+
     newNavigationTermList : function(params) {
         return edges.instantiate(edges.NavigationTermList, params, edges.newComponent);
     },
