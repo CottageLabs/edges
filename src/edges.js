@@ -735,7 +735,7 @@ var edges = {
         };
 
         this.process = function(params) {
-            if (this.list.length == 0) {
+            if (this.list.length === 0) {
                 this.functions.carryOn();
             }
 
