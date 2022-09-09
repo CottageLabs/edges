@@ -59,7 +59,7 @@ $.extend(true, edges, {
                 let addFilterButton = edges.css_classes(this.namespace, "add", this);
                 let removeAllButton = edges.css_classes(this.namespace, "remove", this);
 
-                let selectorFrag = `<select name="${selectorName}" id="${selectorName}"><option name="">${this.selectName}</option>`;
+                let selectorFrag = `<select name="${selectorName}" id="${selectorName}"><option name="" disabled selected value>${this.selectName}</option>`;
                 for (let i = 0; i < this.fields.length; i++) {
                     let field = this.fields[i];
                     selectorFrag += `<option value="${field.field}">${field.display}</option>`
@@ -182,6 +182,9 @@ $.extend(true, edges, {
                         }
                     },
                     newValue: allowValue,
+                    onInit: function(clinstance) {
+                        $(clinstance.input).trigger("focus");
+                    },
                     onChoose: function(e, idx) {
                         let addFilterSelector = edges.css_class_selector(that.namespace, "add", that);
                         $(addFilterSelector).prop("disabled", false);
