@@ -27,15 +27,6 @@ $.extend(true, edges, {
             this.addButton = edges.getParam(params.addButton, "Add new filter");
             this.removeAllButton = edges.getParam(params.removeAllButton, "Remove all filters");
 
-
-            // this.optionsFunction = edges.getParam(params.optionsFunction, false);
-            // this.optionsTemplate = edges.getParam(params.optionsTemplate, false);
-            // this.selectedTemplate = edges.getParam(params.selectedTemplate, false);
-            // this.allowNewValue = edges.getParam(params.allowNewValue, false);
-            // this.newValueFunction = edges.getParam(params.newValueFunction, false);
-            // this.textFromObject = edges.getParam(params.textFromObject, false);
-            // this.objectFromText = edges.getParam(params.objectFromText, false);
-
             this.logState = edges.getParam(params.logState, false);
 
             //////////////////////////////////////////////
@@ -108,9 +99,6 @@ $.extend(true, edges, {
                         inputId: inputId,
                         inputAttributes: {}
                     });
-
-                    // let addFilterSelector = edges.css_class_selector(this.namespace, "add", this);
-                    // $(addFilterSelector).prop("disabled", false);
                 }
             };
 
