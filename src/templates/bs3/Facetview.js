@@ -1,7 +1,11 @@
-import {styleClasses} from "../../utils";
-import {Template} from "../../core";
+// requires: edges
+// requires: edges.util
 
-class Facetview extends Template{
+if (!window.hasOwnProperty("edges")) { edges = {}}
+if (!edges.hasOwnProperty("templates")) { edges.templates = {}}
+if (!edges.templates.hasOwnProperty("bs3")) { edges.templates.bs3 = {}}
+
+edges.templates.bs3.Facetview = class extends edges.Template{
     constructor(params) {
         super(params);
         this.namespace = "edges-bs3-facetview";
@@ -11,15 +15,15 @@ class Facetview extends Template{
     draw(edge) {
         this.edge = edge;
 
-        let containerClass = styleClasses(this.namespace, "container");
-        let facetsClass = styleClasses(this.namespace, "facets");
-        let facetClass = styleClasses(this.namespace, "facet");
-        let panelClass = styleClasses(this.namespace, "panel");
-        let controllerClass = styleClasses(this.namespace, "search-controller");
-        let selectedFiltersClass = styleClasses(this.namespace, "selected-filters");
-        let pagerClass = styleClasses(this.namespace, "pager");
-        let searchingClass = styleClasses(this.namespace, "searching");
-        let resultsClass = styleClasses(this.namespace, "results");
+        let containerClass = edges.util.styleClasses(this.namespace, "container");
+        let facetsClass = edges.util.styleClasses(this.namespace, "facets");
+        let facetClass = edges.util.styleClasses(this.namespace, "facet");
+        let panelClass = edges.util.styleClasses(this.namespace, "panel");
+        let controllerClass = edges.util.styleClasses(this.namespace, "search-controller");
+        let selectedFiltersClass = edges.util.styleClasses(this.namespace, "selected-filters");
+        let pagerClass = edges.util.styleClasses(this.namespace, "pager");
+        let searchingClass = edges.util.styleClasses(this.namespace, "searching");
+        let resultsClass = edges.util.styleClasses(this.namespace, "results");
 
         // the facet view object to be appended to the page
         let thefacetview = `<div class="${containerClass}"><div class="row">`;
@@ -122,5 +126,3 @@ class Facetview extends Template{
         edge.context.html(thefacetview);
     }
 }
-
-export {Facetview}

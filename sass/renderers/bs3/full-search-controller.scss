@@ -1,0 +1,110 @@
+/********************************************************
+ *  Full Search Controller
+ */
+
+$ns:".edges-bs3-facetview-search-controller";
+
+#{$ns} {
+    .col-md-8 {
+        text-align: right;
+    }
+
+    .col-md-6 {
+        text-align: right;
+    }
+
+    .form-inline .input-group .edges-bs3-search-controller-field {
+        width: 100px;
+    }
+
+    .form-inline .input-group .edges-bs3-search-controller-text {
+        width: 300px;
+    }
+
+    .col-xs-12:first-child {
+        margin-bottom:  10px;
+    }
+
+    .col-xs-6:first-child {
+        margin-bottom:  10px;
+    }
+}
+
+@media (min-width: 768px) {
+    #{$ns} .form-inline .input-group .edges-bs3-search-controller-field {
+        width: auto;
+    }
+
+    #{$ns} .form-inline .input-group .edges-bs3-search-controller-text {
+        width: 423px;
+    }
+
+    #{$ns} .col-xs-12:first-child {
+        margin-bottom:  10px;
+    }
+
+    #{$ns} .col-xs-6:first-child {
+        margin-bottom:  10px;
+    }
+}
+
+@media (min-width: 992px) {
+    #{$ns} .form-inline .input-group .edges-bs3-search-controller-field {
+        width: 132px;
+    }
+
+    #{$ns} .form-inline .input-group .edges-bs3-search-controller-text {
+        width: 240px;
+    }
+
+    #{$ns} .col-md-6 .form-inline .input-group .edges-bs3-search-controller-field {
+        width: 100px;
+    }
+
+    #{$ns} .col-md-6 .form-inline .input-group .edges-bs3-search-controller-text {
+        width: 167px;
+    }
+}
+
+@media (min-width: 1200px) {
+    #{$ns} .form-inline .input-group .edges-bs3-search-controller-field {
+        width: auto;
+    }
+
+    #{$ns} .form-inline .input-group .edges-bs3-search-controller-text {
+        width: 240px;
+    }
+
+    #{$ns} .col-md-6 .form-inline .input-group .edges-bs3-search-controller-field {
+        width: auto;
+    }
+
+    #{$ns} .col-md-6 .form-inline .input-group .edges-bs3-search-controller-text {
+        width: 165px;
+    }
+}
+
+#{$ns}_share {
+    border: 1px solid #bce8f1;
+    color: #3a87ad;
+    background-color: #d9edf7;
+    padding: 10px;
+    margin: 10px 0px 10px 0px;
+    border-radius: 5px;
+}
+
+#{$ns}_share-url {
+    width: 100%;
+    max-width: 100%;
+    color: #000000;
+    height: 5em;
+    margin-top: 3px;
+    margin-bottom: 3px;
+}
+
+#{$ns}_embed {
+    width: 100%;
+    max-width: 100%;
+    color: #000000;
+    height: 5em;
+}

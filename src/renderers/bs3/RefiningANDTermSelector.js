@@ -1,41 +1,44 @@
-import {Renderer} from "../../core";
-import {getParam, styleClasses, jsClassSelector, idSelector, allClasses, htmlID, on, escapeHtml} from "../../utils";
+// requires: $
+// requires: edges
+// requires: edges.util
 
-import {$} from '../../../dependencies/jquery';
+if (!window.hasOwnProperty("edges")) { edges = {}}
+if (!edges.hasOwnProperty("renderers")) { edges.renderers = {}}
+if (!edges.templates.hasOwnProperty("bs3")) { edges.renderers.bs3 = {}}
 
-export class RefiningANDTermSelectorRenderer extends Renderer {
+edges.renderers.bs3.RefiningANDTermSelector = class extends edges.Renderer {
     constructor(params) {
         super();
 
         ///////////////////////////////////////
         // parameters that can be passed in
 
-        this.title = getParam(params, "title", "Select");
+        this.title = edges.util.getParam(params, "title", "Select");
 
         // whether to hide or just disable the facet if not active
-        this.hideInactive = getParam(params, "hideInactive", false);
+        this.hideInactive = edges.util.getParam(params, "hideInactive", false);
 
         // should the facet sort/size controls be shown?
-        this.controls = getParam(params, "controls", true);
+        this.controls = edges.util.getParam(params, "controls", true);
 
         // whether the facet should be open or closed
         // can be initialised and is then used to track internal state
-        this.open = getParam(params, "open", false);
+        this.open = edges.util.getParam(params, "open", false);
 
-        this.togglable = getParam(params, "togglable", true);
+        this.togglable = edges.util.getParam(params, "togglable", true);
 
         // whether to display selected filters
-        this.showSelected = getParam(params, "showSelected", true);
+        this.showSelected = edges.util.getParam(params, "showSelected", true);
 
         // sort cycle to use
-        this.sortCycle = getParam(params, "sortCycle", ["count desc", "count asc", "term desc", "term asc"]);
+        this.sortCycle = edges.util.getParam(params, "sortCycle", ["count desc", "count asc", "term desc", "term asc"]);
 
         // formatter for count display
-        this.countFormat = getParam(params, "countFormat", false);
+        this.countFormat = edges.util.getParam(params, "countFormat", false);
 
         // a short tooltip and a fuller explanation
-        this.tooltipText = getParam(params, "tooltipText", false);
-        this.tooltip = getParam(params, "tooltip", false);
+        this.tooltipText = edges.util.getParam(params, "tooltipText", false);
+        this.tooltip = edges.util.getParam(params, "tooltip", false);
         this.tooltipState = "closed";
 
         // namespace to use in the page
@@ -52,22 +55,22 @@ export class RefiningANDTermSelectorRenderer extends Renderer {
         }
 
         // classes where we need both styles and js
-        var valClass = allClasses(this.namespace, "value", this.component.id);
-        var filterRemoveClass = allClasses(this.namespace, "filter-remove", this.component.id);
+        var valClass = edges.util.allClasses(this.namespace, "value", this.component.id);
+        var filterRemoveClass = edges.util.allClasses(this.namespace, "filter-remove", this.component.id);
 
         // sort out all the classes that we're going to be using
-        var resultsListClass = styleClasses(this.namespace, "results-list", this.component.id);
-        var resultClass = styleClasses(this.namespace, "result", this.component.id);
-        var controlClass = styleClasses(this.namespace, "controls", this.component.id);
-        var facetClass = styleClasses(this.namespace, "facet", this.component.id);
-        var headerClass = styleClasses(this.namespace, "header", this.component.id);
-        var selectedClass = styleClasses(this.namespace, "selected", this.component.id);
+        var resultsListClass = edges.util.styleClasses(this.namespace, "results-list", this.component.id);
+        var resultClass = edges.util.styleClasses(this.namespace, "result", this.component.id);
+        var controlClass = edges.util.styleClasses(this.namespace, "controls", this.component.id);
+        var facetClass = edges.util.styleClasses(this.namespace, "facet", this.component.id);
+        var headerClass = edges.util.styleClasses(this.namespace, "header", this.component.id);
+        var selectedClass = edges.util.styleClasses(this.namespace, "selected", this.component.id);
 
-        var controlId = htmlID(this.namespace, "controls", this.component.id);
-        var sizeId = htmlID(this.namespace, "size", this.component.id);
-        var orderId = htmlID(this.namespace, "order", this.component.id);
-        var toggleId = htmlID(this.namespace, "toggle", this.component.id);
-        var resultsId = htmlID(this.namespace, "results", this.component.id);
+        var controlId = edges.util.htmlID(this.namespace, "controls", this.component.id);
+        var sizeId = edges.util.htmlID(this.namespace, "size", this.component.id);
+        var orderId = edges.util.htmlID(this.namespace, "order", this.component.id);
+        var toggleId = edges.util.htmlID(this.namespace, "toggle", this.component.id);
+        var resultsId = edges.util.htmlID(this.namespace, "results", this.component.id);
 
         // this is what's displayed in the body if there are no results
         var results = "Loading...";
@@ -93,8 +96,8 @@ export class RefiningANDTermSelectorRenderer extends Renderer {
                     if (this.countFormat) {
                         count = this.countFormat(count)
                     }
-                    results += '<div class="' + resultClass + '"><a href="#" class="' + valClass + '" data-key="' + escapeHtml(val.term) + '">' +
-                        escapeHtml(val.display) + "</a> (" + count + ")</div>";
+                    results += '<div class="' + resultClass + '"><a href="#" class="' + valClass + '" data-key="' + edges.util.escapeHtml(val.term) + '">' +
+                        edges.util.escapeHtml(val.display) + "</a> (" + count + ")</div>";
                 }
             }
         }
@@ -103,8 +106,8 @@ export class RefiningANDTermSelectorRenderer extends Renderer {
         var tooltipFrag = "";
         if (this.tooltipText) {
             var tt = this._shortTooltip();
-            var tooltipClass = styleClasses(this.namespace, "tooltip", this.component.id);
-            var tooltipId = htmlID(this.namespace, "tooltip", this.component.id);
+            var tooltipClass = edges.util.styleClasses(this.namespace, "tooltip", this.component.id);
+            var tooltipId = edges.util.htmlID(this.namespace, "tooltip", this.component.id);
             tooltipFrag = '<div id="' + tooltipId + '" class="' + tooltipClass + '" style="display:none"><div class="row"><div class="col-md-12">' + tt + '</div></div></div>';
         }
 
@@ -127,8 +130,8 @@ export class RefiningANDTermSelectorRenderer extends Renderer {
         if (ts.filters.length > 0 && this.showSelected) {
             for (var i = 0; i < ts.filters.length; i++) {
                 var filt = ts.filters[i];
-                filterFrag += '<div class="' + resultClass + '"><strong>' + escapeHtml(filt.display) + "&nbsp;";
-                filterFrag += '<a href="#" class="' + filterRemoveClass + '" data-key="' + escapeHtml(filt.term) + '">';
+                filterFrag += '<div class="' + resultClass + '"><strong>' + edges.util.escapeHtml(filt.display) + "&nbsp;";
+                filterFrag += '<a href="#" class="' + filterRemoveClass + '" data-key="' + edges.util.escapeHtml(filt.term) + '">';
                 filterFrag += '<i class="glyphicon glyphicon-black glyphicon-remove"></i></a>';
                 filterFrag += "</strong></a></div>";
             }
@@ -170,25 +173,25 @@ export class RefiningANDTermSelectorRenderer extends Renderer {
         this.setUIOpen();
 
         // sort out the selectors we're going to be needing
-        var valueSelector = jsClassSelector(this.namespace, "value", this.component.id);
-        var filterRemoveSelector = jsClassSelector(this.namespace, "filter-remove", this);
-        var toggleSelector = idSelector(this.namespace, "toggle", this);
-        var sizeSelector = idSelector(this.namespace, "size", this);
-        var orderSelector = idSelector(this.namespace, "order", this);
-        var tooltipSelector = idSelector(this.namespace, "tooltip-toggle", this);
+        var valueSelector = edges.util.jsClassSelector(this.namespace, "value", this.component.id);
+        var filterRemoveSelector = edges.util.jsClassSelector(this.namespace, "filter-remove", this);
+        var toggleSelector = edges.util.idSelector(this.namespace, "toggle", this);
+        var sizeSelector = edges.util.idSelector(this.namespace, "size", this);
+        var orderSelector = edges.util.idSelector(this.namespace, "order", this);
+        var tooltipSelector = edges.util.idSelector(this.namespace, "tooltip-toggle", this);
 
         // for when a value in the facet is selected
-        on(valueSelector, "click", this, "termSelected");
+        edges.on(valueSelector, "click", this, "termSelected");
         // for when the open button is clicked
-        on(toggleSelector, "click", this, "toggleOpen");
+        edges.on(toggleSelector, "click", this, "toggleOpen");
         // for when a filter remove button is clicked
-        on(filterRemoveSelector, "click", this, "removeFilter");
+        edges.on(filterRemoveSelector, "click", this, "removeFilter");
         // for when a size change request is made
-        on(sizeSelector, "click", this, "changeSize");
+        edges.on(sizeSelector, "click", this, "changeSize");
         // when a sort order request is made
-        on(orderSelector, "click", this, "changeSort");
+        edges.on(orderSelector, "click", this, "changeSort");
         // toggle the full tooltip
-        on(tooltipSelector, "click", this, "toggleTooltip");
+        edges.on(tooltipSelector, "click", this, "toggleTooltip");
     };
 
     /////////////////////////////////////////////////////
@@ -196,10 +199,10 @@ export class RefiningANDTermSelectorRenderer extends Renderer {
 
     setUIOpen() {
         // the selectors that we're going to use
-        var resultsSelector = idSelector(this.namespace, "results", this.component.id);
-        var controlsSelector = idSelector(this.namespace, "controls", this.component.id);
-        var tooltipSelector = idSelector(this.namespace, "tooltip", this.component.id);
-        var toggleSelector = idSelector(this.namespace, "toggle", this.component.id);
+        var resultsSelector = edges.util.idSelector(this.namespace, "results", this.component.id);
+        var controlsSelector = edges.util.idSelector(this.namespace, "controls", this.component.id);
+        var tooltipSelector = edges.util.idSelector(this.namespace, "tooltip", this.component.id);
+        var toggleSelector = edges.util.idSelector(this.namespace, "toggle", this.component.id);
 
         var results = this.component.jq(resultsSelector);
         var controls = this.component.jq(controlsSelector);
@@ -220,12 +223,12 @@ export class RefiningANDTermSelectorRenderer extends Renderer {
     };
 
     setUISize() {
-        var sizeSelector = idSelector(this.namespace, "size", this.component.id);
+        var sizeSelector = edges.util.idSelector(this.namespace, "size", this.component.id);
         this.component.jq(sizeSelector).html(this.component.size);
     };
 
     setUISort() {
-        var orderSelector = idSelector(this.namespace, "order", this.component.id);
+        var orderSelector = edges.util.idSelector(this.namespace, "order", this.component.id);
         var el = this.component.jq(orderSelector);
 
         if (this.component.orderBy === "count") {
@@ -278,7 +281,7 @@ export class RefiningANDTermSelectorRenderer extends Renderer {
     };
 
     toggleTooltip(element) {
-        var tooltipSpanSelector = idSelector(this.namespace, "tooltip-span", this.component.id);
+        var tooltipSpanSelector = edges.util.idSelector(this.namespace, "tooltip-span", this.component.id);
         var container = this.component.jq(tooltipSpanSelector).parent();
         var tt = "";
         if (this.tooltipState === "closed") {
@@ -289,9 +292,9 @@ export class RefiningANDTermSelectorRenderer extends Renderer {
             this.tooltipState = "closed";
         }
         container.html(tt);
-        var tooltipSelector = idSelector(this.namespace, "tooltip-toggle", this.component.id);
+        var tooltipSelector = edges.util.idSelector(this.namespace, "tooltip-toggle", this.component.id);
         // refresh the event binding
-        on(tooltipSelector, "click", this, "toggleTooltip");
+        edges.on(tooltipSelector, "click", this, "toggleTooltip");
     };
 
     //////////////////////////////////////////////////////////
@@ -299,10 +302,10 @@ export class RefiningANDTermSelectorRenderer extends Renderer {
 
     _shortTooltip() {
         var tt = this.tooltipText;
-        var tooltipLinkId = htmlID(this.namespace, "tooltip-toggle", this.component.id);
-        var tooltipSpan = htmlID(this.namespace, "tooltip-span", this.component.id);
+        var tooltipLinkId = edges.util.htmlID(this.namespace, "tooltip-toggle", this.component.id);
+        var tooltipSpan = edges.util.htmlID(this.namespace, "tooltip-span", this.component.id);
         if (this.tooltip) {
-            var tooltipLinkClass = styleClasses(this.namespace, "tooltip-link", this.component.id);
+            var tooltipLinkClass = edges.util.styleClasses(this.namespace, "tooltip-link", this.component.id);
             tt = '<span id="' + tooltipSpan + '"><a id="' + tooltipLinkId + '" class="' + tooltipLinkClass + '" href="#">' + tt + '</a></span>'
         }
         return tt;
@@ -310,9 +313,9 @@ export class RefiningANDTermSelectorRenderer extends Renderer {
 
     _longTooltip = function() {
         var tt = this.tooltip;
-        var tooltipLinkId = htmlID(this.namespace, "tooltip-toggle", this.component.id);
-        var tooltipLinkClass = styleClasses(this.namespace, "tooltip-link", this.component.id);
-        var tooltipSpan = htmlID(this.namespace, "tooltip-span", this.component.id);
+        var tooltipLinkId = edges.util.htmlID(this.namespace, "tooltip-toggle", this.component.id);
+        var tooltipLinkClass = edges.util.styleClasses(this.namespace, "tooltip-link", this.component.id);
+        var tooltipSpan = edges.util.htmlID(this.namespace, "tooltip-span", this.component.id);
         tt = '<span id="' + tooltipSpan + '">' + this.tooltip + ' <a id="' + tooltipLinkId + '" class="' + tooltipLinkClass + '" href="#">less</a></span>';
         return tt;
     };

@@ -1,45 +1,47 @@
-import {Component} from "../core";
-import {getParam, objClosure} from "../utils";
+// requires: es
+// requires: edges
+// requires: edges.util
 
-import {es} from '../../dependencies/es'
+if (!window.hasOwnProperty("edges")) { edges = {}}
+if (!edges.hasOwnProperty("components")) { edges.components = {}}
 
-export class RefiningANDTermSelector extends Component {
+edges.components.RefiningANDTermSelector = class extends edges.Component {
     constructor(params) {
         super(params);
 
-        this.field = getParam(params, "field");
+        this.field = edges.util.getParam(params, "field");
 
         // how many terms should the facet limit to
-        this.size = getParam(params, "size", 10);
+        this.size = edges.util.getParam(params, "size", 10);
 
         // which ordering to use term/count and asc/desc
-        this.orderBy = getParam(params, "orderBy", "count");
-        this.orderDir = getParam(params, "orderDir", "desc");
+        this.orderBy = edges.util.getParam(params, "orderBy", "count");
+        this.orderDir = edges.util.getParam(params, "orderDir", "desc");
 
         // number of facet terms below which the facet is disabled
-        this.deactivateThreshold = getParam(params, "deactivateThreshold", false);
+        this.deactivateThreshold = edges.util.getParam(params, "deactivateThreshold", false);
 
         // should the terms facet ignore empty strings in display
-        this.ignoreEmptyString = getParam(params, "ignoreEmptyString", true);
+        this.ignoreEmptyString = edges.util.getParam(params, "ignoreEmptyString", true);
 
         // should filters defined in the baseQuery be excluded from the selector
-        this.excludePreDefinedFilters = getParam(params, "excludePreDefinedFilters", true);
+        this.excludePreDefinedFilters = edges.util.getParam(params, "excludePreDefinedFilters", true);
 
         // provide a map of values for terms to displayable terms, or a function
         // which can be used to translate terms to displyable values
-        this.valueMap = getParam(params, "valueMap", false);
-        this.valueFunction = getParam(params, "valueFunction", false);
+        this.valueMap = edges.util.getParam(params, "valueMap", false);
+        this.valueFunction = edges.util.getParam(params, "valueFunction", false);
 
         // due to a limitation in elasticsearch's clustered node facet counts, we need to inflate
         // the number of facet results we need to ensure that the results we actually want are
         // accurate.  This option tells us by how much.
-        this.inflation = getParam(params, "inflation", 100);
+        this.inflation = edges.util.getParam(params, "inflation", 100);
 
-        this.active = getParam(params, "active", true);
+        this.active = edges.util.getParam(params, "active", true);
 
         // whether this component updates itself on every request, or whether it is static
         // throughout its lifecycle.  One of "update" or "static"
-        this.lifecycle = getParam(params, "lifecycle", "update");
+        this.lifecycle = edges.util.getParam(params, "lifecycle", "update");
 
         //////////////////////////////////////////
         // properties used to store internal state
@@ -189,8 +191,8 @@ export class RefiningANDTermSelector extends Component {
         this.edge.queryAdapter.doQuery({
             edge: this.edge,
             query: bq,
-            success: objClosure(this, "listAllQuerySuccess", ["result"]),
-            error: objClosure(this, "listAllQueryFail")
+            success: edges.util.objClosure(this, "listAllQuerySuccess", ["result"]),
+            error: edges.util.objClosure(this, "listAllQueryFail")
         });
     };
 
@@ -257,7 +259,7 @@ export class RefiningANDTermSelector extends Component {
     };
 
     clearFilters(params) {
-        let triggerQuery = getParam(params, "triggerQuery", true);
+        let triggerQuery = edges.util.getParam(params, "triggerQuery", true);
 
         if (this.filters.length > 0) {
             let nq = this.edge.cloneQuery();

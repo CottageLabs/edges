@@ -1,0 +1,64 @@
+/********************************************************
+ *  Pager
+ */
+
+$ns:".edges-bs3-pager";
+
+#{$ns}_container {
+    padding: 5px;
+    background: #eeeeee;
+    margin-top: 10px;
+    margin-bottom: 10px;
+}
+
+#{$ns}_total {
+    font-weight: bold;
+}
+
+@media (min-width: 992px) {
+    #{$ns}_size {
+        margin-left: 10px;
+    }
+}
+
+#{$ns}_nav {
+    float: right;
+}
+
+#{$ns}_first {
+    margin-right: 5px;
+    font-weight: bold;
+}
+
+#{$ns}_first.disabled {
+    margin-right: 5px;
+    font-weight: bold;
+    color: #cccccc;
+}
+
+#{$ns}_prev {
+    margin-right: 5px;
+    font-weight: bold;
+}
+
+#{$ns}_prev.disabled {
+    margin-right: 5px;
+    font-weight: bold;
+    color: #cccccc;
+}
+
+#{$ns}_page {
+    margin-right: 5px;
+    font-weight: bold;
+}
+
+#{$ns}_next {
+    margin-right: 5px;
+    font-weight: bold;
+}
+
+#{$ns}_next.disabled {
+    margin-right: 5px;
+    font-weight: bold;
+    color: #cccccc;
+}
