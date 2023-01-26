@@ -53,14 +53,14 @@ edges.components.Pager = class extends edges.Component {
         nq.from = from;
 
         this.edge.pushQuery(nq);
-        this.edge.doQuery();
+        this.edge.cycle();
     }
 
     setSize(size) {
         var nq = this.edge.cloneQuery();
         nq.size = size;
         this.edge.pushQuery(nq);
-        this.edge.doQuery();
+        this.edge.cycle();
     }
 
     decrementPage() {

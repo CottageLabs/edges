@@ -17,9 +17,9 @@ edges.components.SearchingNotification = class extends edges.Component {
     init(edge) {
         super.init(edge);
 
-        edge.context.on("edges:pre-query", edges.eventClosure(this, "searchingBegan"));
-        edge.context.on("edges:query-fail", edges.eventClosure(this, "searchingFinished"));
-        edge.context.on(this.finishedEvent, edges.eventClosure(this, "searchingFinished"));
+        edge.context.on("edges:pre-query", edges.util.eventClosure(this, "searchingBegan"));
+        edge.context.on("edges:query-fail", edges.util.eventClosure(this, "searchingFinished"));
+        edge.context.on(this.finishedEvent, edges.util.eventClosure(this, "searchingFinished"));
     }
 
     // specifically disable this function

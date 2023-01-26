@@ -99,7 +99,7 @@ es._classExtends = function(clazz, ref) {
         return true;
     }
     else {
-        return _classExtends(clazz.__proto__, ref);
+        return es._classExtends(clazz.__proto__, ref);
     }
 }
 
@@ -138,7 +138,7 @@ es.requestHeaders = false;
 
 es.aggregationFactory = function(type, params) {
     for (const [key, value] of Object.entries(es)) {
-        if (_classExtends(es[key], Aggregation)) {
+        if (es._classExtends(es[key], es.Aggregation)) {
             if (es[key].type === type) {
                 return new es[key](params);
             }
@@ -154,7 +154,7 @@ es.filterFactory = function(type, params) {
 
     // otherwise auto-detect
     for (const [key, value] of Object.entries(es)) {
-        if (_classExtends(es[key], Filter)) {
+        if (es._classExtends(es[key], es.Filter)) {
             if (es[key].type === type) {
                 return new es[key](params);
             }

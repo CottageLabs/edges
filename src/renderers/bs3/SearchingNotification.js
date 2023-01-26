@@ -3,9 +3,9 @@
 
 if (!window.hasOwnProperty("edges")) { edges = {}}
 if (!edges.hasOwnProperty("renderers")) { edges.renderers = {}}
-if (!edges.templates.hasOwnProperty("bs3")) { edges.renderers.bs3 = {}}
+if (!edges.renderers.hasOwnProperty("bs3")) { edges.renderers.bs3 = {}}
 
-edges.renderers.bs3.SearchingNotificationRenderer = class extends edges.Renderer {
+edges.renderers.bs3.SearchingNotification = class extends edges.Renderer {
 
     constructor(params) {
         super(params);

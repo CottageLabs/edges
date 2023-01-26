@@ -2,9 +2,9 @@
  *  Full Search Controller
  */
 
-$ns:".edges-bs3-facetview-search-controller";
+$ns:".edges-bs3-search-controller";
 
-#{$ns} {
+#{$ns}_container {
     .col-md-8 {
         text-align: right;
     }
@@ -13,11 +13,11 @@ $ns:".edges-bs3-facetview-search-controller";
         text-align: right;
     }
 
-    .form-inline .input-group .edges-bs3-search-controller-field {
+    .form-inline .input-group .edges-bs3-search-controller_field {
         width: 100px;
     }
 
-    .form-inline .input-group .edges-bs3-search-controller-text {
+    .form-inline .input-group .edges-bs3-search-controller_text {
         width: 300px;
     }
 
@@ -28,83 +28,89 @@ $ns:".edges-bs3-facetview-search-controller";
     .col-xs-6:first-child {
         margin-bottom:  10px;
     }
+
+    #{$ns}_share {
+        border: 1px solid #bce8f1;
+        color: #3a87ad;
+        background-color: #d9edf7;
+        padding: 10px;
+        margin: 10px 0px 10px 0px;
+        border-radius: 5px;
+    }
+
+    #{$ns}_share-url {
+        width: 100%;
+        max-width: 100%;
+        color: #000000;
+        height: 5em;
+        margin-top: 3px;
+        margin-bottom: 3px;
+    }
+
+    #{$ns}_embed {
+        width: 100%;
+        max-width: 100%;
+        color: #000000;
+        height: 5em;
+    }
 }
 
 @media (min-width: 768px) {
-    #{$ns} .form-inline .input-group .edges-bs3-search-controller-field {
-        width: auto;
-    }
+    #{$ns}_container {
+        .form-inline .input-group .edges-bs3-search-controller_field {
+            width: auto;
+        }
 
-    #{$ns} .form-inline .input-group .edges-bs3-search-controller-text {
-        width: 423px;
-    }
+        .form-inline .input-group .edges-bs3-search-controller_text {
+            width: 423px;
+        }
 
-    #{$ns} .col-xs-12:first-child {
-        margin-bottom:  10px;
-    }
+        .col-xs-12:first-child {
+            margin-bottom: 10px;
+        }
 
-    #{$ns} .col-xs-6:first-child {
-        margin-bottom:  10px;
+        .col-xs-6:first-child {
+            margin-bottom: 10px;
+        }
     }
 }
 
 @media (min-width: 992px) {
-    #{$ns} .form-inline .input-group .edges-bs3-search-controller-field {
-        width: 132px;
-    }
+    #{$ns}_container {
+        .form-inline .input-group .edges-bs3-search-controller_field {
+            width: 132px;
+        }
 
-    #{$ns} .form-inline .input-group .edges-bs3-search-controller-text {
-        width: 240px;
-    }
+        .form-inline .input-group .edges-bs3-search-controller_text {
+            width: 240px;
+        }
 
-    #{$ns} .col-md-6 .form-inline .input-group .edges-bs3-search-controller-field {
-        width: 100px;
-    }
+        .col-md-6 .form-inline .input-group .edges-bs3-search-controller_field {
+            width: 100px;
+        }
 
-    #{$ns} .col-md-6 .form-inline .input-group .edges-bs3-search-controller-text {
-        width: 167px;
+        .col-md-6 .form-inline .input-group .edges-bs3-search-controller_text {
+            width: 167px;
+        }
     }
 }
 
 @media (min-width: 1200px) {
-    #{$ns} .form-inline .input-group .edges-bs3-search-controller-field {
-        width: auto;
+    #{$ns}_container {
+        .form-inline .input-group .edges-bs3-search-controller_field {
+            width: auto;
+        }
+
+        .form-inline .input-group .edges-bs3-search-controller_text {
+            width: 240px;
+        }
+
+        .col-md-6 .form-inline .input-group .edges-bs3-search-controller_field {
+            width: auto;
+        }
+
+        .col-md-6 .form-inline .input-group .edges-bs3-search-controller_text {
+            width: 165px;
+        }
     }
-
-    #{$ns} .form-inline .input-group .edges-bs3-search-controller-text {
-        width: 240px;
-    }
-
-    #{$ns} .col-md-6 .form-inline .input-group .edges-bs3-search-controller-field {
-        width: auto;
-    }
-
-    #{$ns} .col-md-6 .form-inline .input-group .edges-bs3-search-controller-text {
-        width: 165px;
-    }
-}
-
-#{$ns}_share {
-    border: 1px solid #bce8f1;
-    color: #3a87ad;
-    background-color: #d9edf7;
-    padding: 10px;
-    margin: 10px 0px 10px 0px;
-    border-radius: 5px;
-}
-
-#{$ns}_share-url {
-    width: 100%;
-    max-width: 100%;
-    color: #000000;
-    height: 5em;
-    margin-top: 3px;
-    margin-bottom: 3px;
-}
-
-#{$ns}_embed {
-    width: 100%;
-    max-width: 100%;
-    color: #000000;
-    height: 5em;
 }

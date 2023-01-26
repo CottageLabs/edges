@@ -4,9 +4,9 @@
 
 if (!window.hasOwnProperty("edges")) { edges = {}}
 if (!edges.hasOwnProperty("renderers")) { edges.renderers = {}}
-if (!edges.templates.hasOwnProperty("bs3")) { edges.renderers.bs3 = {}}
+if (!edges.renderers.hasOwnProperty("bs3")) { edges.renderers.bs3 = {}}
 
-edges.renderers.bs3.FullSearchControllerRenderer = class extends edges.Renderer {
+edges.renderers.bs3.FullSearchController = class extends edges.Renderer {
     constructor (params) {
         super(params)
         
@@ -192,7 +192,8 @@ edges.renderers.bs3.FullSearchControllerRenderer = class extends edges.Renderer 
             lhs += '<div class="col-xs-' + sortXs + ' col-md-' + sortMd + '">' + sortOptions + '</div>';
         }
 
-        var frag = '<div class="row">' + lhs + '<div class="col-xs-' + searchXs + ' col-md-' + searchMd + '">{{SEARCH}}</div></div>' + shareFrag;
+        let containerClass = edges.util.styleClasses(this.namespace, "container", this);
+        var frag = '<div class="' + containerClass + '"><div class="row">' + lhs + '<div class="col-xs-' + searchXs + ' col-md-' + searchMd + '">{{SEARCH}}</div></div>' + shareFrag + "</div>";
 
         frag = frag.replace(/{{SEARCH}}/g, searchBox);
 

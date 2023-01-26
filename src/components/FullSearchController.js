@@ -89,7 +89,7 @@ edges.components.FullSearchController = class extends edges.Component {
         // reset the search page to the start and then trigger the next query
         nq.from = 0;
         this.edge.pushQuery(nq);
-        this.edge.doQuery();
+        this.edge.cycle();
     }
 
     changeSortDir() {
@@ -106,7 +106,7 @@ edges.components.FullSearchController = class extends edges.Component {
         // reset the search page to the start and then trigger the next query
         nq.from = 0;
         this.edge.pushQuery(nq);
-        this.edge.doQuery();
+        this.edge.cycle();
     }
 
     setSortBy(field) {
@@ -124,7 +124,7 @@ edges.components.FullSearchController = class extends edges.Component {
         // reset the search page to the start and then trigger the next query
         nq.from = 0;
         this.edge.pushQuery(nq);
-        this.edge.doQuery();
+        this.edge.cycle();
     }
 
     setSearchField(field, cycle) {
@@ -152,7 +152,7 @@ edges.components.FullSearchController = class extends edges.Component {
         nq.from = 0;
         this.edge.pushQuery(nq);
         if (cycle) {
-            this.edge.doQuery();
+            this.edge.cycle();
         } else {
             this.searchField = field;
         }
@@ -184,7 +184,7 @@ edges.components.FullSearchController = class extends edges.Component {
         nq.from = 0;
         this.edge.pushQuery(nq);
         if (cycle) {
-            this.edge.doQuery();
+            this.edge.cycle();
         } else {
             this.searchString = text;
         }

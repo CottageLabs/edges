@@ -1115,12 +1115,12 @@ edges.util._normaliseInstanceName = function(instance_name) {
     if (typeof instance_name === "string") {
         return instance_name;
     }
-    // FIXME: check this doesn't cause a circular import issue
-    if (instance_name instanceof Component) {
+
+    if (instance_name instanceof edges.Component) {
         return instance_name.id;
     }
 
-    if (instance_name instanceof Renderer) {
+    if (instance_name instanceof edges.Renderer) {
         return instance_name.component.id;
     }
 }
