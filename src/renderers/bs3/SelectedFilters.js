@@ -1,17 +1,22 @@
-import {Renderer} from "../../core";
-import {htmlID, styleClasses, safeId, escapeHtml, getParam, idSelector, jsClassSelector, on, allClasses} from "../../utils";
+// requires: $
+// requires: edges
+// requires: edges.util
 
-export class SelectedFiltersRenderer extends Renderer {
+if (!window.hasOwnProperty("edges")) { edges = {}}
+if (!edges.hasOwnProperty("renderers")) { edges.renderers = {}}
+if (!edges.templates.hasOwnProperty("bs3")) { edges.renderers.bs3 = {}}
+
+edges.renderers.bs3.SelectedFiltersRenderer = class extends edges.Renderer {
     constructor(params) {
         super(params);
 
-        this.showFilterField = getParam(params, "showFilterField", true);
+        this.showFilterField = edges.util.getParam(params, "showFilterField", true);
 
-        this.allowRemove = getParam(params, "allowRemove", true);
+        this.allowRemove = edges.util.getParam(params, "allowRemove", true);
 
-        this.showSearchString = getParam(params, "showSearchString", false);
+        this.showSearchString = edges.util.getParam(params, "showSearchString", false);
 
-        this.ifNoFilters = getParam(params, "ifNoFilters", false);
+        this.ifNoFilters = edges.util.getParam(params, "ifNoFilters", false);
 
         this.namespace = "edges-bs3-selected-filters";
     }
@@ -22,11 +27,11 @@ export class SelectedFiltersRenderer extends Renderer {
         var ns = this.namespace;
 
         // sort out the classes we are going to use
-        var fieldClass = styleClasses(ns, "field", this);
-        var fieldNameClass = styleClasses(ns, "fieldname", this);
-        var valClass = styleClasses(ns, "value", this);
-        var relClass = styleClasses(ns, "rel", this);
-        var containerClass = styleClasses(ns, "container", this);
+        var fieldClass = edges.util.styleClasses(ns, "field", this);
+        var fieldNameClass = edges.util.styleClasses(ns, "fieldname", this);
+        var valClass = edges.util.styleClasses(ns, "value", this);
+        var relClass = edges.util.styleClasses(ns, "rel", this);
+        var containerClass = edges.util.styleClasses(ns, "container", this);
 
         var filters = "";
 
@@ -60,7 +65,7 @@ export class SelectedFiltersRenderer extends Renderer {
 
                 // the remove block looks different, depending on the kind of filter to remove
                 if (this.allowRemove) {
-                    var removeClass = allClasses(ns, "remove", this);
+                    var removeClass = edges.util.allClasses(ns, "remove", this);
                     if (def.filter === "term" || def.filter === "terms") {
                         filters += '<a class="' + removeClass + '" data-bool="must" data-filter="' + def.filter + '" data-field="' + field + '" data-value="' + val.val + '" alt="Remove" title="Remove" href="#">';
                         filters += '<i class="glyphicon glyphicon-black glyphicon-remove"></i>';
@@ -93,8 +98,8 @@ export class SelectedFiltersRenderer extends Renderer {
             sf.context.html(frag);
 
             // click handler for when a filter remove button is clicked
-            var removeSelector = jsClassSelector(ns, "remove", this);
-            on(removeSelector, "click", this, "removeFilter");
+            var removeSelector = edges.util.jsClassSelector(ns, "remove", this);
+            edges.on(removeSelector, "click", this, "removeFilter");
         } else {
             sf.context.html("");
         }

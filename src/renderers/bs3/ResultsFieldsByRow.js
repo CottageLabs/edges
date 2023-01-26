@@ -1,9 +1,12 @@
-import {Renderer} from "../../core";
-import {getParam, styleClasses, escapeHtml} from "../../utils";
+// requires: $
+// requires: edges
+// requires: edges.util
 
-import {$} from '../../../dependencies/jquery';
+if (!window.hasOwnProperty("edges")) { edges = {}}
+if (!edges.hasOwnProperty("renderers")) { edges.renderers = {}}
+if (!edges.templates.hasOwnProperty("bs3")) { edges.renderers.bs3 = {}}
 
-export class ResultsFieldsByRowRenderer extends Renderer {
+edges.renderers.bs3.ResultsFieldsByRow = class extends edges.Renderer {
     constructor(params) {
         super(params);
 
@@ -11,7 +14,7 @@ export class ResultsFieldsByRowRenderer extends Renderer {
         // parameters that can be passed in
 
         // what to display when there are no results
-        this.noResultsText = getParam(params, "noResultsText", "No results to display");
+        this.noResultsText = edges.util.getParam(params, "noResultsText", "No results to display");
 
         // ordered list of rows of fields with pre and post wrappers, and a value function
         // (all fields are optional)
@@ -31,14 +34,14 @@ export class ResultsFieldsByRowRenderer extends Renderer {
         //],
         // ...
         // ]
-        this.rowDisplay = getParam(params, "rowDisplay", []);
+        this.rowDisplay = edges.util.getParam(params, "rowDisplay", []);
 
         // if a multi-value field is found that needs to be displayed, which character
         // to use to join
-        this.arrayValueJoin = getParam(params, "arrayValueJoin", ", ");
+        this.arrayValueJoin = edges.util.getParam(params, "arrayValueJoin", ", ");
 
         // if a field does not have a value, don't display anything from its part of the render
-        this.omitFieldIfEmpty = getParam(params, "omitFieldIfEmpty", true);
+        this.omitFieldIfEmpty = edges.util.getParam(params, "omitFieldIfEmpty", true);
 
         //////////////////////////////////////////////
         // variables for internal state
@@ -59,7 +62,7 @@ export class ResultsFieldsByRowRenderer extends Renderer {
         var results = this.component.results;
         if (results && results.length > 0) {
             // list the css classes we'll require
-            var recordClasses = styleClasses(this.namespace, "record", this.component.id);
+            var recordClasses = edges.util.styleClasses(this.namespace, "record", this.component.id);
 
             // now call the result renderer on each result to build the records
             frag = "";
@@ -70,14 +73,14 @@ export class ResultsFieldsByRowRenderer extends Renderer {
         }
 
         // finally stick it all together into the container
-        var containerClasses = styleClasses(this.namespace, "container", this.component.id);
+        var containerClasses = edges.util.styleClasses(this.namespace, "container", this.component.id);
         var container = '<div class="' + containerClasses + '">' + frag + '</div>';
         this.component.context.html(container);
     }
 
     _renderResult(res) {
         // list the css classes we'll require
-        var rowClasses = styleClasses(this.namespace, "row", this.component.id);
+        var rowClasses = edges.util.styleClasses(this.namespace, "row", this.component.id);
 
         // get a list of the fields on the object to display
         var frag = "";
@@ -92,7 +95,7 @@ export class ResultsFieldsByRowRenderer extends Renderer {
                     val = this._getValue(entry.field, res, val);
                 }
                 if (val) {
-                    val = escapeHtml(val);
+                    val = edges.util.escapeHtml(val);
                 }
                 if (entry.valueFunction) {
                     val = entry.valueFunction(val, res, this);

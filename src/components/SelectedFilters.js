@@ -1,9 +1,11 @@
-import {Component} from "../core";
-import {getParam} from "../utils";
+// requires: es
+// requires: edges
+// requires: edges.util
 
-import {es} from '../../dependencies/es'
+if (!window.hasOwnProperty("edges")) { edges = {}}
+if (!edges.hasOwnProperty("components")) { edges.components = {}}
 
-export class SelectedFilters extends Component {
+edges.components.SelectedFilters = class extends edges.Component {
     constructor(params) {
         super(params);
 
@@ -12,38 +14,38 @@ export class SelectedFilters extends Component {
 
         // mapping from fields to names to display them as
         // if these come from a facet/selector, they should probably line up
-        this.fieldDisplays = getParam(params, "fieldDisplays", {});
+        this.fieldDisplays = edges.util.getParam(params, "fieldDisplays", {});
 
         // constraints that consist of multiple filters that we want to treat as a single
         // one {"filters" : [<es filter templates>], "display" : "...." }
-        this.compoundDisplays = getParam(params, "compoundDisplays", []);
+        this.compoundDisplays = edges.util.getParam(params, "compoundDisplays", []);
 
         // value maps on a per-field basis for Term(s) filters, to apply to values before display.
         // if these come from a facet/selector, they should probably be the same maps
         // {"<field>" : {"<value>" : "<display>"}}
-        this.valueMaps = getParam(params, "valueMaps", {});
+        this.valueMaps = edges.util.getParam(params, "valueMaps", {});
 
         // value functions on a per-field basis for Term(s) filters, to apply to values before display.
         // if these come from a facet/selector, they should probably be the same functions
         // {"<field>" : <function>}
-        this.valueFunctions = getParam(params, "valueFunctions", {});
+        this.valueFunctions = edges.util.getParam(params, "valueFunctions", {});
 
         // range display maps on a per-field basis for Range filters
         // if these come from a facet/selector, they should probably be the same maps
         // {"<field>" : [{"from" : "<from>", "to" : "<to>", "display" : "<display>"}]}
-        this.rangeMaps = getParam(params, "rangeMaps", {});
+        this.rangeMaps = edges.util.getParam(params, "rangeMaps", {});
 
         // range display functions on a per-field basis for Range filters
         // useful if you have a range selector which allows arbitrary ranges
         // {"<field>" : <function (receives field name, from and to as params dict)>}
         // must return {to: to, from: from, display: display}
-        this.rangeFunctions = getParam(params, "rangeFunctions", {});
+        this.rangeFunctions = edges.util.getParam(params, "rangeFunctions", {});
 
         // function to use to format any range that does not appear in the range maps
-        this.formatUnknownRange = getParam(params, "formatUnknownRange", false);
+        this.formatUnknownRange = edges.util.getParam(params, "formatUnknownRange", false);
 
         // if we get a filter for a field we have no config for, should we ignore it?
-        this.ignoreUnknownFilters = getParam(params, "ignoreUnknownFilters", false);
+        this.ignoreUnknownFilters = edges.util.getParam(params, "ignoreUnknownFilters", false);
 
         //////////////////////////////////////////
         // properties used to store internal state

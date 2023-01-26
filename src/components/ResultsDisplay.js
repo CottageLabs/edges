@@ -1,25 +1,28 @@
-import {Component} from "../core";
-import {getParam, objClosure} from "../utils";
+// requires: edges
+// requires: edges.util
 
-export class ResultsDisplay extends Component {
+if (!window.hasOwnProperty("edges")) { edges = {}}
+if (!edges.hasOwnProperty("components")) { edges.components = {}}
+
+edges.components.ResultsDisplay = class extends edges.Component {
     constructor(params) {
         super(params);
 
         // the secondary results to get the data from, if not using the primary
-        this.secondaryResults = getParam(params, "secondaryResults", false);
+        this.secondaryResults = edges.util.getParam(params, "secondaryResults", false);
 
         // filter function that can be used to trim down the result set
-        this.filter = getParam(params, "filter", false);
+        this.filter = edges.util.getParam(params, "filter", false);
 
         // a sort function that can be used to organise the results
-        this.sort = getParam(params, "sort", false);
+        this.sort = edges.util.getParam(params, "sort", false);
 
         // the maximum number of results to be stored
-        this.limit = getParam(params, "limit", false);
+        this.limit = edges.util.getParam(params, "limit", false);
 
-        this.infiniteScroll = getParam(params, "infiniteScroll", false);
+        this.infiniteScroll = edges.util.getParam(params, "infiniteScroll", false);
 
-        this.infiniteScrollPageSize = getParam(params, "infiniteScrollPageSize", 10);
+        this.infiniteScrollPageSize = edges.util.getParam(params, "infiniteScrollPageSize", 10);
 
         //////////////////////////////////////
         // variables for tracking internal state
@@ -100,8 +103,8 @@ export class ResultsDisplay extends Component {
         this.infiniteScrollQuery.from = currentFrom + currentSize;
         this.infiniteScrollQuery.size = this.infiniteScrollPageSize;
 
-        var successCallback = objClosure(this, "infiniteScrollSuccess", ["result"], {callback: callback});
-        var errorCallback = objClosure(this, "infiniteScrollError", false, {callback: callback});
+        var successCallback = edges.util.objClosure(this, "infiniteScrollSuccess", ["result"], {callback: callback});
+        var errorCallback = edges.util.objClosure(this, "infiniteScrollError", false, {callback: callback});
 
         this.edge.queryAdapter.doQuery({
             edge: this.edge,
