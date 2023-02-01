@@ -8,7 +8,7 @@ if (!edges.renderers.hasOwnProperty("bs3")) { edges.renderers.bs3 = {}}
 
 edges.renderers.bs3.RefiningANDTermSelector = class extends edges.Renderer {
     constructor(params) {
-        super();
+        super(params);
 
         ///////////////////////////////////////
         // parameters that can be passed in

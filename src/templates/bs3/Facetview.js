@@ -8,6 +8,9 @@ if (!edges.templates.hasOwnProperty("bs3")) { edges.templates.bs3 = {}}
 edges.templates.bs3.Facetview = class extends edges.Template{
     constructor(params) {
         super(params);
+
+        this.facetHeader = edges.util.getParam(params, "facetHeader", false);
+
         this.namespace = "edges-bs3-facetview";
         this.edge = false;
     }
@@ -24,6 +27,7 @@ edges.templates.bs3.Facetview = class extends edges.Template{
         let pagerClass = edges.util.styleClasses(this.namespace, "pager");
         let searchingClass = edges.util.styleClasses(this.namespace, "searching");
         let resultsClass = edges.util.styleClasses(this.namespace, "results");
+        let facetHeaderClass = edges.util.styleClasses(this.namespace, "facet-header");
 
         // the facet view object to be appended to the page
         let thefacetview = `<div class="${containerClass}"><div class="row">`;
@@ -33,7 +37,12 @@ edges.templates.bs3.Facetview = class extends edges.Template{
         let facetContainers = "";
 
         if (facets.length > 0) {
+            let facetHeader = "";
+            if (this.facetHeader !== false) {
+                facetHeader = `<div class="${facetHeaderClass}">${this.facetHeader}</div>`
+            }
             thefacetview += `<div class="col-md-3">
+                ${facetHeader}
                 <div class="${facetsClass}">{{FACETS}}</div>
             </div>
             <div class="col-md-9" class="${panelClass}">`;

@@ -18,6 +18,10 @@ edges.renderers.bs3.SelectedFilters = class extends edges.Renderer {
 
         this.ifNoFilters = edges.util.getParam(params, "ifNoFilters", false);
 
+        this.hideValues = edges.util.getParam(params, "hideValues", []);
+
+        this.omit = edges.util.getParam(params, "omit", []);
+
         this.namespace = "edges-bs3-selected-filters";
     }
 
@@ -50,9 +54,26 @@ edges.renderers.bs3.SelectedFilters = class extends edges.Renderer {
         }
 
         var fields = Object.keys(sf.mustFilters);
+        var showClear = false;
         for (var i = 0; i < fields.length; i++) {
             var field = fields[i];
             var def = sf.mustFilters[field];
+
+            // render any compound filters
+            if (def.filter === "compound") {
+                filters += '<li class="tag ' + valClass + '">';
+                filters += '<a href="DELETE" class="' + removeClass + '" data-compound="' + field + '" alt="Remove" title="Remove">';
+                filters += def.display;
+                filters += ' <span data-feather="x" aria-hidden="true"></span>';
+                filters += "</a>";
+                filters += "</li>";
+                showClear = true;
+            } else {
+                if ($.inArray(field, this.omit) > -1) {
+                    continue;
+                }
+                showClear = true;
+            }
 
             filters += '<span class="' + fieldClass + '">';
             if (this.showFilterField) {
@@ -61,6 +82,10 @@ edges.renderers.bs3.SelectedFilters = class extends edges.Renderer {
 
             for (var j = 0; j < def.values.length; j++) {
                 var val = def.values[j];
+                var valDisplay = ": " + val.display;
+                if ($.inArray(field, this.hideValues) > -1) {
+                    valDisplay = "";
+                }
                 filters += '<span class="' + valClass + '">' + val.display + '</span>';
 
                 // the remove block looks different, depending on the kind of filter to remove
@@ -88,6 +113,16 @@ edges.renderers.bs3.SelectedFilters = class extends edges.Renderer {
             filters += "</span>";
         }
 
+        if (showClear) {
+            var clearClass = edges.util.allClasses(this.namespace, "clear", this);
+            var clearFrag = '<a href="#" class="' + clearClass + '" title="Clear all search and sort parameters and start again"> \
+                    CLEAR ALL \
+                    <span data-feather="x" aria-hidden="true"></span>\
+                </a>';
+
+            filters += '<span class="' + valClass + '">' + clearFrag + '</span>';
+        }
+
         if (filters === "" && this.ifNoFilters) {
             filters = this.ifNoFilters;
         }
@@ -100,16 +135,29 @@ edges.renderers.bs3.SelectedFilters = class extends edges.Renderer {
             // click handler for when a filter remove button is clicked
             var removeSelector = edges.util.jsClassSelector(ns, "remove", this);
             edges.on(removeSelector, "click", this, "removeFilter");
+
+            // click handler for when the clear button is clicked
+            var clearSelector = edges.util.jsClassSelector(ns, "clear", this);
+            edges.on(clearSelector, "click", this, "clearFilters");
         } else {
             sf.context.html("");
         }
-    };
+    }
 
     /////////////////////////////////////////////////////
     // event handlers
 
     removeFilter(element) {
         var el = this.component.jq(element);
+
+        // if this is a compound filter, remove it by id
+        var compound = el.attr("data-compound");
+        if (compound) {
+            this.component.removeCompoundFilter({compound_id: compound});
+            return;
+        }
+
+        // otherwise follow the usual instructions for removing a filter
         var field = el.attr("data-field");
         var ft = el.attr("data-filter");
         var bool = el.attr("data-bool");
@@ -145,5 +193,9 @@ edges.renderers.bs3.SelectedFilters = class extends edges.Renderer {
         }
 
         this.component.removeFilter(bool, ft, field, value);
+    }
+
+    clearFilters() {
+        this.component.clearSearch();
     }
 }

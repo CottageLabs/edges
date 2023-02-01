@@ -31,6 +31,9 @@ edges.components.FullSearchController = class extends edges.Component {
         // on free-text search, default operator for the elasticsearch query system to use
         this.defaultOperator = edges.util.getParam(params, "defaultOperator", "OR");
 
+        // if there is no other default field set, which field to focus the search on
+        this.defaultField = edges.util.getParam(params, "defaultField", false);
+
         ///////////////////////////////////////////////
         // properties for tracking internal state
 
@@ -173,6 +176,8 @@ edges.components.FullSearchController = class extends edges.Component {
             };
             if (this.searchField && this.searchField !== "") {
                 params["defaultField"] = this.searchField;
+            } else if (this.defaultField) {
+                params["defaultField"] = this.defaultField;
             }
             // set the query with the new search field
             nq.setQueryString(new es.QueryString(params));
