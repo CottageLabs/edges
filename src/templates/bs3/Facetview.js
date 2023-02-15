@@ -57,13 +57,15 @@ edges.templates.bs3.Facetview = class extends edges.Template{
         // make space for the search options container at the top
         let controller = edge.category("controller");
         if (controller.length > 0) {
-            thefacetview += `<div class="row">
-                <div class="col-md-12">
-                    <div class="${controllerClass}">
-                        <div id="${controller[0].id}"></div>
+            for (let cont of controller) {
+                thefacetview += `<div class="row">
+                    <div class="col-md-12">
+                        <div class="${controllerClass}">
+                            <div id="${cont.id}"></div>
+                        </div>
                     </div>
-                </div>
-            </div>`;
+                </div>`;
+            }
         }
 
         // make space for the selected filters
