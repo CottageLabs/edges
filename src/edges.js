@@ -1150,6 +1150,19 @@ edges.util.escapeHtml = function(unsafe, def) {
     }
 }
 
+edges.util.toHtmlEntities = function(str) {
+    return str.replace(/./gm, function(s) {
+        // return "&#" + s.charCodeAt(0) + ";";
+        return (s.match(/[a-z0-9\s]+/i)) ? s : "&#" + s.charCodeAt(0) + ";";
+    });
+}
+
+edges.util.fromHtmlEntities = function(string) {
+    return (string+"").replace(/&#\d+;/gm,function(s) {
+        return String.fromCharCode(s.match(/\d+/gm)[0]);
+    })
+}
+
 edges.util.safeId = function(unsafe) {
     return unsafe.replace(/&/g, "_")
         .replace(/</g, "_")
