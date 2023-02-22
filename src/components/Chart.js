@@ -1,7 +1,11 @@
-import {Component} from "../core";
-import {getParam} from "../utils";
+// requires: edges
+// requires: edges.util
 
-export class Chart extends Component {
+if (!window.hasOwnProperty("edges")) { edges = {}}
+if (!edges.hasOwnProperty("components")) { edges.components = {}}
+if (!edges.components.hasOwnProperty("chartUtils")) {edges.components.chartUtils = {}}
+
+edges.components.Chart = class extends edges.Component {
     constructor(params) {
         super(params);
 
@@ -18,19 +22,19 @@ export class Chart extends Component {
         //
         // For example
         // [{ key: "power output", values: [{label: 1980, value: 100}, {label: 1981, value: 200}]
-        this.dataSeries = getParam(params, "dataSeries", false);
+        this.dataSeries = edges.util.getParam(params, "dataSeries", false);
 
         // function which will generate the data series, which will be
         // written to this.dataSeries if that is not provided
-        this.dataFunction = getParam(params, "dataFunction", false);
+        this.dataFunction = edges.util.getParam(params, "dataFunction", false);
 
         // should we enforce a rectangular shape on the data series for when there is
         // more than one series to be displayed?
-        this.rectangulate = getParam(params, "rectangulate", false);
+        this.rectangulate = edges.util.getParam(params, "rectangulate", false);
 
         // function which will sort the values of a series, used when rectangulate is
         // set to true
-        this.seriesSort = getParam(params, "seriesSort", false);
+        this.seriesSort = edges.util.getParam(params, "seriesSort", false);
     }
 
     synchronise () {
@@ -88,7 +92,7 @@ export class Chart extends Component {
  * @param params
  * @returns {(function(*): ([]|[{values: *[], key: string}]))|*}
  */
-export function dateHistogram(params) {
+edges.components.chartUtils.dateHistogram = function(params) {
 
     let agg = params.agg;
     let seriesName = params.seriesName;
@@ -114,7 +118,7 @@ export function dateHistogram(params) {
  *
  * @param params
  */
-export function termSplitDateHistogram(params) {
+edges.components.chartUtils.termSplitDateHistogram = function(params) {
     let histogramAgg = params.histogramAgg;
     let termsAgg = params.termsAgg;
     let seriesNameMap = params.seriesNameMap;
@@ -159,9 +163,9 @@ export function termSplitDateHistogram(params) {
  * @param params
  * @returns {(function(*): (*[]))|*}
  */
-export function nestedTerms(params) {
-    let aggs = getParam(params, "aggs", []);
-    let seriesName = getParam(params, "seriesName", "series");
+edges.components.chartUtils.nestedTerms = function(params) {
+    let aggs = edges.util.getParam(params, "aggs", []);
+    let seriesName = edges.util.getParam(params, "seriesName", "series");
 
     return function (component) {
         // for each aggregation, get the results and add them to the data series
