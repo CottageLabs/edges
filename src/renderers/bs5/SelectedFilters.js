@@ -159,7 +159,20 @@ edges.renderers.bs5.SelectedFilters = class extends edges.Renderer {
 
         var value = false;
         if (ft === "terms" || ft === "term") {
-            value = el.attr("data-value");
+            var val = el.attr("data-value");
+             // translate string value to a type required by a model
+            if (val === "true"){
+                value = true;
+            }
+            else if (val === "false"){
+                value = false;
+            }
+            else if (!isNaN(parseInt(val))){
+                value = parseInt(val);
+            }
+            else {
+                value = val;
+            }
         } else if (ft === "range") {
             value = {};
 
