@@ -69,18 +69,35 @@ edges.renderers.bs5.FacetFilterSetter = class extends edges.Renderer {
             filters += '<div class="' + filterClass + '">';
 
             if (active) {
-                filters += '<strong>' + display;
+                filters += '<a href="#" class="' + filterRemoveClass + ' active" data-filter="' + edges.util.escapeHtml(id) + '">';
+                if (filter.icon){
+                    if (filter.icon.active){
+                        filters += filter.icon.active;
+                    }
+                    else {
+                        filters += filter.icon;
+                    }
+                }
+                filters += display;
                 if (this.showCount) {
                     filters += " (" + count + ")";
                 }
-                filters += '&nbsp;<a href="#" class="' + filterRemoveClass + '" data-filter="' + edges.util.escapeHtml(id) + '">';
-                filters += '<i class="material-symbols-outlined"></i></a>';
-                filters += "</strong>";
+                filters += '</a>';
             } else {
-                filters += '<a href="#" class="' + valClass + '" data-filter="' + edges.util.escapeHtml(id) + '">' + display + "</a>";
+                filters += '<a href="#" class="' + valClass + ' inactive" data-filter="' + edges.util.escapeHtml(id) + '">'
+                if (filter.icon){
+                    if (filter.icon.inactive){
+                        filters += filter.icon.inactive;
+                    }
+                    else {
+                        filters += filter.icon;
+                    }
+                }
+                filters += display;
                 if (this.showCount) {
                     filters += ' <span class="' + countClass + '">(' + count + ')</span>';
                 }
+                filters += "</a>";
             }
 
             filters += "</div>";

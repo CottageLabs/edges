@@ -73,7 +73,7 @@ edges.renderers.bs5.SearchBox = class extends edges.Renderer {
             if (this.searchButtonText !== false) {
                 text = this.searchButtonText;
             }
-            searchFrag = '<button type="button" class="btn btn-info btn-outline-secondary ' + searchButtonClass + '"> \
+            searchFrag = '<button type="button" class="btn btn-primary ' + searchButtonClass + '"> \
                         ' + text + ' \
                     </button>';
         }

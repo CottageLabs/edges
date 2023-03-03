@@ -124,6 +124,7 @@ edges.renderers.bs5.SelectedFilters = class extends edges.Renderer {
         if (filters !== "") {
             var frag = '<div class="' + containerClass + '">{{FILTERS}}</div>';
             frag = frag.replace(/{{FILTERS}}/g, filters);
+            sf.context.parent().show();
             sf.context.html(frag);
 
             // click handler for when a filter remove button is clicked
@@ -134,7 +135,7 @@ edges.renderers.bs5.SelectedFilters = class extends edges.Renderer {
             var clearSelector = edges.util.jsClassSelector(ns, "clear", this);
             edges.on(clearSelector, "click", this, "clearFilters");
         } else {
-            sf.context.html("");
+            sf.context.parent().hide();
         }
     }
 
