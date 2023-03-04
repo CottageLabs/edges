@@ -49,14 +49,14 @@ edges.renderers.bs5.MultiFieldRangeSelectorFacet = class extends edges.Renderer 
         }
         let existingFrag = '';
         if (f !== '') {
-            existingFrag = '<div class="' + bodyExistingClass + '">';
-            existingFrag += '</div>';
+            existingFrag = `<div class="${bodyExistingClass}">${f}</div>`;
         }
+
+
         // render a new range setter
         let newSelector = '<div class="' + bodyNewClass + '">' + this._renderSelector() + '</div>';
 
         let frag = header + existingFrag + newSelector;
-
         this.component.context.html(frag);
 
         let inputClassSelector = edges.util.jsClassSelector(this.namespace, "input", this);
