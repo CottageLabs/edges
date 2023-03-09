@@ -118,7 +118,7 @@ edges.renderers.bs5.MultiFieldRangeSelectorFacet = class extends edges.Renderer 
         let removeFrag = "";
         if (existingField) {
             let removeClass = edges.util.allClasses(this.namespace, "remove", this);
-            removeFrag = `<button class="${removeClass}">X</button>`;
+            removeFrag = `<button class="btn btn-info btn-secondary ${removeClass}">Remove filter X</button>`;
         }
 
         let selectorClass = edges.util.allClasses(this.namespace, "selector", this);
