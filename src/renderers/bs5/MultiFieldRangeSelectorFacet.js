@@ -113,7 +113,7 @@ edges.renderers.bs5.MultiFieldRangeSelectorFacet = class extends edges.Renderer 
             numberValue = `value="${existingNumber}"`;
             numberDataWas = `data-was="${existingNumber}"`
         }
-        let numberEntry = `<input type="number" class="${inputClass} ${numberClass} form-control" ${numberValue} ${numberDataWas}>`;
+        let numberEntry = `<input type="number" class="${inputClass} ${numberClass} form-control" ${numberValue} ${numberDataWas} placeholder="Value">`;
 
         let removeFrag = "";
         if (existingField) {
