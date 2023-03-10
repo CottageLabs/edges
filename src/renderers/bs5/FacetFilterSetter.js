@@ -93,7 +93,7 @@ edges.renderers.bs5.FacetFilterSetter = class extends edges.Renderer {
                         filters += filter.icon;
                     }
                 }
-                filters += display;
+                filters += '<label class="form-label">' + display + '</label>';
                 if (this.showCount) {
                     filters += ' <span class="' + countClass + '">(' + count + ')</span>';
                 }
