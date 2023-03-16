@@ -100,8 +100,8 @@ edges.renderers.bs5.RefiningANDTermSelectorSwitchable = class extends edges.Rend
                     results += '<div class="' + resultClass + '">';
                     results += '<div class="form-check form-switch">\
                             <a href="#" class="' + valClass + '" data-key="' + edges.util.escapeHtml(val.term) + '">\
-                            <label class="form-check-label" htmlFor="flexSwitchCheckDefault">';
-                    results +=  edges.util.escapeHtml(val.display);
+                            <label class="form-check-label" for="flexSwitchCheckDefault">';
+                    results +=  edges.util.escapeHtml(val.display) + " (" + count + ")";
                     results += '</label><input class="form-check-input" type="checkbox" id="';
                     results += valClass;
                     results += '"></a></div></div>';
@@ -140,7 +140,7 @@ edges.renderers.bs5.RefiningANDTermSelectorSwitchable = class extends edges.Rend
                 filterFrag += '<div class="' + resultClass + '">';
                 filterFrag += '<div class="form-check form-switch">';
                 filterFrag += '<a href="#" class="' + filterRemoveClass + '" data-key="' + edges.util.escapeHtml(filt.term) + '">';
-                filterFrag += '<label class="form-check-label" htmlFor="flexSwitchCheckDefault">' + edges.util.escapeHtml(filt.display) + '&nbsp;</label>';
+                filterFrag += '<label class="form-check-label" for="flexSwitchCheckDefault">' + edges.util.escapeHtml(filt.display) + '&nbsp;</label>';
                 filterFrag += '</label><input class="form-check-input" type="checkbox" id="';
                 filterFrag += valClass;
                 filterFrag += '" checked></a></div></div>';
