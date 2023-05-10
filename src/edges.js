@@ -740,18 +740,22 @@ edges.on = function(selector, event, caller, targetFunction, delay, conditional,
     // create the closure to be called on the event
     var clos = edges.util.eventClosure(caller, targetFunction, conditional, preventDefault);
 
+    if (delay) {
+        clos = edges.util.delayer(clos, delay);
+    }
+
     // now bind the closure directly or with delay
     // if the caller has an inner component (i.e. it is a Renderer) use the components jQuery selector
     // otherwise, if it has an inner, use the selector on that.
-    if (delay) {
-        if (caller.component) {
-            caller.component.jq(selector).bindWithDelay(event, clos, delay);
-        } else if (caller.edge) {
-            caller.edge.jq(selector).bindWithDelay(event, clos, delay);
-        } else {
-            $(selector).bindWithDelay(event, clos, delay);
-        }
-    } else {
+    // if (delay) {
+    //     if (caller.component) {
+    //         caller.component.jq(selector).bindWithDelay(event, clos, delay);
+    //     } else if (caller.edge) {
+    //         caller.edge.jq(selector).bindWithDelay(event, clos, delay);
+    //     } else {
+    //         $(selector).bindWithDelay(event, clos, delay);
+    //     }
+    // } else {
         if (caller.component) {
             var element = caller.component.jq(selector);
             element.off(event);
@@ -765,7 +769,7 @@ edges.on = function(selector, event, caller, targetFunction, delay, conditional,
             element.off(event);
             element.on(event, clos);
         }
-    }
+    // }
 }
 
 edges.off = function(selector, event, caller) {
@@ -943,7 +947,22 @@ edges.util.eventClosure = function(obj, fn, conditional, preventDefault) {
         if (preventDefault) {
             event.preventDefault();
         }
-        obj[fn](this, event);
+        obj[fn](event.currentTarget, event);
+    }
+}
+
+edges.util.delayer = function(fn, delay, timeout) {
+    let wait = null;
+
+    return function(event) {
+        // var e = $.extend(true, { }, arguments[0]);
+        var throttler = function() {
+            wait = null;
+            fn(event);
+        };
+
+        if (!timeout) { clearTimeout(wait); }
+        if (!timeout || !wait) { wait = setTimeout(throttler, delay); }
     }
 }
 
