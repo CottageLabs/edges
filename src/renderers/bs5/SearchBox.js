@@ -115,6 +115,13 @@ edges.renderers.bs5.SearchBox = class extends edges.Renderer {
             edges.on(textSelector, "keyup", this, "setSearchText", false, onlyEnter);
         }
 
+        let input = $(textSelector)[0]
+        let end = input.value.length;
+        window.setTimeout(() => {
+            input.setSelectionRange(end, end);
+            input.focus()
+        }, 0);
+
         if (this.clearButton) {
             var resetSelector = edges.util.jsClassSelector(this.namespace, "reset", this);
             edges.on(resetSelector, "click", this, "clearSearch");
