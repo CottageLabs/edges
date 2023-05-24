@@ -28,6 +28,8 @@ edges.renderers.bs5.Pager = class extends edges.Renderer {
 
         this.numberFormat = edges.util.getParam(params, "numberFormat", false);
 
+        this.showChevrons = edges.util.getParam(params,"showChevrons", false)
+
         this.namespace = "edges-bs5-pager";
     }
     
@@ -82,17 +84,36 @@ edges.renderers.bs5.Pager = class extends edges.Renderer {
 
         var nav = "";
         if (this.showPageNavigation) {
-            var first = '<a href="#" class="' + firstClass + '">First</a>';
-            var prev = '<a href="#" class="' + prevClass + '">Prev</a>';
+            var chevron_left = `<img src="/static/img/icons/chevron_left.svg" class="image-fluid" style="height: 20px; width: auto;" />`
+            var chevron_right = `<img src="/static/img/icons/chevron_right.svg" class="image-fluid" style="height: 20px; width: auto;" />`
+            var first_page_icon = `<img src="/static/img/icons/first_page.svg" class="image-fluid" style="height: 20px; width: auto;" />`
+
+            var first = '<a href="#" class="' + firstClass;
+            var prev = '<a href="#" class="' + prevClass;
             if (this.component.page === 1) {
-                first = '<span class="' + firstClass + ' disabled">First</span>';
-                prev = '<span class="' + prevClass + ' disabled">Prev</span>';
+                 first += " disabled";
+                 prev += " disabled";
+            }
+            first += '">'
+            prev += '">'
+
+            if(this.showChevrons) {
+                first += first_page_icon
+                prev += chevron_left
             }
 
-            var next = '<a href="#" class="' + nextClass + '">Next</a>';
+            first += 'First</a>';
+            prev += 'Prev</a>';
+
+            var next = '<a href="#" class="' + nextClass
             if (this.component.page === this.component.totalPages) {
-                next = '<span class="' + nextClass + ' disabled">Next</a>';
+                next += " disabled"
             }
+            next += '">Next';
+            if (this.showChevrons) {
+                next += chevron_right;
+            }
+            next += `</a>`;
 
             var pageNum = this.component.page;
             var totalPages = this.component.totalPages;
@@ -100,9 +121,9 @@ edges.renderers.bs5.Pager = class extends edges.Renderer {
                 pageNum = this.numberFormat(pageNum);
                 totalPages = this.numberFormat(totalPages);
             }
-            nav = '<div class="' + navClass + '">' + first + prev +
+            nav = '<div class="' + navClass + '">' + first + "<span>" + prev  +
                 '<span class="' + pageClass + '">Page ' + pageNum + ' of ' + totalPages + '</span>' +
-                next + "</div>";
+                next + "</span></div>";
         }
 
         var frag = "";
