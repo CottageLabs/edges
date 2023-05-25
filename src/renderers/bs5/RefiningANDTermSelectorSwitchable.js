@@ -92,22 +92,47 @@ edges.renderers.bs5.RefiningANDTermSelectorSwitchable = class extends edges.Rend
             // render each value, if it is not also a filter that has been set
             for (var i = 0; i < ts.values.length; i++) {
                 var val = ts.values[i];
-                if ($.inArray(val.term.toString(), filterTerms) === -1) {   // the toString() helps us normalise other values, such as integers
+
+                let countFrag = "&nbsp;";
+                let checkedFrag = "";
+                let anchorClass = valClass;
+                if ($.inArray(val.term.toString(), filterTerms) === -1) { // the toString() helps us normalise other values, such as integers
                     var count = val.count;
                     if (this.countFormat) {
                         count = this.countFormat(count)
                     }
-                    results += '<div class="' + resultClass + '">';
-                    results += '<div class="form-check form-switch">\
-                            <a href="#" class="' + valClass + '" data-key="' + edges.util.escapeHtml(val.term) + '">\
-                            <label class="form-check-label" for="flexSwitchCheckDefault">';
-                    results +=  edges.util.escapeHtml(val.display) + " (" + count + ")";
-                    results += '</label><input class="form-check-input" type="checkbox" id="';
-                    results += valClass;
-                    results += '"></a></div></div>';
+                    countFrag = " (" + count + ")";
+                } else {
+                    checkedFrag = " checked";
+                    anchorClass = filterRemoveClass;
                 }
+
+                results += '<div class="' + resultClass + '">';
+                results += '<div class="form-check form-switch">\
+                        <a href="#" class="' + anchorClass + '" data-key="' + edges.util.escapeHtml(val.term) + '">\
+                        <label class="form-check-label" for="flexSwitchCheckDefault">';
+                results +=  edges.util.escapeHtml(val.display) + countFrag;
+                results += '</label><input class="form-check-input" type="checkbox" id="';
+                results += valClass;
+                results += '"' + checkedFrag + '></a></div></div>';
+
             }
         }
+
+        // if we want the active filters, render them
+        // var filterFrag = "";
+        // if (ts.filters.length > 0 && this.showSelected) {
+        //     for (var i = 0; i < ts.filters.length; i++) {
+        //         var filt = ts.filters[i];
+        //         filterFrag += '<div class="' + resultClass + '">';
+        //         filterFrag += '<div class="form-check form-switch">';
+        //         filterFrag += '<a href="#" class="' + filterRemoveClass + '" data-key="' + edges.util.escapeHtml(filt.term) + '">';
+        //         filterFrag += '<label class="form-check-label" for="flexSwitchCheckDefault">' + edges.util.escapeHtml(filt.display) + '&nbsp;</label>';
+        //         filterFrag += '</label><input class="form-check-input" type="checkbox" id="';
+        //         filterFrag += valClass;
+        //         filterFrag += '" checked></a></div></div>';
+        //     }
+        // }
 
         // if there is a tooltip, make the frag
         var tooltipFrag = "";
@@ -132,21 +157,6 @@ edges.renderers.bs5.RefiningANDTermSelectorSwitchable = class extends edges.Rend
                     </div></div>';
         }
 
-        // if we want the active filters, render them
-        var filterFrag = "";
-        if (ts.filters.length > 0 && this.showSelected) {
-            for (var i = 0; i < ts.filters.length; i++) {
-                var filt = ts.filters[i];
-                filterFrag += '<div class="' + resultClass + '">';
-                filterFrag += '<div class="form-check form-switch">';
-                filterFrag += '<a href="#" class="' + filterRemoveClass + '" data-key="' + edges.util.escapeHtml(filt.term) + '">';
-                filterFrag += '<label class="form-check-label" for="flexSwitchCheckDefault">' + edges.util.escapeHtml(filt.display) + '&nbsp;</label>';
-                filterFrag += '</label><input class="form-check-input" type="checkbox" id="';
-                filterFrag += valClass;
-                filterFrag += '" checked></a></div></div>';
-            }
-        }
-
         // render the toggle capability
         var tog = this.title;
         if (this.togglable) {
@@ -162,7 +172,6 @@ edges.renderers.bs5.RefiningANDTermSelectorSwitchable = class extends edges.Rend
                         {{CONTROLS}}\
                         <div class="row" style="display:none" id="' + resultsId + '">\
                             <div class="col-md-12">\
-                                <div class="' + selectedClass + '">{{SELECTED}}</div>\
                                 <div class="' + resultsListClass + '">{{RESULTS}}</div>\
                             </div>\
                         </div></div>';
@@ -170,7 +179,7 @@ edges.renderers.bs5.RefiningANDTermSelectorSwitchable = class extends edges.Rend
         // substitute in the component parts
         frag = frag.replace(/{{RESULTS}}/g, results)
             .replace(/{{CONTROLS}}/g, controlFrag)
-            .replace(/{{SELECTED}}/g, filterFrag);
+            // .replace(/{{SELECTED}}/g, filterFrag);
 
         // now render it into the page
         ts.context.html(frag);

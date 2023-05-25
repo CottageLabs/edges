@@ -18,6 +18,9 @@ edges.components.RefiningANDTermSelector = class extends edges.Component {
         this.orderBy = edges.util.getParam(params, "orderBy", "count");
         this.orderDir = edges.util.getParam(params, "orderDir", "desc");
 
+        // any values that should be removed from the normal ordering and displayed at the end insead
+        this.pushToBottom = edges.util.getParam(params, "pushToBottom", []);
+
         // number of facet terms below which the facet is disabled
         this.deactivateThreshold = edges.util.getParam(params, "deactivateThreshold", false);
 
@@ -42,6 +45,9 @@ edges.components.RefiningANDTermSelector = class extends edges.Component {
         // whether this component updates itself on every request, or whether it is static
         // throughout its lifecycle.  One of "update" or "static"
         this.lifecycle = edges.util.getParam(params, "lifecycle", "update");
+
+        // for the static lifecycle, should the counts be synchronised with the data
+        this.syncCounts = edges.util.getParam(params, "syncCounts", true);
 
         //////////////////////////////////////////
         // properties used to store internal state
@@ -91,6 +97,10 @@ edges.components.RefiningANDTermSelector = class extends edges.Component {
             if (this.edge.result) {
                 this._readValues({result: this.edge.result});
             }
+        } else if (this.lifecycle === "static" && this.syncCounts) {
+            if (this.edge.result) {
+                this._syncCounts({result: this.edge.result})
+            }
         }
         this.filters = [];
 
@@ -102,6 +112,25 @@ edges.components.RefiningANDTermSelector = class extends edges.Component {
             this.filters.push({display: val, term: filters[i].value});
         }
     };
+
+    _syncCounts(params) {
+        let result = params.result;
+        let buckets = result.buckets(this.id);
+
+        for (let j = 0; j < this.values.length; j++) {
+            let updated = false;
+            for (let i = 0; i < buckets.length; i++) {
+                let bucket = buckets[i];
+                if (this.values[j].term === bucket.key) {
+                    this.values[j].count = bucket.doc_count;
+                    updated = true;
+                }
+            }
+            if (!updated) {
+                this.values[j].count = 0
+            }
+        }
+    }
 
     _readValues(params) {
         let result = params.result;
@@ -123,6 +152,7 @@ edges.components.RefiningANDTermSelector = class extends edges.Component {
             predefined = this.edge.baseQuery.listMust(new es.TermFilter({field: this.field}));
         }
 
+        let pushedToBottom = []
         let realCount = 0;
         for (let i = 0; i < buckets.length; i++) {
             let bucket = buckets[i];
@@ -162,8 +192,14 @@ edges.components.RefiningANDTermSelector = class extends edges.Component {
 
             // store the original value and the translated value plus the count
             let obj = {display: key, term: bucket.key, count: bucket.doc_count};
-            this.values.push(obj);
+
+            if (this.pushToBottom.includes(bucket.key)) {
+                pushedToBottom.push(obj)
+            } else {
+                this.values.push(obj);
+            }
         }
+        this.values = this.values.concat(pushedToBottom);
     };
 
     /////////////////////////////////////////////////
