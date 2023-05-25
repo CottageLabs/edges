@@ -78,15 +78,11 @@ edges.renderers.bs5.SearchBox = class extends edges.Renderer {
                     </button>';
         }
 
-        var searchBox = '<div class="' + searchClasses + '"><div class="form-inline"> \
-                    <div class="form-group"> \
-                        <div class="input-group"> \
+        var searchBox = '<div class="' + searchClasses + '">\
                             ' + clearFrag + field_select + '\
                             <input type="text" id="' + textId + '" class="form-control ' + textClass + '" name="q" value="" placeholder="' + this.searchPlaceholder + '"/> \
                             ' + searchFrag + ' \
-                        </div> \
-                    </div> \
-                </div></div>';
+                </div>';
 
         // assemble the final fragment and render it into the component's context
         var frag = '<div class="row"><div class="col-md-12">{{SEARCH}}</div></div>';
