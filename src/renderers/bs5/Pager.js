@@ -84,9 +84,10 @@ edges.renderers.bs5.Pager = class extends edges.Renderer {
 
         var nav = "";
         if (this.showPageNavigation) {
-            var chevron_left = `<img src="/static/img/icons/chevron_left.svg" class="image-fluid" style="height: 20px; width: auto;" />`
-            var chevron_right = `<img src="/static/img/icons/chevron_right.svg" class="image-fluid" style="height: 20px; width: auto;" />`
-            var first_page_icon = `<img src="/static/img/icons/first_page.svg" class="image-fluid" style="height: 20px; width: auto;" />`
+
+            var chevron_left = `<span class="material-symbols-outlined">chevron_left</span>`
+            var chevron_right = `<span class="material-symbols-outlined">chevron_right</span>`
+            var first_page_icon = `<span class="material-symbols-outlined">first_page</span>`
 
             var first = '<a href="#" class="' + firstClass;
             var prev = '<a href="#" class="' + prevClass;
