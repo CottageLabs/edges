@@ -122,9 +122,9 @@ edges.renderers.bs5.Pager = class extends edges.Renderer {
                 pageNum = this.numberFormat(pageNum);
                 totalPages = this.numberFormat(totalPages);
             }
-            nav = '<div class="' + navClass + '">' + first + "<span>" + prev  +
+            nav = '<div class="' + navClass + '">' + first + prev +
                 '<span class="' + pageClass + '">Page ' + pageNum + ' of ' + totalPages + '</span>' +
-                next + "</span></div>";
+                next + "</div>";
         }
 
         var frag = "";
