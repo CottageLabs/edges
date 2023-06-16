@@ -107,6 +107,7 @@ $.extend(true, edges, {
             // event handlers
 
             this.removeFilter = function (element) {
+                var sf = this.component;
                 var el = this.component.jq(element);
                 var field = el.attr("data-field");
                 var ft = el.attr("data-filter");
@@ -114,7 +115,12 @@ $.extend(true, edges, {
 
                 var value = false;
                 if (ft === "terms" || ft === "term") {
-                    value = el.attr("data-value");
+                    // value = el.attr("data-value");
+                    values = sf.mustFilters[field].values;
+                    // sanity check, values length needs to be 1 due to the nature of the terms filter
+                    if(values.length == 1){
+                            value = values[0].val;
+                    }
                 } else if (ft === "range") {
                     value = {};
 
