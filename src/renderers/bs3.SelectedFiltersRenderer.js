@@ -65,7 +65,7 @@ $.extend(true, edges, {
                         if (this.allowRemove) {
                             var removeClass = edges.css_classes(ns, "remove", this);
                             if (def.filter == "term" || def.filter === "terms") {
-                                filters += '<a class="' + removeClass + '" data-bool="must" data-filter="' + def.filter + '" data-field="' + field + '" data-value="' + val.val + '" alt="Remove" title="Remove" href="#">';
+                                filters += '<a class="' + removeClass + '" data-bool="must" data-filter="' + def.filter + '" data-field="' + field + '" data-value="' + val.val + '" data-value-idx="' + j + '" alt="Remove" title="Remove" href="#">';
                                 filters += '<i class="glyphicon glyphicon-black glyphicon-remove"></i>';
                                 filters += "</a>";
                             } else if (def.filter === "range") {
@@ -117,10 +117,9 @@ $.extend(true, edges, {
                 if (ft === "terms" || ft === "term") {
                     // value = el.attr("data-value");
                     values = sf.mustFilters[field].values;
-                    // sanity check, values length needs to be 1 due to the nature of the terms filter
-                    if(values.length == 1){
-                            value = values[0].val;
-                    }
+                    values = sf.mustFilters[field].values;
+                    idx = el.attr("data-value-idx")
+                    value = values[idx].val
                 } else if (ft === "range") {
                     value = {};
 
