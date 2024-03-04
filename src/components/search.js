@@ -391,17 +391,8 @@ $.extend(edges, {
         };
 
         this.generateShortUrl = function(callback) {
-            var query = this.edge.currentQuery.objectify({
-                include_query_string : true,
-                include_filters : true,
-                include_paging : true,
-                include_sort : true,
-                include_fields : false,
-                include_aggregations : false
-            });
             var success_callback = edges.objClosure(this, "setShortUrl", false, callback);
-            var error_callback = function() {};
-            this.urlShortener(query, success_callback, error_callback);
+            this.urlShortener(this.edge.fullUrl(), success_callback);
         };
 
         this.setShortUrl = function(short_url, callback) {
