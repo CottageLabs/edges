@@ -390,9 +390,9 @@ $.extend(edges, {
             this.edge.reset();
         };
 
-        this.generateShortUrl = function(callback) {
+        this.generateShortUrl = function(url, callback) {
             var success_callback = edges.objClosure(this, "setShortUrl", false, callback);
-            this.urlShortener(this.edge.fullUrl(), success_callback);
+            this.urlShortener(url, success_callback);
         };
 
         this.setShortUrl = function(short_url, callback) {
