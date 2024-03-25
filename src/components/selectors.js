@@ -1156,12 +1156,17 @@ $.extend(edges, {
         this.init = function(edge) {
             // first kick the request up to the superclass
             edges.newSelector().init.call(this, edge);
+            edge.context.on("edges:pre-reset", edges.eventClosure(this, "reset"));
 
             // now trigger a request for the terms to present, if not explicitly provided
             if (this.pruneTree) {
                 this._pruneTree();
             }
         };
+
+        this.reset = function(edge) {
+            this.renderer.lastSearch = null;
+        }
 
         this.contrib = function(query) {
             var params = {
