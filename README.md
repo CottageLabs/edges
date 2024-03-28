@@ -1,6 +1,11 @@
-# Edges
+# Edges 2.0
 
-2.0 Upgrade README TODO
+**WARNING** This version of edges is not stable or complete.  You should not use this version, it exists only
+as a reminder of the folly of JavaScript build systems.
+
+You should either checkout `edges1` to use the original version, or `master`/`develop` to work with Edges 3.
+
+---
 
 ## Build
 
