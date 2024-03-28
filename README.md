@@ -35,7 +35,7 @@ so you should check the source for full details.
 
 The most basic setup would be something like this:
 
-```
+```javascript
 e = edges.newEdge({
     selector: "#edges",
     template: edges.bs3.newTabbed(),
@@ -86,7 +86,7 @@ You can bind an Edge to one or more data sources as follows:
 
 For elastic:
 
-```
+```javascript
 e = edges.newEdge({
     search_url: "http://localhost:9200/allapc/institutional/_search",
     ...
@@ -95,7 +95,7 @@ e = edges.newEdge({
 
 For static CSVs:
 
-```
+```javascript
 e4 = edges.newEdge({
     staticFiles : [
         {
