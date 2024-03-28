@@ -1,8 +1,11 @@
-import {getParam, numFormat} from "../utils";
-import {Component} from "../core";
-import {es} from '../../dependencies/es'
+// requires: edges
+// requires: edges.util
+// requires: es
 
-export class MultiDateRangeEntry extends Component {
+if (!window.hasOwnProperty("edges")) { edges = {}}
+if (!edges.hasOwnProperty("components")) { edges.components = {}}
+
+edges.components.MultiDateRangeEntry = class extends edges.Component {
     constructor(params) {
         super(params);
 
@@ -14,31 +17,31 @@ export class MultiDateRangeEntry extends Component {
 
         // list of field objects, which provide the field itself, and the display name.  e.g.
         // [{field : "monitor.rioxxterms:publication_date", display: "Publication Date"}]
-        this.fields = getParam(params, "fields", []);
+        this.fields = edges.util.getParam(params, "fields", []);
 
         // map from field name (as in this.field[n].field) to a function which will provide
         // the earliest allowed date for that field.  e.g.
         // {"monitor.rioxxterms:publication_date" : earliestDate}
-        this.earliest = getParam(params, "earliest", {});
+        this.earliest = edges.util.getParam(params, "earliest", {});
 
         // map from field name (as in this.field[n].field) to a function which will provide
         // the latest allowed date for that field.  e.g.
         // {"monitor.rioxxterms:publication_date" : latestDate}
-        this.latest = getParam(params, "latest", {});
+        this.latest = edges.util.getParam(params, "latest", {});
 
-        this.autoLookupRange = getParam(params, "autoLookupRange", false);
+        this.autoLookupRange = edges.util.getParam(params, "autoLookupRange", false);
 
         // category for this component, defaults to "selector"
-        this.category = getParam(params, "category", "selector");
+        this.category = edges.util.getParam(params, "category", "selector");
 
         // default earliest date to use in all cases (defaults to start of the unix epoch)
-        this.defaultEarliest = getParam(params, "defaultEarliest", new Date(0));
+        this.defaultEarliest = edges.util.getParam(params, "defaultEarliest", new Date(0));
 
         // default latest date to use in all cases (defaults to now)
-        this.defaultLatest = getParam(params, "defaultLatest", new Date());
+        this.defaultLatest = edges.util.getParam(params, "defaultLatest", new Date());
 
         // use this to force a latest date, even if the auto lookup on the range is set
-        this.forceLatest = getParam(params, "forceLatest", false);
+        this.forceLatest = edges.util.getParam(params, "forceLatest", false);
 
         ///////////////////////////////////////////////
         // fields used to track internal state
@@ -202,7 +205,7 @@ export class MultiDateRangeEntry extends Component {
     }
 
     formatDateForQuery(date) {
-        let zeroPadder = numFormat({zeroPadding: 2})
+        let zeroPadder = edges.util.numFormat({zeroPadding: 2})
         return date.getUTCFullYear() + "-" + zeroPadder(date.getUTCMonth() + 1) + "-" + zeroPadder(date.getUTCDate())
     }
 

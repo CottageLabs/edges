@@ -1,0 +1,24 @@
+/********************************************************
+ *  MultiDateRangeCombineSelector Renderer styles
+ */
+
+$ns:".edges-bs3-multidaterangecombineselector";
+
+.edges-bs3-multidaterangecombineselector_input {
+  background-color: $component-background;
+  padding-top: 0;
+  padding-bottom: 0;
+  border: none;
+  border-radius: 0;
+
+  span {
+    line-height: 34px;
+  }
+}
+
+.edges-bs3-multidaterangecombineselector_label {
+  color: $component-border;
+  font-weight: 700;
+  font-size: 14px;
+  text-transform: uppercase;
+}

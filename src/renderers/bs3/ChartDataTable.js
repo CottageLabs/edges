@@ -1,15 +1,18 @@
-import {Renderer} from "../../core";
-import {getParam, styleClasses} from "../../utils";
+// requires: edges
+// requires: edges.util
 
-export class ChartDataTable extends Renderer {
+if (!window.hasOwnProperty("edges")) { edges = {}}
+if (!edges.hasOwnProperty("components")) { edges.components = {}}
+
+edges.components.ChartDataTable = class extends edges.Renderer {
     constructor(params) {
         super();
 
-        this.includeHeaderRow = getParam(params, "includeHeaderRow", true);
-        this.valueFormat = getParam(params, "valueFormat", false);
-        this.labelFormat = getParam(params, "labelFormat", false);
-        this.headerFormat = getParam(params, "headerFormat", false);
-        this.seriesOrderFunction = getParam(params, "seriesOrderFunction", false);
+        this.includeHeaderRow = edges.util.getParam(params, "includeHeaderRow", true);
+        this.valueFormat = edges.util.getParam(params, "valueFormat", false);
+        this.labelFormat = edges.util.getParam(params, "labelFormat", false);
+        this.headerFormat = edges.util.getParam(params, "headerFormat", false);
+        this.seriesOrderFunction = edges.util.getParam(params, "seriesOrderFunction", false);
 
         this.namespace = "edges-bs3-chartdatatable";
     }
@@ -37,7 +40,7 @@ export class ChartDataTable extends Renderer {
             bodyFrag += "<tr><td>" + row.join("</td><td>") + "</td></tr>";
         }
 
-        let tableClass = styleClasses(this.namespace, "table", this);
+        let tableClass = edges.util.styleClasses(this.namespace, "table", this);
 
         let frag = `
             <table class="${tableClass}">

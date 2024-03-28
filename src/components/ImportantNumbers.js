@@ -1,14 +1,14 @@
-import {Component} from "../core";
-import {getParam} from "../utils";
+// requires: edges
+// requires: edges.util
 
-export class ImportantNumbers extends Component {
+edges.components.ImportantNumbers = class extends edges.Component {
     constructor(params) {
         super(params);
 
-        this.main = getParam(params, "main", false);
-        this.second = getParam(params, "second", false);
+        this.main = edges.util.getParam(params, "main", false);
+        this.second = edges.util.getParam(params, "second", false);
 
-        this.calculate = getParam(params, "calculate", false);
+        this.calculate = edges.util.getParam(params, "calculate", false);
     }
 
     synchronise() {

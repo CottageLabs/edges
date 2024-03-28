@@ -1,5 +1,6 @@
 // requires: edges
 // requires: edges.util
+// requires: es
 
 if (!window.hasOwnProperty("edges")) { edges = {}}
 if (!edges.hasOwnProperty("components")) { edges.components = {}}

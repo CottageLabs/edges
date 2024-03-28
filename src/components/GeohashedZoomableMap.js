@@ -1,24 +1,25 @@
-import {es} from '../../dependencies/es'
+// requires: edges
+// requires: edges.util
+// requires: latlon-geohash.Geohash
+// requires: edges.lib.map.pickFirst
 
-import {Component} from "../core";
-import {getParam} from "../utils";
-import {pickFirst} from "./maputils";
-import Geohash from "latlon-geohash";
+if (!window.hasOwnProperty("edges")) { edges = {}}
+if (!edges.hasOwnProperty("components")) { edges.components = {}}
 
-export class GeohashedZoomableMap extends Component {
+edges.components.GeohashedZoomableMap = class extends edges.Component {
     constructor(params) {
         super(params);
         //////////////////////////////////
         // parameters that can be passed in
 
         // field in the data which is the geo_point type
-        this.geoHashAggregation = getParam(params, "geoHashAggregation", "geohash");
+        this.geoHashAggregation = edges.util.getParam(params, "geoHashAggregation", "geohash");
 
-        this.calculateCentre = getParam(params, "calculateCentre", () => { return pickFirst });
+        this.calculateCentre = edges.util.getParam(params, "calculateCentre", () => { return edges.lib.map.pickFirst });
 
-        this.geoBoundingBoxFilterField = getParam(params, "geoBoundingBoxFilterField", "location")
+        this.geoBoundingBoxFilterField = edges.util.getParam(params, "geoBoundingBoxFilterField", "location")
 
-        this.zoomToPrecisionMap = getParam(params, "zoomToPrecisionMap", {
+        this.zoomToPrecisionMap = edges.util.getParam(params, "zoomToPrecisionMap", {
             0: 1,
             3: 2,
             5: 3,
