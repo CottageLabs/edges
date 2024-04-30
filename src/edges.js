@@ -1130,6 +1130,23 @@ edges.util.idSelector = function(namespace, field, instance_name) {
     return "#" + edges.util.htmlID(namespace, field, instance_name);
 }
 
+edges.util.cssClassSelector = (namespace, field, instance_name) => {
+  instance_name = edges.util._normaliseInstanceName(instance_name);
+  return "." + edges.util.cssClass(namespace, field, instance_name);
+}
+
+edges.util.cssClass = (namespace, field, instance_name) => {
+  instance_name = edges.util._normaliseInstanceName(instance_name);
+  let cls = namespace;
+  if (instance_name) {
+    cls += "_" + instance_name;
+  }
+  if (field) {
+    cls += "_" + field;
+  }
+  return cls;
+}
+
 edges.util._normaliseInstanceName = function(instance_name) {
     if (typeof instance_name === "string") {
         return instance_name;
