@@ -817,6 +817,124 @@ edges.es.ESQueryAdapter = class extends edges.QueryAdapter {
     };
 }
 
+// Solr query adapter
+edges.es.SolrQueryAdapter = class extends edges.QueryAdapter {
+    doQuery(params) {
+        var edge = params.edge;
+        var query = params.query;
+        var success = params.success;
+        var error = params.error;
+
+        if (!query) {
+            query = edge.currentQuery;
+        }
+
+        const args = this._es2solr({ query : query });
+
+        // Execute the Solr query
+        this._solrQuery({ edge, success, error, solrArgs: args });
+    };
+
+    // Method to execute the Solr query
+    _solrQuery({ solrArgs, edge, success, error }) {
+        const searchUrl = edge.searchUrl;
+
+        // Generate the Solr query URL
+        const fullUrl = this._args2URL({ baseUrl: searchUrl, args: solrArgs });
+
+        // Perform the HTTP GET request to Solr
+        $.get({
+            url: fullUrl,
+            datatype: edge ? edge.datatype : "jsonp",
+            success: (data) => es.querySuccess(success)(data),
+            error: (xhr, status, err) => es.queryError(error)(xhr, status, err)
+        });
+    }
+
+    // Method to convert es query to Solr query
+    _es2solr({ query }) {
+        const solrQuery = {};
+        let solrFacets = []
+
+        // Handle the query part
+        if (query.query) {
+            const queryPart = query.query;
+            if (queryPart.match) {
+                const field = Object.keys(queryPart.match)[0];
+                const value = queryPart.match[field];
+                solrQuery.q = `${field}:${value}`;
+            } else if (queryPart.range) {
+                const field = Object.keys(queryPart.range)[0];
+                const range = queryPart.range[field];
+                const rangeQuery = `${field}:[${range.gte || '*'} TO ${range.lte || '*'}]`;
+                solrQuery.fq = rangeQuery;
+            } else if (queryPart.match_all) {
+                solrQuery.q = `*:*`;
+            }
+        } else {
+            solrQuery.q = `*:*`;
+        }
+
+        // Handle pagination
+        if (query.from !== undefined) {
+            if (typeof query.from == "boolean" && !query.from) {
+                solrQuery.start = 0
+            } else {
+                solrQuery.start = query.from;
+            }
+        }
+        if (query.size !== undefined) {
+            if (typeof query.size == "boolean" && !query.size) {
+                solrQuery.rows = 10
+            } else {
+                solrQuery.rows = query.size;
+            }
+
+        }
+
+        // Handle sorting
+        if (query.sort.length > 0) {
+            solrQuery.sort = query.sort.map(sortOption => {
+                const sortField = sortOption.field;
+                const sortOrder = sortOption.order === "desc" ? "desc" : "asc";
+                return `${sortField} ${sortOrder}`;
+            }).join(', ');
+        }
+
+        if (query.aggs.length > 0) {
+            let facets = query.aggs.map(agg => this._convertAggToFacet(agg));
+            solrQuery.factes = facets.join(',');
+        }
+
+        solrQuery.wt = "json"
+        console.log(solrQuery)
+        return solrQuery;
+    }
+
+    _args2URL({ baseUrl, args }) {
+        const qParts = Object.keys(args).flatMap(k => {
+            const v = args[k];
+            if (Array.isArray(v)) {
+                return v.map(item => `${encodeURIComponent(k)}=${encodeURIComponent(item)}`);
+            }
+            return `${encodeURIComponent(k)}=${encodeURIComponent(v)}`;
+        });
+
+        const qs = qParts.join("&");
+        return `${baseUrl}?${qs}`;
+    }
+
+    _convertAggToFacet(agg) {
+        const field = agg.field;
+        const name = agg.name;
+        const size = agg.size || 10; // default size if not specified
+        const order = agg.orderBy === "_count" ? "count" : "index"; // mapping orderBy to Solr
+        const direction = agg.orderDir === "desc" ? "desc" : "asc"; // default direction if not specified
+
+        return `facet.field={!key=${name}}${field}&f.${field}.facet.limit=${size}&f.${field}.facet.sort=${order} ${direction}`;
+    }
+}
+
 //////////////////////////////////////////////////////////////////
 // utilities
 
