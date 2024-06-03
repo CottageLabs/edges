@@ -1,0 +1,18 @@
+{
+  "name": "edges",
+  "version": "1.0.0",
+  "description": "TODO",
+  "main": "src/edges.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "NODE_ENV=production node esbuild.config.js",
+    "build:dev": "NODE_ENV=development node esbuild.config.js",
+    "build:prod": "NODE_ENV=production node esbuild.config.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "esbuild": "^0.21.4",
+    "esbuild-plugin-scss": "^1.0.0"
+  }
+}
