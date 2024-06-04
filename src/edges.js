@@ -846,8 +846,8 @@ edges.es.SolrQueryAdapter = class extends edges.QueryAdapter {
         $.get({
             url: fullUrl,
             datatype: edge ? edge.datatype : "jsonp",
-            success: (data) => es.querySuccess(success)(data),
-            error: (xhr, status, err) => es.queryError(error)(xhr, status, err)
+            success: (data) => this._querySuccess(success)(data),
+            error: (xhr, status, err) => this._queryError(error)(xhr, status, err)
         });
     }
 
@@ -893,7 +893,7 @@ edges.es.SolrQueryAdapter = class extends edges.QueryAdapter {
         }
 
         // Handle sorting
-        if (query.sort.length > 0) {
+        if (query && query.sort.length > 0) {
             solrQuery.sort = query.sort.map(sortOption => {
                 const sortField = sortOption.field;
                 const sortOrder = sortOption.order === "desc" ? "desc" : "asc";
@@ -901,13 +901,13 @@ edges.es.SolrQueryAdapter = class extends edges.QueryAdapter {
             }).join(', ');
         }
 
-        if (query.aggs.length > 0) {
+        if (query && query.aggs.length > 0) {
             let facets = query.aggs.map(agg => this._convertAggToFacet(agg));
             solrQuery.factes = facets.join(',');
         }
 
         solrQuery.wt = "json"
-        console.log(solrQuery)
+
         return solrQuery;
     }
 
@@ -932,6 +932,28 @@ edges.es.SolrQueryAdapter = class extends edges.QueryAdapter {
         const direction = agg.orderDir === "desc" ? "desc" : "asc"; // default direction if not specified
 
         return `facet.field={!key=${name}}${field}&f.${field}.facet.limit=${size}&f.${field}.facet.sort=${order} ${direction}`;
+    }
+
+    _querySuccess(callback, error_callback) {
+        return function(data) {
+            if (data.hasOwnProperty("error")) {
+                error_callback(data);
+                return;
+            }
+
+            var result = new es.Result({raw: data});
+            callback(result);
+        }
+    }
+
+    _queryError(callback) {
+        return function(data) {
+            if (callback) {
+                callback(data);
+            } else {
+                throw new Error(data);
+            }
+        }
     }
 }
 
