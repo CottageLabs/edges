@@ -106,6 +106,7 @@ $.extend(edges, {
 
             // extract all the filter values that pertain to this selector
             var filters = this.edge.currentQuery.listMust(es.newTermFilter({field: this.field}));
+            this._translatePrepare(filters.map((v) => v.value));
             for (var i = 0; i < filters.length; i++) {
                 var val = filters[i].value;
                 if (this.filterToAggValue) {
@@ -136,6 +137,8 @@ $.extend(edges, {
             if (this.excludePreDefinedFilters && this.edge.baseQuery) {
                 predefined = this.edge.baseQuery.listMust(es.TermFilter({field: this.field}));
             }
+
+            this._translatePrepare(buckets.map((v) => v.key));
 
             var realCount = 0;
             for (var i = 0; i < buckets.length; i++) {
@@ -341,6 +344,12 @@ $.extend(edges, {
             }
             return term;
         };
+
+        this._translatePrepare = function(records) {
+            if (this.valueFunction && this.valueFunction.hasOwnProperty('prepareMap')) {
+                return this.valueFunction.prepareMap(records);
+            }
+        }
     },
 
     newORTermSelector : function(params) {
