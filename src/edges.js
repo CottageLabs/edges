@@ -964,7 +964,7 @@ edges.es.SolrQueryAdapter = class extends edges.QueryAdapter {
 // Result class for solr
 class SolrResult {
     constructor(params) {
-        this.data = params.raw;
+        this.data = JSON.parse(params.raw);
     }
 
     buckets(facet_name) {
@@ -1002,6 +1002,7 @@ class SolrResult {
                 res.push(this.data.response.docs[i]);
             }
         }
+
         return res;
     }
 
