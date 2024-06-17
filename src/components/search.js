@@ -626,7 +626,6 @@ $.extend(edges, {
 
         this._synchronise_term = function (filter) {
             var display = this.fieldDisplays[filter.field] || filter.field;
-            this._translatePrepare([filter.value]);
 
             // multiple term filters mean AND, so group them together here
             if (filter.field in this.mustFilters) {
@@ -647,7 +646,6 @@ $.extend(edges, {
         this._synchronise_terms = function (filter) {
             var display = this.fieldDisplays[filter.field] || filter.field;
             var values = [];
-            this._translatePrepare(filter.values);
             for (var i = 0; i < filter.values.length; i++) {
                 var v = filter.values[i];
                 var d = this._translate(filter.field, v);
@@ -692,15 +690,6 @@ $.extend(edges, {
                 values: values
             }
         };
-
-        this._translatePrepare = function(records) {
-            for (var field in this.valueFunctions) {
-                var valueFunction = this.valueFunctions[field];
-                if (valueFunction && valueFunction.hasOwnProperty('prepareMap')) {
-                    valueFunction.prepareMap(records);
-                }
-            }
-        }
 
         this._translate = function (field, value) {
             if (field in this.valueMaps) {
