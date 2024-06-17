@@ -38,6 +38,7 @@ $.extend(true, edges, {
             this.tooltip = edges.getParam(params.tooltip, false);
             this.tooltipState = "closed";
 
+            this.noDisplayEscape = edges.getParam(params.noDisplayEscape, false);
             // namespace to use in the page
             this.namespace = "edges-bs3-refiningand-term-selector";
 
@@ -86,13 +87,17 @@ $.extend(true, edges, {
                     // render each value, if it is not also a filter that has been set
                     for (var i = 0; i < ts.values.length; i++) {
                         var val = ts.values[i];
+                        var valDisplay = val.display;
+                        if (!this.noDisplayEscape) {
+                            valDisplay = edges.escapeHtml(val.display);
+                        }
                         if ($.inArray(val.term.toString(), filterTerms) === -1) {   // the toString() helps us normalise other values, such as integers
                             var count = val.count;
                             if (this.countFormat) {
                                 count = this.countFormat(count)
                             }
                             results += '<div class="' + resultClass + '"><a href="#" class="' + valClass + '" data-key="' + edges.escapeHtml(val.term) + '">' +
-                                edges.escapeHtml(val.display) + "</a> (" + count + ")</div>";
+                                valDisplay + "</a> (" + count + ")</div>";
                         }
                     }
                 }
@@ -125,7 +130,11 @@ $.extend(true, edges, {
                 if (ts.filters.length > 0 && this.showSelected) {
                     for (var i = 0; i < ts.filters.length; i++) {
                         var filt = ts.filters[i];
-                        filterFrag += '<div class="' + resultClass + '"><strong>' + edges.escapeHtml(filt.display) + "&nbsp;";
+                        var valDisplay = val.display;
+                        if (!this.noDisplayEscape) {
+                            valDisplay = edges.escapeHtml(val.display);
+                        }
+                        filterFrag += '<div class="' + resultClass + '"><strong>' + valDisplay + "&nbsp;";
                         filterFrag += '<a href="#" class="' + filterRemoveClass + '" data-key="' + edges.escapeHtml(filt.term) + '">';
                         filterFrag += '<i class="glyphicon glyphicon-black glyphicon-remove"></i></a>';
                         filterFrag += "</strong></a></div>";
