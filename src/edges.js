@@ -817,6 +817,203 @@ edges.es.ESQueryAdapter = class extends edges.QueryAdapter {
     };
 }
 
+// Solr query adapter
+edges.es.SolrQueryAdapter = class extends edges.QueryAdapter {
+    doQuery(params) {
+        var edge = params.edge;
+        var query = params.query;
+        var success = params.success;
+        var error = params.error;
+
+        if (!query) {
+            query = edge.currentQuery;
+        }
+
+        const args = this._es2solr({ query : query });
+
+        // Execute the Solr query
+        this._solrQuery({ edge, success, error, solrArgs: args });
+    };
+
+    // Method to execute the Solr query
+    _solrQuery({ solrArgs, edge, success, error }) {
+        const searchUrl = edge.searchUrl;
+
+        // Generate the Solr query URL
+        const fullUrl = this._args2URL({ baseUrl: searchUrl, args: solrArgs });
+  
+        var error_callback = this._queryError(error);
+        var success_callback = this._querySuccess(success, error_callback);
+
+        // Perform the HTTP GET request to Solr
+        $.get({
+            url: fullUrl,
+            datatype: edge ? edge.datatype : "jsonp",
+            success: success_callback,
+            error: error_callback,
+            jsonp: 'json.wrf'
+        });
+    }
+
+    // Method to convert es query to Solr query
+    _es2solr({ query }) {
+        const solrQuery = {};
+        let solrFacets = []
+
+        // Handle the query part
+        if (query.query) {
+            const queryPart = query.query;
+            if (queryPart.match) {
+                const field = Object.keys(queryPart.match)[0];
+                const value = queryPart.match[field];
+                solrQuery.q = `${field}:${value}`;
+            } else if (queryPart.range) {
+                const field = Object.keys(queryPart.range)[0];
+                const range = queryPart.range[field];
+                const rangeQuery = `${field}:[${range.gte || '*'} TO ${range.lte || '*'}]`;
+                solrQuery.fq = rangeQuery;
+            } else if (queryPart.match_all) {
+                solrQuery.q = `*:*`;
+            }
+        } else {
+            solrQuery.q = `*:*`;
+        }
+
+        // Handle pagination
+        if (query.from !== undefined) {
+            if (typeof query.from == "boolean" && !query.from) {
+                solrQuery.start = 0
+            } else {
+                solrQuery.start = query.from;
+            }
+        }
+        if (query.size !== undefined) {
+            if (typeof query.size == "boolean" && !query.size) {
+                solrQuery.rows = 10
+            } else {
+                solrQuery.rows = query.size;
+            }
+
+        }
+
+        // Handle sorting
+        if (query && query.sort.length > 0) {
+            solrQuery.sort = query.sort.map(sortOption => {
+                const sortField = sortOption.field;
+                const sortOrder = sortOption.order === "desc" ? "desc" : "asc";
+                return `${sortField} ${sortOrder}`;
+            }).join(', ');
+        }
+
+        if (query && query.aggs.length > 0) {
+            let facets = query.aggs.map(agg => this._convertAggToFacet(agg));
+            solrQuery.factes = facets.join(',');
+        }
+
+        solrQuery.wt = "json"
+
+        return solrQuery;
+    }
+
+    _args2URL({ baseUrl, args }) {
+        const qParts = Object.keys(args).flatMap(k => {
+            const v = args[k];
+            if (Array.isArray(v)) {
+                return v.map(item => `${encodeURIComponent(k)}=${encodeURIComponent(item)}`);
+            }
+            return `${encodeURIComponent(k)}=${encodeURIComponent(v)}`;
+        });
+
+        const qs = qParts.join("&");
+        return `${baseUrl}?${qs}`;
+    }
+
+    _convertAggToFacet(agg) {
+        const field = agg.field;
+        const name = agg.name;
+        const size = agg.size || 10; // default size if not specified
+        const order = agg.orderBy === "_count" ? "count" : "index"; // mapping orderBy to Solr
+        const direction = agg.orderDir === "desc" ? "desc" : "asc"; // default direction if not specified
+
+        return `facet.field={!key=${name}}${field}&f.${field}.facet.limit=${size}&f.${field}.facet.sort=${order} ${direction}`;
+    }
+
+    _querySuccess(callback, error_callback) {
+        return function(data) {
+            if (data.hasOwnProperty("error")) {
+                error_callback(data);
+                return;
+            }
+
+            var result = new SolrResult({raw: data});
+            callback(result);
+        }
+    }
+
+    _queryError(callback) {
+        return function(data) {
+            if (callback) {
+                callback(data);
+            } else {
+                throw new Error(data);
+            }
+        }
+    }
+}
+
+// Result class for solr
+class SolrResult {
+    constructor(params) {
+        this.data = JSON.parse(params.raw);
+    }
+
+    buckets(facet_name) {
+        if (this.data.facet_counts) {
+            if (this.data.facet_counts.facet_fields && this.data.facet_counts.facet_fields[facet_name]) {
+                return this._convertFacetToBuckets(this.data.facet_counts.facet_fields[facet_name]);
+            } else if (this.data.facet_counts.facet_queries && this.data.facet_counts.facet_queries[facet_name]) {
+                return this._convertFacetToBuckets(this.data.facet_counts.facet_queries[facet_name]);
+            }
+        }
+        return [];
+    }
+
+    _convertFacetToBuckets(facet) {
+        let buckets = [];
+        for (let i = 0; i < facet.length; i += 2) {
+            buckets.push({
+                key: facet[i],
+                doc_count: facet[i + 1]
+            });
+        }
+        return buckets;
+    }
+
+    aggregation(facet_name) {
+        return {
+            buckets: this.buckets(facet_name)
+        };
+    }
+
+    results() {
+        var res = [];
+        if (this.data.response && this.data.response.docs) {
+            for (var i = 0; i < this.data.response.docs.length; i++) {
+                res.push(this.data.response.docs[i]);
+            }
+        }
+
+        return res;
+    }
+
+    total() {
+        if (this.data.response && this.data.response.numFound !== undefined) {
+            return parseInt(this.data.response.numFound);
+        }
+        return false;
+    }
+}
+
 //////////////////////////////////////////////////////////////////
 // utilities
 
