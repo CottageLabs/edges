@@ -829,10 +829,18 @@ edges.es.SolrQueryAdapter = class extends edges.QueryAdapter {
             query = edge.currentQuery;
         }
 
-        const args = this._es2solr({ query : query });
+        es.doQuery({
+            search_url: edge.searchUrl,
+            query: query,
+            datatype: edge.datatype,
+            success: success,
+            error: error
+        })
 
-        // Execute the Solr query
-        this._solrQuery({ edge, success, error, solrArgs: args });
+        // const args = this._es2solr({ query : query });
+
+        // // Execute the Solr query
+        // this._solrQuery({ edge, success, error, solrArgs: args });
     };
 
     // Method to execute the Solr query
@@ -897,7 +905,7 @@ edges.es.SolrQueryAdapter = class extends edges.QueryAdapter {
         }
 
         // Handle sorting
-        if (query && query.sort.length > 0) {
+        if (query && query.sort &&  query.sort.length > 0) {
             solrQuery.sort = query.sort.map(sortOption => {
                 const sortField = sortOption.field;
                 const sortOrder = sortOption.order === "desc" ? "desc" : "asc";
@@ -905,7 +913,7 @@ edges.es.SolrQueryAdapter = class extends edges.QueryAdapter {
             }).join(', ');
         }
 
-        if (query && query.aggs.length > 0) {
+        if (query && query.aggs && query.aggs.length > 0) {
             let facets = query.aggs.map(agg => this._convertAggToFacet(agg));
             solrQuery.factes = facets.join(',');
         }
@@ -945,7 +953,7 @@ edges.es.SolrQueryAdapter = class extends edges.QueryAdapter {
                 return;
             }
 
-            var result = new SolrResult({raw: data});
+            var result = new es.Result({raw: data});
             callback(result);
         }
     }
