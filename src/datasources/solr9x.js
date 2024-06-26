@@ -1196,8 +1196,13 @@ function _es2solr({ query }) {
 	}
 
 	if (query && query.aggs && query.aggs.length > 0) {
-		let facets = query.aggs.map(agg => this._convertAggToFacet(agg));
-		solrQuery.factes = facets.join(',');
+		let facetsFields = query.aggs.map(agg => this._convertAggFieldToFacetField(agg));
+        query.aggs.forEach(agg => {
+            _convertAggLimitToFacetLimit(agg, solrQuery);
+            _convertAggSortToFacetSort(agg, solrQuery);
+        });
+        solrQuery.facet = true
+        solrQuery["facet.field"] = facetsFields.join(",")
 	}
 
 	solrQuery.wt = "json"
@@ -1218,12 +1223,24 @@ function  _args2URL({ baseUrl, args }) {
 	return `${baseUrl}?${qs}`;
 }
 
-function  _convertAggToFacet(agg) {
+function _convertAggFieldToFacetField(agg) {
 	const field = agg.field;
 	const name = agg.name;
-	const size = agg.size || 10; // default size if not specified
-	const order = agg.orderBy === "_count" ? "count" : "index"; // mapping orderBy to Solr
-	const direction = agg.orderDir === "desc" ? "desc" : "asc"; // default direction if not specified
 
-	return `facet.field={!key=${name}}${field}&f.${field}.facet.limit=${size}&f.${field}.facet.sort=${order} ${direction}`;
+	return `{!key=${name}}${field}`;
+}   
+
+function _convertAggLimitToFacetLimit(agg , solrQuery) {
+    const size = agg.size || 10; 	// default size if not specified
+    const field = agg.field;
+
+    solrQuery[`f.${field}.facet.limit`] = size
+}
+
+function _convertAggSortToFacetSort(agg , solrQuery) {
+    const order = agg.orderBy === "_count" ? "count" : "index"; // mapping orderBy to Solr
+	const direction = agg.orderDir === "desc" ? "desc" : "asc"; // default direction if not specified
+    const field = agg.field;
+
+    solrQuery[`f.${field}.facet.sort`] = `${order}|${direction}`
 }
