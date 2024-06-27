@@ -97,41 +97,39 @@ es.Filter = class {
     parse() {}
 };
 
+
+// Define the Query class
 es.Query = class {
     constructor(params) {
-        if (!params) { params = {}}
-        // properties that can be set directly
-        this.filtered = false;  // this is no longer present in es5.x+
-        this.trackTotalHits = true;   // FIXME: hard code this for the moment, we can introduce the ability to vary it later
+        if (!params) { params = {}; }
 
-        this.size = this.getParam(params.size, false);
-        this.from = this.getParam(params.from, false);
-        this.fields = this.getParam(params.fields, []);
-        this.aggs = this.getParam(params.aggs, []);
-        this.must = this.getParam(params.must, []);
-        this.mustNot = this.getParam(params.mustNot, []);
-        this.should = this.getParam(params.should, []);
-        this.minimumShouldMatch = this.getParam(params.minimumShouldMatch, false);
+        // Properties initialization
+        this.filtered = false;  // no longer present in ES 5.x+
+        this.trackTotalHits = true;  // FIXME: hard code this for now
 
-        // defaults from properties that will be set through their setters
+        // Initialize with default values or from params
+        this.size = es.getParam(params.size, false);
+        this.from = es.getParam(params.from, false);
+        this.fields = es.getParam(params.fields, []);
+        this.aggs = es.getParam(params.aggs, []);
+        this.must = es.getParam(params.must, []);
+        this.mustNot = es.getParam(params.mustNot, []);
+        this.should = es.getParam(params.should, []);
+        this.minimumShouldMatch = es.getParam(params.minimumShouldMatch, false);
+
+        // Defaults from properties set through their setters
         this.queryString = false;
         this.sort = [];
 
-        // ones that we haven't used yet, so are awaiting implementation
-        // NOTE: once we implement these, they also need to be considered in merge()
-        this.source = this.getParam(params.source, false);
-        this.partialFields = this.getParam(params.partialField, false);
-        this.scriptFields = this.getParam(params.scriptFields, false);
-        this.partialFields = this.getParam(params.partialFields, false);
-        this.scriptFields = this.getParam(params.scriptFields, false);
+        // Properties awaiting implementation
+        this.source = es.getParam(params.source, false);
+        this.partialFields = es.getParam(params.partialFields, false); // using partialFields instead of partialField
+        this.scriptFields = es.getParam(params.scriptFields, false);
 
-        // for old versions of ES, so are not necessarily going to be implemented
-        this.facets = this.getParam(params.facets, []);
+        // For older ES versions, may not be implemented
+        this.facets = es.getParam(params.facets, []);
 
-        ///////////////////////////////////////////////////////////
-        // final part of construction - set the dynamic properties
-        // via their setters
-
+        // Final part of construction - set dynamic properties via their setters
         if (params.queryString) {
             this.setQueryString(params.queryString);
         }
@@ -140,43 +138,34 @@ es.Query = class {
             this.setSortBy(params.sort);
         }
 
-        // finally, if we're given a raw query, parse it
+        // Parse raw query if provided
         if (params.raw) {
-            this.parse(params.raw)
+            this.parse(params.raw);
         }
     }
 
-    getParam(param, defaultValue) {
-        return param !== undefined ? param : defaultValue;
-    }
-
+    // Getters and Setters
     getSize() {
-        if (this.size !== undefined && this.size !== false) {
-            return this.size;
-        }
-        return 10;
+        return this.size !== undefined && this.size !== false ? this.size : 10;
     }
 
     getFrom() {
-        if (this.from) {
-            return this.from
-        }
-        return 0;
+        return this.from || 0;
     }
 
     addField(field) {
-        if (this.fields.indexOf(field) === -1) {
+        if (!this.fields.includes(field)) {
             this.fields.push(field);
         }
     }
 
     setQueryString(params) {
-        var qs = params;
+        let qs = params;
         if (!(params instanceof es.QueryString)) {
-            if (typeof params === 'object') {
+            if ($.isPlainObject(params)) {
                 qs = new es.QueryString(params);
             } else {
-                qs = new es.QueryString({queryString: params});
+                qs = new es.QueryString({ queryString: params });
             }
         }
         this.queryString = qs;
@@ -191,63 +180,27 @@ es.Query = class {
     }
 
     setSortBy(params) {
-        // overwrite anything that was there before
         this.sort = [];
-        // ensure we have a list of sort options
-        var sorts = params;
-        if (!Array.isArray(params)) {
-            sorts = [params]
-        }
-        // add each one
-        for (var i = 0; i < sorts.length; i++) {
-            this.addSortBy(sorts[i]);
-        }
+        let sorts = Array.isArray(params) ? params : [params];
+        sorts.forEach(sort => this.addSortBy(sort));
     }
 
     addSortBy(params) {
-        // ensure we have an instance of es.Sort
-        var sort = params;
-        if (!(params instanceof es.Sort)) {
-            sort = new es.Sort(params);
+        let sort = params instanceof es.Sort ? params : new es.Sort(params);
+        if (!this.sort.some(existingSort => existingSort.field === sort.field)) {
+            this.sort.push(sort);
         }
-        // prevent repeated sort options being added
-        for (var i = 0; i < this.sort.length; i++) {
-            var so = this.sort[i];
-            if (so.field === sort.field) {
-                return;
-            }
-        }
-        // add the sort option
-        this.sort.push(sort);
     }
 
     prependSortBy(params) {
-        // ensure we have an instance of es.Sort
-        var sort = params;
-        if (!(params instanceof es.Sort)) {
-            sort = new es.Sort(params);
-        }
+        let sort = params instanceof es.Sort ? params : new es.Sort(params);
         this.removeSortBy(sort);
         this.sort.unshift(sort);
     }
 
     removeSortBy(params) {
-        // ensure we have an instance of es.Sort
-        var sort = params;
-        if (!(params instanceof es.Sort)) {
-            sort = new es.Sort(params);
-        }
-        var removes = [];
-        for (var i = 0; i < this.sort.length; i++) {
-            var so = this.sort[i];
-            if (so.field === sort.field) {
-                removes.push(i);
-            }
-        }
-        removes = removes.sort().reverse();
-        for (var i = 0; i < removes.length; i++) {
-            this.sort.splice(removes[i], 1);
-        }
+        let sort = params instanceof es.Sort ? params : new es.Sort(params);
+        this.sort = this.sort.filter(existingSort => existingSort.field !== sort.field);
     }
 
     getSortBy() {
@@ -255,9 +208,7 @@ es.Query = class {
     }
 
     setSourceFilters(params) {
-        if (!this.source) {
-            this.source = {include: [], exclude: []};
-        }
+        this.source = this.source || { include: [], exclude: [] };
         if (params.include) {
             this.source.include = params.include;
         }
@@ -267,73 +218,37 @@ es.Query = class {
     }
 
     addSourceFilters(params) {
-        if (!this.source) {
-            this.source = {include: [], exclude: []};
-        }
+        this.source = this.source || { include: [], exclude: [] };
         if (params.include) {
-            if (this.source.include) {
-                Array.prototype.push.apply(this.source.include, params.include);
-            } else {
-                this.source.include = params.include;
-            }
+            this.source.include.push(...params.include);
         }
         if (params.exclude) {
-            if (this.source.include) {
-                Array.prototype.push.apply(this.source.include, params.include);
-            } else {
-                this.source.include = params.include;
-            }
+            this.source.exclude.push(...params.exclude);
         }
     }
 
     getSourceIncludes() {
-        if (!this.source) {
-            return [];
-        }
-        return this.source.include;
+        return this.source && this.source.include ? this.source.include : [];
     }
 
     getSourceExcludes() {
-        if (!this.source) {
-            return [];
-        }
-        return this.source.exclude;
-    };
+        return this.source && this.source.exclude ? this.source.exclude : [];
+    }
 
+    // Aggregation Methods
     getAggregation(params) {
-        var name = params.name;
-        for (var i = 0; i < this.aggs.length; i++) {
-            var a = this.aggs[i];
-            if (a.name === name) {
-                return a;
-            }
-        }
+        return this.aggs.find(agg => agg.name === params.name);
     }
 
     addAggregation(agg, overwrite) {
         if (overwrite) {
             this.removeAggregation(agg.name);
-        } else {
-            for (var i = 0; i < this.aggs.length; i++) {
-                if (this.aggs[i].name === agg.name) {
-                    return;
-                }
-            }
         }
         this.aggs.push(agg);
     }
 
     removeAggregation(name) {
-        var removes = [];
-        for (var i = 0; i < this.aggs.length; i++) {
-            if (this.aggs[i].name === name) {
-                removes.push(i);
-            }
-        }
-        removes = removes.sort().reverse();
-        for (var i = 0; i < removes.length; i++) {
-            this.aggs.splice(removes[i], 1);
-        }
+        this.aggs = this.aggs.filter(agg => agg.name !== name);
     }
 
     clearAggregations() {
@@ -344,31 +259,27 @@ es.Query = class {
         return this.aggs;
     }
 
+    // Filter Methods
     addMust(filter) {
-        var existing = this.listMust(filter);
-        if (existing.length === 0) {
+        if (!this.listMust().some(existingFilter => existingFilter.matches(filter))) {
             this.must.push(filter);
         }
     }
 
-    listMust(template) {
-        return this.listFilters({boolType: "must", template: template});
+    listMust() {
+        return this.must;
     }
 
     removeMust(template) {
-        var removes = [];
-        for (var i = 0; i < this.must.length; i++) {
-            var m = this.must[i];
-            if (m.matches(template)) {
-                removes.push(i);
+        let removedCount = 0;
+        this.must = this.must.filter(filter => {
+            const matches = filter.matches(template);
+            if (matches) {
+                removedCount++;
             }
-        }
-        removes = removes.sort().reverse();
-        for (var i = 0; i < removes.length; i++) {
-            this.must.splice(removes[i], 1);
-        }
-        // return the count of filters that were removed
-        return removes.length;
+            return !matches;
+        });
+        return removedCount;
     }
 
     clearMust() {
@@ -376,30 +287,25 @@ es.Query = class {
     }
 
     addMustNot(filter) {
-        var existing = this.listMustNot(filter);
-        if (existing.length === 0) {
+        if (!this.listMustNot().some(existingFilter => existingFilter.matches(filter))) {
             this.mustNot.push(filter);
         }
     }
 
-    listMustNot(template) {
-        return this.listFilters({boolType: "must_not", template: template});
+    listMustNot() {
+        return this.mustNot;
     }
 
     removeMustNot(template) {
-        var removes = [];
-        for (var i = 0; i < this.mustNot.length; i++) {
-            var m = this.mustNot[i];
-            if (m.matches(template)) {
-                removes.push(i);
+        let removedCount = 0;
+        this.mustNot = this.mustNot.filter(filter => {
+            const matches = filter.matches(template);
+            if (matches) {
+                removedCount++;
             }
-        }
-        removes = removes.sort().reverse();
-        for (var i = 0; i < removes.length; i++) {
-            this.mustNot.splice(removes[i], 1);
-        }
-        // return the count of filters that were removed
-        return removes.length;
+            return !matches;
+        });
+        return removedCount;
     }
 
     clearMustNot() {
@@ -407,279 +313,178 @@ es.Query = class {
     }
 
     addShould(filter) {
-        var existing = this.listShould(filter);
-        if (existing.length === 0) {
+        if (!this.listShould().some(existingFilter => existingFilter.matches(filter))) {
             this.should.push(filter);
         }
     }
 
-    listShould(template) {
-        return this.listFilters({boolType: "should", template: template});
+    listShould() {
+        return this.should;
     }
 
     removeShould(template) {
-        var removes = [];
-        for (var i = 0; i < this.should.length; i++) {
-            var m = this.should[i];
-            if (m.matches(template)) {
-                removes.push(i);
+        let removedCount = 0;
+        this.should = this.should.filter(filter => {
+            const matches = filter.matches(template);
+            if (matches) {
+                removedCount++;
             }
-        }
-        removes = removes.sort().reverse();
-        for (var i = 0; i < removes.length; i++) {
-            this.should.splice(removes[i], 1);
-        }
-        // return the count of filters that were removed
-        return removes.length;
+            return !matches;
+        });
+        return removedCount;
     }
 
     clearShould() {
         this.should = [];
     }
 
-    setMinimumShouldMatch(val) {
-        this.minimumShouldMatch = val;
-    }
-
-    getMinimumShouldMatch() {
-        return this.minimumShouldMatch;
+    // Interrogative Methods
+    hasFilters() {
+        return this.must.length > 0 || this.should.length > 0 || this.mustNot.length > 0;
     }
 
     listFilters(params) {
-        var boolType = params.boolType;
-        var template = params.template;
-        var filters = [];
-        var source;
-        if (boolType === "must") {
-            source = this.must;
-        } else if (boolType === "must_not") {
-            source = this.mustNot;
-        } else if (boolType === "should") {
-            source = this.should;
-        }
-        for (var i = 0; i < source.length; i++) {
-            var f = source[i];
-            if (f.matches(template)) {
-                filters.push(f);
-            }
-        }
-        return filters;
-    }
-
-    getFilters() {
-        var filters = [];
-        for (var i = 0; i < this.must.length; i++) {
-            filters.push(this.must[i]);
-        }
-        for (var i = 0; i < this.mustNot.length; i++) {
-            filters.push(this.mustNot[i]);
-        }
-        for (var i = 0; i < this.should.length; i++) {
-            filters.push(this.should[i]);
-        }
-        return filters;
-    }
-
-    hasFilters() {
-        if (this.must.length > 0 || this.mustNot.length > 0 || this.should.length > 0) {
-            return true;
-        }
-        return false;
-    }
-
-    parse(raw) {
-        var parsed = JSON.parse(raw);
-        // re-initialise
-        this.must = [];
-        this.mustNot = [];
-        this.should = [];
-        this.minimumShouldMatch = false;
-        // and then apply
-        this.apply(parsed);
-    }
-
-    apply(parsed) {
-        if (parsed.size !== undefined) {
-            this.size = parsed.size;
-        }
-        if (parsed.from !== undefined) {
-            this.from = parsed.from;
-        }
-        if (parsed.track_total_hits !== undefined) {
-            this.trackTotalHits = parsed.track_total_hits;
-        }
-        if (parsed._source) {
-            this.setSourceFilters(parsed._source);
-        }
-        if (parsed.fields) {
-            this.fields = parsed.fields;
-        }
-        if (parsed.sort) {
-            this.setSortBy(parsed.sort);
-        }
-        if (parsed.aggs) {
-            for (var a in parsed.aggs) {
-                this.addAggregation(new es.Aggregation({name: a, raw: parsed.aggs[a]}));
-            }
-        }
-        if (parsed.query) {
-            if (parsed.query.query_string) {
-                this.setQueryString(parsed.query.query_string);
-            }
-            if (parsed.query.bool) {
-                if (parsed.query.bool.must) {
-                    for (var i = 0; i < parsed.query.bool.must.length; i++) {
-                        this.addMust(new es.Filter({raw: parsed.query.bool.must[i]}));
-                    }
-                }
-                if (parsed.query.bool.must_not) {
-                    for (var i = 0; i < parsed.query.bool.must_not.length; i++) {
-                        this.addMustNot(new es.Filter({raw: parsed.query.bool.must_not[i]}));
-                    }
-                }
-                if (parsed.query.bool.should) {
-                    for (var i = 0; i < parsed.query.bool.should.length; i++) {
-                        this.addShould(new es.Filter({raw: parsed.query.bool.should[i]}));
-                    }
-                }
-                if (parsed.query.bool.minimum_should_match) {
-                    this.setMinimumShouldMatch(parsed.query.bool.minimum_should_match);
-                }
-            }
+        const { boolType, template } = params;
+        switch (boolType) {
+            case 'must':
+                return this.listMust().filter(filter => filter.matches(template));
+            case 'should':
+                return this.listShould().filter(filter => filter.matches(template));
+            case 'must_not':
+                return this.listMustNot().filter(filter => filter.matches(template));
+            default:
+                return [];
         }
     }
 
-    export() {
-        var exported = {
-            // see https://www.elastic.co/guide/en/elasticsearch/reference/current/paginate-search-results.html
-            size: this.size || 10,
-            from: this.from || 0,
-            track_total_hits: this.trackTotalHits,
-            query: {},
-            aggs: {},
-            _source: {},
-            sort: []
-        };
-        if (this.getSourceIncludes().length > 0 || this.getSourceExcludes().length > 0) {
-            exported._source = {
-                includes: this.getSourceIncludes(),
-                excludes: this.getSourceExcludes()
-            };
+    // Parsing and Serialization
+    merge(source) {
+        this.filtered = source.filtered;
+        if (source.size) {
+            this.size = source.size;
         }
-        if (this.fields.length > 0) {
-            exported.fields = this.fields;
+        if (source.from) {
+            this.from = source.from;
         }
-        if (this.sort.length > 0) {
-            for (var i = 0; i < this.sort.length; i++) {
-                exported.sort.push(this.sort[i].export());
-            }
-        } else {
-            delete exported.sort;
+        if (source.fields && source.fields.length > 0) {
+            source.fields.forEach(field => this.addField(field));
         }
-        var filters = this.getFilters();
-        if (filters.length > 0) {
-            exported.query.bool = {};
+        source.aggs.forEach(agg => this.addAggregation(agg, true));
+        source.must.forEach(filter => this.addMust(filter));
+        source.mustNot.forEach(filter => this.addMustNot(filter));
+        source.should.forEach(filter => this.addShould(filter));
+        if (source.minimumShouldMatch !== false) {
+            this.minimumShouldMatch = source.minimumShouldMatch;
+        }
+        if (source.getQueryString()) {
+            this.setQueryString(source.getQueryString());
+        }
+        if (source.sort && source.sort.length > 0) {
+            source.sort.reverse().forEach(sort => this.prependSortBy(sort));
+        }
+        if (source.source) {
+            this.addSourceFilters({ include: source.getSourceIncludes(), exclude: source.getSourceExcludes() });
+        }
+    }
+
+    objectify(params) {
+        params = params || {};
+        const {
+            include_query_string = true,
+            include_filters = true,
+            include_paging = true,
+            include_sort = true,
+            include_fields = true,
+            include_aggregations = true,
+            include_source_filters = true
+        } = params;
+
+        const query_part = {};
+        const bool = {};
+
+        if (this.queryString && include_query_string) {
+            Object.assign(query_part, this.queryString.objectify());
+        }
+
+        if (include_filters) {
             if (this.must.length > 0) {
-                exported.query.bool.must = [];
-                for (var i = 0; i < this.must.length; i++) {
-                    exported.query.bool.must.push(this.must[i].export());
-                }
+                bool.must = this.must.map(filter => filter.objectify());
             }
             if (this.mustNot.length > 0) {
-                exported.query.bool.must_not = [];
-                for (var i = 0; i < this.mustNot.length; i++) {
-                    exported.query.bool.must_not.push(this.mustNot[i].export());
-                }
+                bool.must_not = this.mustNot.map(filter => filter.objectify());
             }
             if (this.should.length > 0) {
-                exported.query.bool.should = [];
-                for (var i = 0; i < this.should.length; i++) {
-                    exported.query.bool.should.push(this.should[i].export());
-                }
+                bool.should = this.should.map(filter => filter.objectify());
             }
-            if (this.minimumShouldMatch) {
-                exported.query.bool.minimum_should_match = this.minimumShouldMatch;
+            if (this.minimumShouldMatch !== false) {
+                bool.minimum_should_match = this.minimumShouldMatch;
             }
-        } else if (this.queryString) {
-            exported.query = {
-                query_string: this.queryString.export()
-            };
-        } else {
-            exported.query = {
-                match_all: {}
-            };
         }
-        for (var i = 0; i < this.aggs.length; i++) {
-            var agg = this.aggs[i];
-            var inner = {};
-            inner[agg.type] = {};
-            if (agg.field) {
-                inner[agg.type].field = agg.field;
-            }
-            if (agg.script) {
-                inner[agg.type].script = agg.script;
-            }
-            if (agg.size) {
-                inner[agg.type].size = agg.size;
-            }
-            if (agg.interval) {
-                inner[agg.type].interval = agg.interval;
-            }
-            exported.aggs[agg.name] = inner;
+
+        if (Object.keys(query_part).length === 0 && Object.keys(bool).length === 0) {
+            query_part.match_all = {};
+        } else if (Object.keys(query_part).length === 0 && Object.keys(bool).length > 0) {
+            query_part.bool = bool;
         }
-        // if we haven't added any aggs, remove the aggs key
-        if (Object.keys(exported.aggs).length === 0) {
-            delete exported.aggs;
+
+        const obj = {
+            query: query_part
+        };
+
+        if (include_paging) {
+            obj.from = this.getFrom();
+            obj.size = this.getSize();
         }
-        // remove the _source key if it wasn't populated
-        if (Object.keys(exported._source).length === 0) {
-            delete exported._source;
+
+        if (include_sort && this.sort.length > 0) {
+            obj.sort = this.sort.map(sort => sort.objectify());
         }
-        return JSON.stringify(exported, null, 4);
+
+        if (include_fields && this.fields.length > 0) {
+            obj.fields = this.fields.slice(); // Shallow copy of fields array
+        }
+
+        if (include_aggregations && this.aggs.length > 0) {
+            obj.aggs = this.aggs.map(agg => agg.objectify());
+        }
+
+        if (include_source_filters && this.source) {
+            obj._source = {};
+            if (this.source.include && this.source.include.length > 0) {
+                obj._source.includes = this.source.include.slice(); // Shallow copy of include array
+            }
+            if (this.source.exclude && this.source.exclude.length > 0) {
+                obj._source.excludes = this.source.exclude.slice(); // Shallow copy of exclude array
+            }
+        }
+
+        return obj;
     }
 
-    merge(q) {
-        // size / limit
-        if (q.size) {
-            this.size = q.size;
-        }
-        // from / offset
-        if (q.from) {
-            this.from = q.from;
-        }
-        // fields
-        for (var i = 0; i < q.fields.length; i++) {
-            this.addField(q.fields[i]);
-        }
-        // aggregations
-        for (var i = 0; i < q.aggs.length; i++) {
-            this.addAggregation(q.aggs[i]);
-        }
-        // musts
-        for (var i = 0; i < q.must.length; i++) {
-            this.addMust(q.must[i]);
-        }
-        // must nots
-        for (var i = 0; i < q.mustNot.length; i++) {
-            this.addMustNot(q.mustNot[i]);
-        }
-        // shoulds
-        for (var i = 0; i < q.should.length; i++) {
-            this.addShould(q.should[i]);
-        }
-        if (q.minimumShouldMatch) {
-            this.setMinimumShouldMatch(q.minimumShouldMatch);
-        }
-        // sort
-        for (var i = 0; i < q.sort.length; i++) {
-            this.addSortBy(q.sort[i]);
-        }
-        // query string
-        if (q.queryString) {
-            this.setQueryString(q.queryString);
-        }
+    clone() {
+        const cloneParams = {
+            size: this.size,
+            from: this.from,
+            fields: [...this.fields], // Shallow copy of fields array
+            aggs: this.aggs.map(agg => ({ ...agg })), // Shallow copy of aggs array
+            must: this.must.map(filter => ({ ...filter })), // Shallow copy of must array
+            mustNot: this.mustNot.map(filter => ({ ...filter })), // Shallow copy of mustNot array
+            should: this.should.map(filter => ({ ...filter })), // Shallow copy of should array
+            minimumShouldMatch: this.minimumShouldMatch,
+            queryString: this.queryString ? { ...this.queryString } : null, // Shallow copy of queryString if present
+            sort: this.sort.map(sort => ({ ...sort })), // Shallow copy of sort array
+            source: this.source ? {
+                include: [...this.source.include], // Shallow copy of include array
+                exclude: [...this.source.exclude] // Shallow copy of exclude array
+            } : null,
+            partialFields: this.partialFields,
+            scriptFields: this.scriptFields
+            // Add any other properties that need to be cloned
+        };
+
+        return new es.Query(cloneParams);
     }
-};
+}
 
 es.QueryString = class {
     constructor(params) {
@@ -698,8 +503,8 @@ es.QueryString = class {
     }
 
     objectify() {
-        var qs = this._escape(this._fuzzify(this.queryString));
-        var obj = {q: qs};
+        const qs = this._escape(this._fuzzify(this.queryString));
+        const obj = { q: qs };
         if (this.defaultOperator) {
             obj["q.op"] = this.defaultOperator;
         }
@@ -707,6 +512,18 @@ es.QueryString = class {
             obj["df"] = this.defaultField;
         }
         return obj;
+    }
+
+    clone() {
+        return new es.QueryString({
+            queryString: this.queryString,
+            defaultField: this.defaultField,
+            defaultOperator: this.defaultOperator,
+            fuzzify: this.fuzzify,
+            escapeSet: this.escapeSet.slice(), // Shallow copy of escapeSet array
+            pairs: this.pairs.slice(), // Shallow copy of pairs array
+            unEscapeSet: this.unEscapeSet.slice() // Shallow copy of unEscapeSet array
+        });
     }
 
     parse(obj) {
@@ -726,71 +543,65 @@ es.QueryString = class {
             return str;
         }
 
-        if (!(str.indexOf('*') === -1 && str.indexOf('~') === -1 && str.indexOf(':') === -1)) {
+        if (!(str.includes('*') || str.includes('~') || str.includes(':'))) {
             return str;
         }
 
-        var pq = "";
-        var optparts = str.split(' ');
-        for (var i = 0; i < optparts.length; i++) {
-            var oip = optparts[i];
+        let pq = "";
+        const optparts = str.split(' ');
+        for (let i = 0; i < optparts.length; i++) {
+            let oip = optparts[i];
             if (oip.length > 0) {
-                oip = oip + this.fuzzify;
-                this.fuzzify === "*" ? oip = "*" + oip : false;
+                oip += this.fuzzify;
+                if (this.fuzzify === "*") {
+                    oip = "*" + oip;
+                }
                 pq += oip + " ";
             }
         }
-        return pq;
-    };
+        return pq.trim();
+    }
 
     _escapeRegExp(string) {
         return string.replace(/([.*+?^=!:${}()|\[\]\/\\])/g, "\\$1");
-    };
+    }
 
     _replaceAll(string, find, replace) {
         return string.replace(new RegExp(this._escapeRegExp(find), 'g'), replace);
-    };
+    }
 
     _unReplaceAll(string, find) {
-        return string.replace(new RegExp("\\\\(" + this._escapeRegExp(find) + ")", 'g'), "$1");
-    };
+        return string.replace(new RegExp("\\\\" + this._escapeRegExp(find), 'g'), find);
+    }
 
     _paired(string, pair) {
-        var matches = (string.match(new RegExp(this._escapeRegExp(pair), "g"))) || [];
+        const matches = (string.match(new RegExp(this._escapeRegExp(pair), "g"))) || [];
         return matches.length % 2 === 0;
-    };
+    }
 
     _escape(str) {
-        // make a copy of the special characters (we may modify it in a moment)
-        var scs = this.escapeSet.slice(0);
-
-        // first check for pairs, and push any extra characters to be escaped
-        for (var i = 0; i < this.pairs.length; i++) {
-            var char = this.pairs[i];
+        let scs = this.escapeSet.slice(); // Make a copy of escapeSet
+        for (let i = 0; i < this.pairs.length; i++) {
+            const char = this.pairs[i];
             if (!this._paired(str, char)) {
                 scs.push(char);
             }
         }
-
-        // now do the escape
-        for (var i = 0; i < scs.length; i++) {
-            var char = scs[i];
+        for (let i = 0; i < scs.length; i++) {
+            const char = scs[i];
             str = this._replaceAll(str, char, "\\" + char);
         }
-
         return str;
-    };
+    }
 
     _unescape(str) {
-        for (var i = 0; i < this.unEscapeSet.length; i++) {
-            var char = this.unEscapeSet[i];
-            str = this._unReplaceAll(str, char)
+        for (let i = 0; i < this.unEscapeSet.length; i++) {
+            const char = this.unEscapeSet[i];
+            str = this._unReplaceAll(str, char);
         }
         return str;
-    };
-}
-
-
+    }
+};
 
 // Factories
 es.aggregationFactory = function(type, params) {
@@ -1051,7 +862,6 @@ es.doQuery = (params) => {
 	const { success, error, complete, search_url, query, datatype } = params;
 	
 	const solrArgs = this._es2solr({ query : query });
-
 	const searchUrl = search_url;
 	// Generate the Solr query URL
 	const fullUrl = this._args2URL({ baseUrl: searchUrl, args: solrArgs });
@@ -1195,6 +1005,29 @@ function _es2solr({ query }) {
 		}).join(', ');
 	}
 
+    if (query.queryString && query.queryString.queryString) {
+        const esQueryString = query.queryString.queryString;
+        const searchField = query.queryString.defaultField;
+        let operator = query.queryString.defaultOperator;
+
+        if(typeof esQueryString == 'boolean') {
+            throw new Error('Search string needs to be string got boolean');
+        }
+
+        if (operator == '') {
+            operator = "OR"
+        }
+
+        if (esQueryString != "") {
+            if (typeof searchField == 'boolean') {
+                solrQuery.q = `${solrQuery.q} ${operator} ${esQueryString}`;
+            } else {
+                solrQuery.q = `${solrQuery.q} ${operator} ${searchField}:${esQueryString}`;
+            }
+        }
+    }
+
+
 	if (query && query.aggs && query.aggs.length > 0) {
 		let facetsFields = query.aggs.map(agg => this._convertAggFieldToFacetField(agg));
         query.aggs.forEach(agg => {
@@ -1243,4 +1076,9 @@ function _convertAggSortToFacetSort(agg , solrQuery) {
     const field = agg.field;
 
     solrQuery[`f.${field}.facet.sort`] = `${order}|${direction}`
+}
+
+
+es.getParam = function(value, def) {
+    return value !== undefined ? value : def;
 }
