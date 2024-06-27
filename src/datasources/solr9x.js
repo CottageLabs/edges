@@ -261,7 +261,9 @@ es.Query = class {
 
     // Filter Methods
     addMust(filter) {
-        if (!this.listMust().some(existingFilter => existingFilter.matches(filter))) {
+        if (!this.listMust().some(existingFilter => {
+            return Object.keys(filter).every(key => existingFilter[key] === filter[key]);
+        })) {
             this.must.push(filter);
         }
     }
@@ -273,7 +275,9 @@ es.Query = class {
     removeMust(template) {
         let removedCount = 0;
         this.must = this.must.filter(filter => {
-            const matches = filter.matches(template);
+            
+            // Check if filter values match the template values
+            const matches = Object.keys(template).every(key => filter[key] === template[key]);
             if (matches) {
                 removedCount++;
             }
@@ -281,13 +285,14 @@ es.Query = class {
         });
         return removedCount;
     }
-
     clearMust() {
         this.must = [];
     }
 
     addMustNot(filter) {
-        if (!this.listMustNot().some(existingFilter => existingFilter.matches(filter))) {
+        if (!this.listMustNot().some(existingFilter => {
+            return Object.keys(filter).every(key => existingFilter[key] === filter[key]);
+        })) {
             this.mustNot.push(filter);
         }
     }
@@ -299,7 +304,7 @@ es.Query = class {
     removeMustNot(template) {
         let removedCount = 0;
         this.mustNot = this.mustNot.filter(filter => {
-            const matches = filter.matches(template);
+            const matches = Object.keys(template).every(key => filter[key] === template[key]);
             if (matches) {
                 removedCount++;
             }
@@ -313,7 +318,9 @@ es.Query = class {
     }
 
     addShould(filter) {
-        if (!this.listShould().some(existingFilter => existingFilter.matches(filter))) {
+        if (!this.listShould().some(existingFilter => {
+            return Object.keys(filter).every(key => existingFilter[key] === filter[key]);
+        })) {
             this.should.push(filter);
         }
     }
@@ -325,7 +332,7 @@ es.Query = class {
     removeShould(template) {
         let removedCount = 0;
         this.should = this.should.filter(filter => {
-            const matches = filter.matches(template);
+            const matches = Object.keys(template).every(key => filter[key] === template[key]);
             if (matches) {
                 removedCount++;
             }
@@ -345,17 +352,21 @@ es.Query = class {
 
     listFilters(params) {
         const { boolType, template } = params;
+        const matchesTemplate = filter => {
+            return Object.keys(template).every(key => filter[key] === template[key]);
+        };
+    
         switch (boolType) {
             case 'must':
-                return this.listMust().filter(filter => filter.matches(template));
+                return this.listMust().filter(matchesTemplate);
             case 'should':
-                return this.listShould().filter(filter => filter.matches(template));
+                return this.listShould().filter(matchesTemplate);
             case 'must_not':
-                return this.listMustNot().filter(filter => filter.matches(template));
+                return this.listMustNot().filter(matchesTemplate);
             default:
                 return [];
         }
-    }
+    }    
 
     // Parsing and Serialization
     merge(source) {
@@ -865,7 +876,7 @@ es.doQuery = (params) => {
 	const searchUrl = search_url;
 	// Generate the Solr query URL
 	const fullUrl = this._args2URL({ baseUrl: searchUrl, args: solrArgs });
-
+    
 	var error_callback = es.queryError(error);
 	var success_callback = es.querySuccess(success, error_callback);
 
@@ -1027,7 +1038,6 @@ function _es2solr({ query }) {
         }
     }
 
-
 	if (query && query.aggs && query.aggs.length > 0) {
 		let facetsFields = query.aggs.map(agg => this._convertAggFieldToFacetField(agg));
         query.aggs.forEach(agg => {
@@ -1037,6 +1047,24 @@ function _es2solr({ query }) {
         solrQuery.facet = true
         solrQuery["facet.field"] = facetsFields.join(",")
 	}
+
+    if(query && query.must && query.must.length > 0) {
+        query.must.forEach(mustQuery => {
+            solrQuery.q = `${mustQuery.field}:${mustQuery.value}`
+        });
+    }
+
+    if(query && query.mustNot && query.mustNot.length > 0) {
+        query.mustNot.forEach(mustNotq => {
+            solrQuery.q = `-${mustNotq.field}:${mustNotq.value}`
+        });
+    }
+
+    if(query && query.should && query.should.length > 0) {
+        query.should.forEach(shouldQ => {
+            solrQuery.q = `(${shouldQ.field}:${shouldQ.value})^1.0`
+        });
+    }
 
 	solrQuery.wt = "json"
 
