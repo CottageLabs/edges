@@ -2,6 +2,14 @@ if (!window.hasOwnProperty("es")) { es = {}}
 
 // request method to be used throughout.  Set this before using the module if you want it different
 es.requestMethod = "get";
+es.distanceUnits = ["km", "mi", "miles", "in", "inch", "yd", "yards", "kilometers", "mm", "millimeters", "cm", "centimeters", "m", "meters"];
+
+es.specialChars = ["\\", "+", "-", "=", "&&", "||", ">", "<", "!", "(", ")", "{", "}", "[", "]", "^", '"', "~", "*", "?", ":", "/"];
+es.characterPairs = ['"'];
+
+// the reserved special character set with * and " removed, so that users can do quote searches and wildcards
+// if they want
+es.specialCharsSubSet = ["\\", "+", "-", "=", "&&", "||", ">", "<", "!", "(", ")", "{", "}", "[", "]", "^", "~", "?", ":", "/"];
 
 // add request headers (such as Auth) if you need to
 es.requestHeaders = false;
@@ -96,6 +104,18 @@ es.Filter = class {
     objectify() {}
     parse() {}
 };
+
+es._classExtends = function(clazz, ref) {
+    if (clazz.__proto__ === null) {
+        return false;
+    }
+    if (clazz.__proto__ === ref) {
+        return true;
+    }
+    else {
+        return es._classExtends(clazz.__proto__, ref);
+    }
+}
 
 
 // Define the Query class
@@ -701,6 +721,29 @@ es.TermFilter = class extends es.Filter {
     }
 }
 
+es.ExistsFilter = class extends es.Filter {
+    static type = "exists";
+
+    constructor(params) {
+        super(params);
+
+        if (params.raw) {
+            this.parse(params.raw);
+        }
+    }
+
+    objectify() {
+        return {exists: {field: this.field}};
+    }
+
+    parse(obj) {
+        if (obj.exists) {
+            obj = obj.exists;
+        }
+        this.field = obj.field;
+    }
+}
+
 es.TermsFilter = class extends es.Filter {
     static type = "terms";
 
@@ -793,6 +836,304 @@ es.TermsFilter = class extends es.Filter {
     }
 };
 
+es.BoolFilter = class extends es.Filter {
+    static type = "bool";
+
+    constructor(params) {
+        params["field"] = "_bool"; // Set a placeholder field for the filter
+        super(params);
+
+        // For the moment, this implementation only supports must_not as it's all we need
+        this.mustNot = es.getParam(params.mustNot, []);
+
+        if (params.raw) {
+            this.parse(params.raw);
+        }
+    }
+
+    objectify() {
+        let obj = {bool: {}};
+        if (this.mustNot.length > 0) {
+            let mustNots = [];
+            for (var i = 0; i < this.mustNot.length; i++) {
+                var m = this.mustNot[i];
+                mustNots.push(m.objectify());
+            }
+            obj.bool["must_not"] = mustNots;
+        }
+        return obj;
+    }
+
+    parse(obj) {
+        if (obj.bool.must_not) {
+            for (var i = 0; i < obj.bool.must_not.length; i++) {
+                var type = Object.keys(obj.bool.must_not[i])[0];
+                var fil = es.filterFactory(type, {raw: obj.bool.must_not[i]});
+                if (fil) {
+                    this.addMustNot(fil);
+                }
+            }
+        }
+    }
+
+    addMustNot(filter) {
+        var existing = this.listMustNot(filter);
+        if (existing.length === 0) {
+            this.mustNot.push(filter);
+        }
+    }
+
+    listMustNot(template) {
+        return this.listFilters({boolType: "must_not", template: template});
+    }
+
+    listFilters(params) {
+        var boolType = params.boolType || "must";
+        var template = params.template || false;
+
+        var bool = [];
+        if (boolType === "must") {
+            bool = this.aggs; // Using `this.aggs` assuming it holds the list of aggregations in Solr context
+        } else if (boolType === "should") {
+            bool = []; // Adjust as per your Solr implementation for 'should' clauses
+        } else if (boolType === "must_not") {
+            bool = this.mustNot;
+        }
+
+        if (!template) {
+            return bool;
+        }
+        var l = [];
+        for (var i = 0; i < bool.length; i++) {
+            var m = bool[i];
+            if (m.matches(template)) {
+                l.push(m);
+            }
+        }
+        return l;
+    }
+}
+
+es.RangeFilter = class extends es.Filter {
+    static type = "range";
+
+    constructor(params) {
+        super(params);
+
+        // Field handled by superclass
+        this.lt = es.getParam(params.lt, false);
+        this.lte = es.getParam(params.lte, false);
+        this.gte = es.getParam(params.gte, false);
+        this.format = es.getParam(params.format, false);
+
+        // Normalize the values to strings
+        if (this.lt !== false) {
+            this.lt = this.lt.toString();
+        }
+        if (this.lte !== false) {
+            this.lte = this.lte.toString();
+        }
+        if (this.gte !== false) {
+            this.gte = this.gte.toString();
+        }
+
+        if (params.raw) {
+            this.parse(params.raw);
+        }
+    }
+
+    matches(other) {
+        // Ask the parent object first
+        let pm = super.matches(other);
+        if (!pm) {
+            return false;
+        }
+
+        // Ranges (if set) must match
+        if (other.lt !== undefined) {
+            if (other.lt.toString() !== this.lt) {
+                return false;
+            }
+        }
+        if (other.lte !== undefined) {
+            if (other.lte.toString() !== this.lte) {
+                return false;
+            }
+        }
+        if (other.gte !== undefined) {
+            if (other.gte.toString() !== this.gte) {
+                return false;
+            }
+        }
+
+        if (other.format !== undefined) {
+            if (other.format !== this.format) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    objectify() {
+        var obj = {range: {}};
+        obj.range[this.field] = {};
+        if (this.lte !== false) {
+            obj.range[this.field]["lte"] = this.lte;
+        }
+        if (this.lt !== false && this.lte === false) {
+            obj.range[this.field]["lt"] = this.lt;
+        }
+        if (this.gte !== false) {
+            obj.range[this.field]["gte"] = this.gte;
+        }
+        if (this.format !== false) {
+            obj.range[this.field]["format"] = this.format;
+        }
+        return obj;
+    }
+
+    parse(obj) {
+        if (obj.range) {
+            obj = obj.range;
+        }
+        this.field = Object.keys(obj)[0];
+        if (obj[this.field].lte !== undefined) {
+            this.lte = obj[this.field].lte.toString();
+        }
+        if (obj[this.field].lt !== undefined) {
+            this.lt = obj[this.field].lt.toString();
+        }
+        if (obj[this.field].gte !== undefined) {
+            this.gte = obj[this.field].gte.toString();
+        }
+        if (obj[this.field].format !== undefined) {
+            this.format = obj[this.field].format;
+        }
+    }
+}
+
+es.GeoDistanceRangeFilter = class extends es.Filter {
+    static type = "geo_distance_range";
+
+    constructor(params) {
+        super(params);
+
+        // Field is handled by superclass
+        this.lt = params.lt || false;
+        this.gte = params.gte || false;
+        this.lat = params.lat || false;
+        this.lon = params.lon || false;
+        this.unit = params.unit || "m";
+
+        if (params.raw) {
+            this.parse(params.raw);
+        }
+    }
+
+    objectify() {
+        var obj = {geo_distance_range: {}};
+        obj.geo_distance_range[this.field] = {lat: this.lat, lon: this.lon};
+        if (this.lt) {
+            obj.geo_distance_range[this.field]["lt"] = this.lt + this.unit;
+        }
+        if (this.gte) {
+            obj.geo_distance_range[this.field]["gte"] = this.gte + this.unit;
+        }
+        return obj;
+    }
+
+    parse(obj) {
+        function endsWith(str, suffix) {
+            return str.indexOf(suffix, str.length - suffix.length) !== -1;
+        }
+
+        function splitUnits(str) {
+            var unit = false;
+            for (var i = 0; i < es.distanceUnits.length; i++) {
+                var cu = es.distanceUnits[i];
+                if (endsWith(str, cu)) {
+                    str = str.substring(0, str.length - cu.length);
+                    unit = cu; // Solr uses full unit name directly
+                    break;
+                }
+            }
+            return [str, unit];
+        }
+
+        if (obj.geo_distance_range) {
+            obj = obj.geo_distance_range;
+        }
+        this.field = Object.keys(obj)[0];
+        this.lat = obj[this.field].lat;
+        this.lon = obj[this.field].lon;
+
+        var lt = obj[this.field].lt;
+        var gte = obj[this.field].gte;
+
+        if (lt) {
+            lt = lt.trim();
+            var parts = splitUnits(lt);
+            this.lt = parts[0];
+            this.unit = parts[1];
+        }
+
+        if (gte) {
+            gte = gte.trim();
+            var parts = splitUnits(gte);
+            this.gte = parts[0];
+            this.unit = parts[1];
+        }
+    }
+}
+
+es.GeoBoundingBoxFilter = class extends es.Filter {
+    static type = "geo_bounding_box";
+
+    constructor(params) {
+        super(params);
+        this.top_left = params.top_left || false;
+        this.bottom_right = params.bottom_right || false;
+
+        if (params.raw) {
+            this.parse(params.raw);
+        }
+    }
+
+    matches(other) {
+        // Ask the parent object first
+        let pm = super.matches(other);
+        if (!pm) {
+            return false;
+        }
+        if (other.top_left && other.top_left !== this.top_left) {
+            return false;
+        }
+        if (other.bottom_right && other.bottom_right !== this.bottom_right) {
+            return false;
+        }
+        return true;
+    }
+
+    objectify() {
+        var obj = {geo_bounding_box: {}};
+        obj.geo_bounding_box[this.field] = {
+            top_left: this.top_left,
+            bottom_right: this.bottom_right
+        };
+        return obj;
+    }
+
+    parse(obj) {
+        if (obj.geo_bounding_box) {
+            obj = obj.geo_bounding_box;
+        }
+        this.field = Object.keys(obj)[0];
+        this.top_left = obj[this.field].top_left;
+        this.bottom_right = obj[this.field].bottom_right;
+    }
+}
+
 
 //  Aggregation extended classes starts here
 es.TermsAggregation = class extends es.Aggregation {
@@ -867,7 +1208,233 @@ es.TermsAggregation = class extends es.Aggregation {
     }
 };
 
+es.CardinalityAggregation = class extends es.Aggregation {
+    static type = "cardinality";
 
+    constructor(params) {
+        super(params);
+        this.field = es.getParam(params.field, false);
+
+        if (params.raw) {
+            this.parse(params.raw);
+        }
+    }
+
+    objectify() {
+        var body = {field: this.field};
+        return this._make_aggregation(es.CardinalityAggregation.type, body);
+    }
+
+    parse(obj) {
+        var body = this._parse_wrapper(obj, es.CardinalityAggregation.type);
+        this.field = body.field;
+    }
+}
+
+es.RangeAggregation = class extends es.Aggregation {
+    static type = "range";
+
+    constructor(params) {
+        super(params);
+        this.field = params.field || false;
+        this.ranges = params.ranges || [];
+
+        if (params.raw) {
+            this.parse(params.raw);
+        }
+    }
+
+    objectify() {
+        var body = {field: this.field, ranges: this.ranges};
+        return this._make_aggregation(es.RangeAggregation.type, body);
+    }
+
+    parse(obj) {
+        var body = this._parse_wrapper(obj, es.RangeAggregation.type);
+        this.field = body.field;
+        this.ranges = body.ranges;
+    }
+}
+
+es.GeoDistanceAggregation = class extends es.Aggregation {
+    static type = "geo_distance";
+
+    constructor(params) {
+        super(params);
+        this.field = params.field || false;
+        this.lat = params.lat || false;
+        this.lon = params.lon || false;
+        this.unit = params.unit || "m";
+        this.distance_type = params.distance_type || "arc"; // Solr uses "arc" instead of "sloppy_arc"
+        this.ranges = params.ranges || [];
+
+        if (params.raw) {
+            this.parse(params.raw);
+        }
+    }
+
+    objectify() {
+        var body = {
+            field: this.field,
+            origin: `${this.lat},${this.lon}`, // Solr uses lat,lon as a string
+            unit: this.unit,
+            distance_type: this.distance_type,
+            ranges: this.ranges
+        };
+        return this._make_aggregation(es.GeoDistanceAggregation.type, body);
+    }
+
+    parse(obj) {
+        var body = this._parse_wrapper(obj, es.GeoDistanceAggregation.type);
+        this.field = body.field;
+
+        var origin = body.origin.split(",");
+        if (origin.length === 2) {
+            this.lat = parseFloat(origin[0]);
+            this.lon = parseFloat(origin[1]);
+        }
+
+        if (body.unit) {
+            this.unit = body.unit;
+        }
+
+        if (body.distance_type) {
+            this.distance_type = body.distance_type;
+        }
+
+        this.ranges = body.ranges;
+    }
+}
+
+es.GeohashGridAggregation = class extends es.Aggregation {
+    static type = "geohash_grid";
+
+    constructor(params) {
+        super(params);
+        this.field = params.field || false;
+        this.precision = params.precision || 3;
+
+        if (params.raw) {
+            this.parse(params.raw);
+        }
+    }
+
+    objectify() {
+        var body = {
+            field: this.field,
+            precision: this.precision
+        };
+        return this._make_aggregation(es.GeohashGridAggregation.type, body);
+    }
+
+    parse(obj) {
+        var body = this._parse_wrapper(obj, es.GeohashGridAggregation.type);
+        this.field = body.field;
+        this.precision = body.precision;
+    }
+}
+
+es.StatsAggregation = class extends es.Aggregation {
+    static type = "stats";
+
+    constructor(params) {
+        super(params);
+        this.field = params.field || false;
+        if (params.raw) {
+            this.parse(params.raw);
+        }
+    }
+
+    objectify() {
+        var body = {field: this.field};
+        return this._make_aggregation(es.StatsAggregation.type, body);
+    }
+
+    parse(obj) {
+        var body = this._parse_wrapper(obj, es.StatsAggregation.type);
+        this.field = body.field;
+    }
+}
+
+es.SumAggregation = class extends es.Aggregation {
+    static type = "sum";
+
+    constructor(params) {
+        super(params);
+        this.field = params.field || false;
+
+        if (params.raw) {
+            this.parse(params.raw);
+        }
+    }
+
+    objectify() {
+        var body = {field: this.field};
+        return this._make_aggregation(es.SumAggregation.type, body);
+    }
+
+    parse(obj) {
+        var body = this._parse_wrapper(obj, es.SumAggregation.type);
+        this.field = body.field;
+    }
+}
+
+es.DateHistogramAggregation = class extends es.Aggregation {
+    static type = "date_histogram";
+
+    constructor(params) {
+        super(params);
+        this.field = params.field || false;
+        this.interval = params.interval || "month";
+        this.format = params.format || false;
+
+        if (params.raw) {
+            this.parse(params.raw);
+        }
+    }
+
+    objectify() {
+        var body = {field: this.field, interval: this.interval};
+        if (this.format) {
+            body["format"] = this.format;
+        }
+        return this._make_aggregation(es.DateHistogramAggregation.type, body);
+    }
+
+    parse(obj) {
+        var body = this._parse_wrapper(obj, es.DateHistogramAggregation.type);
+        this.field = body.field;
+        if (body.interval) {
+            this.interval = body.interval;
+        }
+        if (body.format) {
+            this.format = body.format;
+        }
+    }
+}
+
+es.FiltersAggregation = class extends es.Aggregation {
+    static type = "filters";
+
+    constructor(params) {
+        super(params);
+        this.filters = params.filters || {};
+
+        if (params.raw) {
+            this.parse(params.raw);
+        }
+    }
+
+    objectify() {
+        var body = {filters: this.filters};
+        return this._make_aggregation(es.FiltersAggregation.type, body);
+    }
+
+    parse(obj) {
+        var body = this._parse_wrapper(obj, es.FiltersAggregation.type);
+        this.filters = body.filters;
+    }
+}
 
 es.doQuery = (params) => {
 	const { success, error, complete, search_url, query, datatype } = params;
