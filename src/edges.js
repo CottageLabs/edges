@@ -839,59 +839,6 @@ edges.es.SolrQueryAdapter = class extends edges.QueryAdapter {
     };
 }
 
-// Result class for solr
-class SolrResult {
-    constructor(params) {
-        this.data = JSON.parse(params.raw);
-    }
-
-    buckets(facet_name) {
-        if (this.data.facet_counts) {
-            if (this.data.facet_counts.facet_fields && this.data.facet_counts.facet_fields[facet_name]) {
-                return this._convertFacetToBuckets(this.data.facet_counts.facet_fields[facet_name]);
-            } else if (this.data.facet_counts.facet_queries && this.data.facet_counts.facet_queries[facet_name]) {
-                return this._convertFacetToBuckets(this.data.facet_counts.facet_queries[facet_name]);
-            }
-        }
-        return [];
-    }
-
-    _convertFacetToBuckets(facet) {
-        let buckets = [];
-        for (let i = 0; i < facet.length; i += 2) {
-            buckets.push({
-                key: facet[i],
-                doc_count: facet[i + 1]
-            });
-        }
-        return buckets;
-    }
-
-    aggregation(facet_name) {
-        return {
-            buckets: this.buckets(facet_name)
-        };
-    }
-
-    results() {
-        var res = [];
-        if (this.data.response && this.data.response.docs) {
-            for (var i = 0; i < this.data.response.docs.length; i++) {
-                res.push(this.data.response.docs[i]);
-            }
-        }
-
-        return res;
-    }
-
-    total() {
-        if (this.data.response && this.data.response.numFound !== undefined) {
-            return parseInt(this.data.response.numFound);
-        }
-        return false;
-    }
-}
-
 //////////////////////////////////////////////////////////////////
 // utilities
 
