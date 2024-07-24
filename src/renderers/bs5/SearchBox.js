@@ -19,6 +19,9 @@ edges.renderers.bs5.SearchBox = class extends edges.Renderer {
         // should the clear button be rendered
         this.clearButton = edges.util.getParam(params, "clearButton", true);
 
+        // set the label text for the search box
+        this.searchLabel = edges.util.getParam(params, "searchLabel", "Search Label");
+
         // set the placeholder text for the search box
         this.searchPlaceholder = edges.util.getParam(params, "searchPlaceholder", "Search");
 
@@ -78,11 +81,22 @@ edges.renderers.bs5.SearchBox = class extends edges.Renderer {
                     </button>';
         }
 
-        var searchBox = '<div class="' + searchClasses + '">\
-                            ' + clearFrag + field_select + '\
-                            <input type="text" id="' + textId + '" class="form-control ' + textClass + '" name="q" value="" placeholder="' + this.searchPlaceholder + '"/> \
-                            ' + searchFrag + ' \
-                </div>';
+        var searchBox = `
+        <div class=${searchClasses}>
+          ${clearFrag}
+          ${field_select}
+          <label>
+            ${this.searchLabel}
+            <input type="text" 
+              id="${textId}" 
+              class="form-control ${textClass}" 
+              name="${this.searchLabel}" 
+              value="" 
+              placeholder="${this.searchPlaceholder}" />
+          </label>
+          ${searchFrag}
+        </div>
+      `
 
         // assemble the final fragment and render it into the component's context
         var frag = '<div class="row"><div class="col-md-12">{{SEARCH}}</div></div>';
