@@ -261,6 +261,7 @@ es.Query = class {
 
     // Filter Methods
     addMust(filter) {
+        console.log("Add must" , filter)
         if (!this.listMust().some(existingFilter => {
             return Object.keys(filter).every(key => existingFilter[key] === filter[key]);
         })) {
@@ -876,7 +877,6 @@ es.doQuery = (params) => {
 	const searchUrl = search_url;
 	// Generate the Solr query URL
 	const fullUrl = this._args2URL({ baseUrl: searchUrl, args: solrArgs });
-    console.log("URK" , fullUrl)
 	var error_callback = es.queryError(error);
 	var success_callback = es.querySuccess(success, error_callback);
 
@@ -1045,13 +1045,15 @@ function _es2solr({ query }) {
         });
 
         solrQuery.facet = true
-
-        console.log("solrQuery" , solrQuery.facets)
 	}
 
     if(query && query.must && query.must.length > 0) {
         query.must.forEach(mustQuery => {
-            solrQuery.q = `${mustQuery.field}:${mustQuery.value}`
+            const term = mustQuery.term;
+            const field = Object.keys(term)[0];
+            const value = term[field];
+
+            solrQuery.q = `${field}:${value}`;
         });
     }
 
