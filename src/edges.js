@@ -28,12 +28,14 @@ var edges = {
      * @param components {Array} List of all the components that are involved in this edge
      * @param renderPacks=[edges.bs3, edges.nvd3, edges.highcharts, edges.google, edges.d3] {Array} Render packs to use to source automatically assigned rendering objects.
      Defaults to [edges.bs3, edges.nvd3, edges.highcharts, edges.google, edges.d3] */
-    newEdge : function(params) {
-        if (!params) { params = {} }
+    newEdge: function (params) {
+        if (!params) {
+            params = {}
+        }
         return new edges.Edge(params);
     },
     /** @class */
-    Edge : function(params) {
+    Edge: function (params) {
 
         /////////////////////////////////////////////
         // parameters that can be set via params arg
@@ -158,7 +160,7 @@ var edges = {
         // startup functions
 
         // at the bottom of this constructor, we'll call this function
-        this.startup = function() {
+        this.startup = function () {
             // obtain the jquery context for all our operations
             this.context = $(this.selector);
 
@@ -169,7 +171,7 @@ var edges = {
             if (this.manageUrl) {
                 var urlParams = this.getUrlParams();
                 if (this.urlQuerySource in urlParams) {
-                    this.urlQuery = es.newQuery({raw : urlParams[this.urlQuerySource]});
+                    this.urlQuery = es.newQuery({raw: urlParams[this.urlQuerySource]});
                     delete urlParams[this.urlQuerySource];
                 }
                 this.urlParams = urlParams;
@@ -195,13 +197,13 @@ var edges = {
             this.loadStaticsAsync(onward);
         };
 
-        this.startupPart2 = function() {
+        this.startupPart2 = function () {
             // FIXME: at this point we should check whether the statics all loaded correctly
             var onward = edges.objClosure(this, "startupPart3");
             this.runPreflightQueries(onward);
         };
 
-        this.startupPart3 = function() {
+        this.startupPart3 = function () {
 
             // determine whether to initialise with either the openingQuery or the urlQuery
             var requestedQuery = this.openingQuery;
@@ -230,12 +232,12 @@ var edges = {
         /////////////////////////////////////////////////////////
         // Edges lifecycle functions
 
-        this.doQuery = function() {
+        this.doQuery = function () {
             // the original doQuery has become doPrimaryQuery, so this has been aliased for this.cycle
             this.cycle();
         };
 
-        this.cycle = function() {
+        this.cycle = function () {
             // if a search is currently executing, don't do anything, else turn it on
             // FIXME: should we queue them up? - see the d3 map for an example of how to do this
             if (this.searching) {
@@ -263,12 +265,12 @@ var edges = {
             }
         };
 
-        this.cyclePart2 = function() {
+        this.cyclePart2 = function () {
             var onward = edges.objClosure(this, "cyclePart3");
             this.runSecondaryQueries(onward);
         };
 
-        this.cyclePart3 = function() {
+        this.cyclePart3 = function () {
             this.synchronise();
 
             // pre-render trigger
@@ -282,7 +284,7 @@ var edges = {
             this.searching = false;
         };
 
-        this.synchronise = function() {
+        this.synchronise = function () {
             // ask the components to synchronise themselves with the latest state
             for (var i = 0; i < this.components.length; i++) {
                 var component = this.components[i];
@@ -290,7 +292,7 @@ var edges = {
             }
         };
 
-        this.draw = function() {
+        this.draw = function () {
             for (var i = 0; i < this.components.length; i++) {
                 var component = this.components[i];
                 component.draw(this);
@@ -298,7 +300,7 @@ var edges = {
         };
 
         // reset the query to the start and re-issue the query
-        this.reset = function() {
+        this.reset = function () {
             // tell the world we're about to reset
             this.trigger("edges:pre-reset");
 
@@ -322,14 +324,14 @@ var edges = {
             this.cycle();
         };
 
-        this.sleep = function() {
+        this.sleep = function () {
             for (var i = 0; i < this.components.length; i++) {
                 var component = this.components[i];
                 component.sleep();
             }
         };
 
-        this.wake = function() {
+        this.wake = function () {
             for (var i = 0; i < this.components.length; i++) {
                 var component = this.components[i];
                 component.wake();
@@ -339,28 +341,28 @@ var edges = {
         ////////////////////////////////////////////////////
         //  functions for working with the queries
 
-        this.cloneQuery = function() {
+        this.cloneQuery = function () {
             if (this.currentQuery) {
                 return $.extend(true, {}, this.currentQuery);
             }
             return false;
         };
 
-        this.pushQuery = function(query) {
+        this.pushQuery = function (query) {
             if (this.baseQuery) {
                 query.merge(this.baseQuery);
             }
             this.currentQuery = query;
         };
 
-        this.cloneBaseQuery = function() {
+        this.cloneBaseQuery = function () {
             if (this.baseQuery) {
                 return $.extend(true, {}, this.baseQuery);
             }
             return es.newQuery();
         };
 
-        this.cloneOpeningQuery = function() {
+        this.cloneOpeningQuery = function () {
             if (this.openingQuery) {
                 return $.extend(true, {}, this.openingQuery);
             }
@@ -372,8 +374,8 @@ var edges = {
 
         // execute the query and all the associated workflow
         // FIXME: could replace this with an async group for neatness
-        this.doPrimaryQuery = function(callback) {
-            var context = {"callback" : callback};
+        this.doPrimaryQuery = function (callback) {
+            var context = {"callback": callback};
 
             this.queryAdapter.doQuery({
                 edge: this,
@@ -382,7 +384,7 @@ var edges = {
             });
         };
 
-        this.queryFail = function(params) {
+        this.queryFail = function (params) {
             var callback = params.callback;
             var response = params.response;
             this.trigger("edges:query-fail");
@@ -395,7 +397,7 @@ var edges = {
             callback();
         };
 
-        this.querySuccess = function(params) {
+        this.querySuccess = function (params) {
             this.result = params.result;
             var callback = params.callback;
 
@@ -404,7 +406,7 @@ var edges = {
             callback();
         };
 
-        this.runPreflightQueries = function(callback) {
+        this.runPreflightQueries = function (callback) {
             if (!this.preflightQueries || Object.keys(this.preflightQueries).length == 0) {
                 callback();
                 return;
@@ -422,7 +424,7 @@ var edges = {
             var that = this;
             var pg = edges.newAsyncGroup({
                 list: entries,
-                action: function(params) {
+                action: function (params) {
                     var entry = params.entry;
                     var success = params.success_callback;
                     var error = params.error_callback;
@@ -436,16 +438,16 @@ var edges = {
                     });
                 },
                 successCallbackArgs: ["result"],
-                success: function(params) {
+                success: function (params) {
                     var result = params.result;
                     var entry = params.entry;
                     that.preflightResults[entry.id] = result;
                 },
-                errorCallbackArgs : ["result"],
-                error:  function(params) {
+                errorCallbackArgs: ["result"],
+                error: function (params) {
                     that.trigger("edges:error-preflight");
                 },
-                carryOn: function() {
+                carryOn: function () {
                     that.trigger("edges:post-preflight");
                     callback();
                 }
@@ -454,7 +456,7 @@ var edges = {
             pg.process();
         };
 
-        this.runSecondaryQueries = function(callback) {
+        this.runSecondaryQueries = function (callback) {
             this.realisedSecondaryQueries = {};
             if (!this.secondaryQueries || Object.keys(this.secondaryQueries).length == 0) {
                 callback();
@@ -478,7 +480,7 @@ var edges = {
             var that = this;
             var pg = edges.newAsyncGroup({
                 list: entries,
-                action: function(params) {
+                action: function (params) {
                     var entry = params.entry;
                     var success = params.success_callback;
                     var error = params.error_callback;
@@ -492,16 +494,16 @@ var edges = {
                     });
                 },
                 successCallbackArgs: ["result"],
-                success: function(params) {
+                success: function (params) {
                     var result = params.result;
                     var entry = params.entry;
                     that.secondaryResults[entry.id] = result;
                 },
-                errorCallbackArgs : ["result"],
-                error:  function(params) {
+                errorCallbackArgs: ["result"],
+                error: function (params) {
                     // FIXME: not really sure what to do about this
                 },
-                carryOn: function() {
+                carryOn: function () {
                     callback();
                 }
             });
@@ -512,7 +514,7 @@ var edges = {
         ////////////////////////////////////////////////
         // various utility functions
 
-        this.getComponent = function(params) {
+        this.getComponent = function (params) {
             var id = params.id;
             for (var i = 0; i < this.components.length; i++) {
                 var component = this.components[i];
@@ -524,7 +526,7 @@ var edges = {
         };
 
         // return components in the requested category
-        this.category = function(cat) {
+        this.category = function (cat) {
             var comps = [];
             for (var i = 0; i < this.components.length; i++) {
                 var component = this.components[i];
@@ -535,7 +537,7 @@ var edges = {
             return comps;
         };
 
-        this.getRenderPackObject = function(oname, params) {
+        this.getRenderPackObject = function (oname, params) {
             for (var i = 0; i < this.renderPacks.length; i++) {
                 var rp = this.renderPacks[i];
                 if (rp && rp.hasOwnProperty(oname)) {
@@ -547,11 +549,11 @@ var edges = {
 
         // get the jquery object for the desired element, in the correct context
         // you should ALWAYS use this, rather than the standard jquery $ object
-        this.jq = function(selector) {
+        this.jq = function (selector) {
             return $(selector, this.context);
         };
 
-        this.trigger = function(event_name) {
+        this.trigger = function (event_name) {
             if (event_name in this.callbacks) {
                 this.callbacks[event_name](this);
             }
@@ -561,22 +563,22 @@ var edges = {
         /////////////////////////////////////////////////////
         // URL management functions
 
-        this.getUrlParams = function() {
+        this.getUrlParams = function () {
             return edges.getUrlParams();
         };
 
-        this.urlQueryArg = function(objectify_options) {
+        this.urlQueryArg = function (objectify_options) {
             if (!objectify_options) {
                 if (this.urlQueryOptions) {
                     objectify_options = this.urlQueryOptions
                 } else {
                     objectify_options = {
-                        include_query_string : true,
-                        include_filters : true,
-                        include_paging : true,
-                        include_sort : true,
-                        include_fields : false,
-                        include_aggregations : false
+                        include_query_string: true,
+                        include_filters: true,
+                        include_paging: true,
+                        include_sort: true,
+                        include_fields: false,
+                        include_aggregations: false
                     }
                 }
             }
@@ -586,17 +588,17 @@ var edges = {
             return obj;
         };
 
-        this.fullQueryArgs = function() {
+        this.fullQueryArgs = function () {
             var args = $.extend(true, {}, this.urlParams);
             $.extend(args, this.urlQueryArg());
             return args;
         };
 
-        this.fullUrlQueryString = function() {
+        this.fullUrlQueryString = function () {
             return this._makeUrlQuery(this.fullQueryArgs())
         };
 
-        this._makeUrlQuery = function(args) {
+        this._makeUrlQuery = function (args) {
             var keys = Object.keys(args);
             var entries = [];
             for (var i = 0; i < keys.length; i++) {
@@ -607,7 +609,7 @@ var edges = {
             return entries.join("&");
         };
 
-        this.fullUrl = function() {
+        this.fullUrl = function () {
             var args = this.fullQueryArgs();
             var fragment = "";
             if (args["#"]) {
@@ -620,7 +622,7 @@ var edges = {
             return url;
         };
 
-        this.updateUrl = function() {
+        this.updateUrl = function () {
             var currentQs = window.location.search;
             var qs = "?" + this.fullUrlQueryString();
 
@@ -641,7 +643,7 @@ var edges = {
         /////////////////////////////////////////////
         // static file management
 
-        this.loadStaticsAsync = function(callback) {
+        this.loadStaticsAsync = function (callback) {
             if (!this.staticFiles || this.staticFiles.length == 0) {
                 this.trigger("edges:post-load-static");
                 callback();
@@ -651,7 +653,7 @@ var edges = {
             var that = this;
             var pg = edges.newAsyncGroup({
                 list: this.staticFiles,
-                action: function(params) {
+                action: function (params) {
                     var entry = params.entry;
                     var success = params.success_callback;
                     var error = params.error_callback;
@@ -669,24 +671,24 @@ var edges = {
                     })
                 },
                 successCallbackArgs: ["data"],
-                success: function(params) {
+                success: function (params) {
                     var data = params.data;
                     var entry = params.entry;
                     if (entry.processor) {
-                        var processed = entry.processor({data : data});
+                        var processed = entry.processor({data: data});
                         that.resources[entry.id] = processed;
                         if (entry.opening) {
-                            entry.opening({resource : processed, edge: that});
+                            entry.opening({resource: processed, edge: that});
                         }
                     }
                     that.static[entry.id] = data;
                 },
-                errorCallbackArgs : ["data"],
-                error:  function(params) {
+                errorCallbackArgs: ["data"],
+                error: function (params) {
                     that.errorLoadingStatic.push(params.entry.id);
                     that.trigger("edges:error-load-static");
                 },
-                carryOn: function() {
+                carryOn: function () {
                     that.trigger("edges:post-load-static");
                     callback();
                 }
@@ -703,11 +705,13 @@ var edges = {
     //////////////////////////////////////////////////
     // Asynchronous resource loading feature
 
-    newAsyncGroup : function(params) {
-        if (!params) { params = {} }
+    newAsyncGroup: function (params) {
+        if (!params) {
+            params = {}
+        }
         return new edges.AsyncGroup(params);
     },
-    AsyncGroup : function(params) {
+    AsyncGroup: function (params) {
         this.list = params.list;
         this.successCallbackArgs = params.successCallbackArgs;
         this.errorCallbackArgs = params.errorCallbackArgs;
@@ -728,13 +732,13 @@ var edges = {
 
         this.finished = false;
 
-        this.construct = function(params) {
+        this.construct = function (params) {
             for (var i = 0; i < this.list.length; i++) {
                 this.checkList.push(0);
             }
         };
 
-        this.process = function(params) {
+        this.process = function (params) {
             if (this.list.length == 0) {
                 this.functions.carryOn();
             }
@@ -746,7 +750,8 @@ var edges = {
                 var error_callback = edges.objClosure(this, "_actionError", this.successCallbackArgs, context);
                 var complete_callback = false;
 
-                this.functions.action({entry: this.list[i],
+                this.functions.action({
+                    entry: this.list[i],
                     success_callback: success_callback,
                     error_callback: error_callback,
                     complete_callback: complete_callback
@@ -754,7 +759,7 @@ var edges = {
             }
         };
 
-        this._actionSuccess = function(params) {
+        this._actionSuccess = function (params) {
             var index = params.index;
             delete params.index;
 
@@ -767,7 +772,7 @@ var edges = {
             }
         };
 
-        this._actionError = function(params) {
+        this._actionError = function (params) {
             var index = params.index;
             delete params.index;
 
@@ -780,15 +785,15 @@ var edges = {
             }
         };
 
-        this._actionComplete = function(params) {
+        this._actionComplete = function (params) {
 
         };
 
-        this._isComplete = function() {
+        this._isComplete = function () {
             return $.inArray(0, this.checkList) === -1;
         };
 
-        this._finalise = function() {
+        this._finalise = function () {
             if (this.finished) {
                 return;
             }
@@ -803,20 +808,25 @@ var edges = {
     /////////////////////////////////////////////
     // Query adapter base class and core ES implementation
 
-    newQueryAdapter : function(params) {
-        if (!params) { params = {} }
+    newQueryAdapter: function (params) {
+        if (!params) {
+            params = {}
+        }
         return edges.instantiate(edges.QueryAdapter, params);
     },
-    QueryAdapter : function(params) {
-        this.doQuery = function(params) {};
+    QueryAdapter: function (params) {
+        this.doQuery = function (params) {
+        };
     },
 
-    newESQueryAdapter : function(params) {
-        if (!params) { params = {} }
+    newESQueryAdapter: function (params) {
+        if (!params) {
+            params = {}
+        }
         return edges.instantiate(edges.ESQueryAdapter, params);
     },
-    ESQueryAdapter : function(params) {
-        this.doQuery = function(params) {
+    ESQueryAdapter: function (params) {
+        this.doQuery = function (params) {
             var edge = params.edge;
             var query = params.query;
             var success = params.success;
@@ -839,31 +849,38 @@ var edges = {
     /////////////////////////////////////////////
     // Base classes for the various kinds of components
 
-    newRenderer : function(params) {
-        if (!params) { params = {} }
+    newRenderer: function (params) {
+        if (!params) {
+            params = {}
+        }
         return new edges.Renderer(params);
     },
-    Renderer : function(params) {
+    Renderer: function (params) {
         this.component = params.component || false;
-        this.init = function(component) {
+        this.init = function (component) {
             this.component = component
         };
-        this.draw = function(component) {};
-        this.sleep = function() {};
-        this.wake = function() {}
+        this.draw = function (component) {
+        };
+        this.sleep = function () {
+        };
+        this.wake = function () {
+        }
     },
 
-    newComponent : function(params) {
-        if (!params) { params = {} }
+    newComponent: function (params) {
+        if (!params) {
+            params = {}
+        }
         return new edges.Component(params);
     },
-    Component : function(params) {
+    Component: function (params) {
         this.id = params.id;
         this.renderer = params.renderer;
         this.category = params.category || "none";
         this.defaultRenderer = params.defaultRenderer || "newRenderer";
 
-        this.init = function(edge) {
+        this.init = function (edge) {
             // record a reference to the parent object
             this.edge = edge;
             this.context = this.edge.jq("#" + this.id);
@@ -877,39 +894,43 @@ var edges = {
             }
         };
 
-        this.draw = function() {
+        this.draw = function () {
             if (this.renderer) {
                 this.renderer.draw();
             }
         };
 
-        this.contrib = function(query) {};
-        this.synchronise = function() {};
+        this.contrib = function (query) {
+        };
+        this.synchronise = function () {
+        };
 
-        this.sleep = function() {
+        this.sleep = function () {
             if (this.renderer) {
                 this.renderer.sleep();
             }
         };
 
-        this.wake = function() {
+        this.wake = function () {
             if (this.renderer) {
                 this.renderer.wake();
             }
         };
 
         // convenience method for any renderer rendering a component
-        this.jq = function(selector) {
+        this.jq = function (selector) {
             return this.edge.jq(selector);
         }
     },
 
-    newSelector : function(params) {
-        if (!params) { params = {} }
+    newSelector: function (params) {
+        if (!params) {
+            params = {}
+        }
         edges.Selector.prototype = edges.newComponent(params);
         return new edges.Selector(params);
     },
-    Selector : function(params) {
+    Selector: function (params) {
         // field upon which to build the selector
         this.field = params.field;
 
@@ -925,56 +946,62 @@ var edges = {
         this.category = params.category || "selector";
     },
 
-    newTemplate : function(params) {
-        if (!params) { params = {} }
+    newTemplate: function (params) {
+        if (!params) {
+            params = {}
+        }
         return new edges.Template(params);
     },
-    Template : function(params) {
-        this.draw = function(edge) {}
+    Template: function (params) {
+        this.draw = function (edge) {
+        }
     },
 
-    newNestedEdge : function(params) {
-        if (!params) { params = {}}
+    newNestedEdge: function (params) {
+        if (!params) {
+            params = {}
+        }
         params.category = params.category || "edge";
         params.renderer = false;
         params.defaultRenderer = false;
         return edges.instantiate(edges.NestedEdge, params, edges.newComponent)
     },
-    NestedEdge : function(params) {
+    NestedEdge: function (params) {
         this.constructOnInit = edges.getParam(params.constructOnInit, false);
 
         this.constructArgs = edges.getParam(params.constructArgs, {});
 
         this.inner = false;
 
-        this.init = function(edge) {
+        this.init = function (edge) {
             this.edge = edge;
             if (this.constructOnInit) {
                 this.construct_and_bind();
             }
         };
 
-        this.setConstructArg = function(key, value) {
+        this.setConstructArg = function (key, value) {
             this.constructArgs[key] = value;
         };
 
-        this.getConstructArg = function(key, def) {
+        this.getConstructArg = function (key, def) {
             if (this.constructArgs.hasOwnProperty(key)) {
                 return this.constructArgs[key];
             }
             return def;
         };
 
-        this.construct_and_bind = function() {
+        this.construct_and_bind = function () {
             this.construct();
             if (this.inner) {
                 this.inner.outer = this;
             }
         };
 
-        this.construct = function() {};
+        this.construct = function () {
+        };
 
-        this.destroy = function() {
+        this.destroy = function () {
             if (this.inner) {
                 this.inner.context.empty();
                 this.inner.context.hide();
@@ -982,12 +1009,12 @@ var edges = {
             this.inner = false;
         };
 
-        this.sleep = function() {
+        this.sleep = function () {
             this.inner.sleep();
             this.inner.context.hide();
         };
 
-        this.wake = function() {
+        this.wake = function () {
             if (this.inner) {
                 this.inner.context.show();
                 this.inner.wake();
@@ -1002,8 +1029,10 @@ var edges = {
 
     // instantiate an object with the parameters and the (optional)
     // prototype
-    instantiate : function(clazz, params, protoConstructor) {
-        if (!params) { params = {} }
+    instantiate: function (clazz, params, protoConstructor) {
+        if (!params) {
+            params = {}
+        }
         if (protoConstructor) {
             clazz.prototype = protoConstructor(params);
         }
@@ -1015,7 +1044,7 @@ var edges = {
     },
 
     // call a method on the parent class
-    up : function(inst, fn, args) {
+    up: function (inst, fn, args) {
         var parent = new inst.__proto_constructor__();
         parent[fn].apply(inst, args);
     },
@@ -1043,8 +1072,8 @@ var edges = {
     // results in a call to
     // this.function({one: arg1, two: arg2})
     //
-    objClosure : function(obj, fn, args, context_params) {
-        return function() {
+    objClosure: function (obj, fn, args, context_params) {
+        return function () {
             if (args) {
                 var params = {};
                 for (var i = 0; i < args.length; i++) {
@@ -1086,11 +1115,11 @@ var edges = {
     // results in a call (only in the case that the event is a click), to
     // this.handler(element)
     //
-    eventClosure : function(obj, fn, conditional, preventDefault) {
+    eventClosure: function (obj, fn, conditional, preventDefault) {
         if (preventDefault === undefined) {
             preventDefault = true;
         }
-        return function(event) {
+        return function (event) {
             if (conditional) {
                 if (!conditional(event)) {
                     return;
@@ -1106,7 +1135,7 @@ var edges = {
     //////////////////////////////////////////////////////////////////
     // CSS normalising/canonicalisation tools
 
-    css_classes : function(namespace, field, renderer) {
+    css_classes: function (namespace, field, renderer) {
         var cl = namespace + "-" + field;
         if (renderer) {
             cl += " " + cl + "-" + renderer.component.id;
@@ -1114,7 +1143,7 @@ var edges = {
         return cl;
     },
 
-    css_class_selector : function(namespace, field, renderer) {
+    css_class_selector: function (namespace, field, renderer) {
         var sel = "." + namespace + "-" + field;
         if (renderer) {
             sel += sel + "-" + renderer.component.id;
@@ -1122,7 +1151,7 @@ var edges = {
         return sel;
     },
 
-    css_id : function(namespace, field, renderer) {
+    css_id: function (namespace, field, renderer) {
         var id = namespace + "-" + field;
         if (renderer) {
             id += "-" + renderer.component.id;
@@ -1130,14 +1159,14 @@ var edges = {
         return id;
     },
 
-    css_id_selector : function(namespace, field, renderer) {
+    css_id_selector: function (namespace, field, renderer) {
         return "#" + edges.css_id(namespace, field, renderer);
     },
 
     //////////////////////////////////////////////////////////////////
     // Event binding utilities
 
-    on : function(selector, event, caller, targetFunction, delay, conditional, preventDefault) {
+    on: function (selector, event, caller, targetFunction, delay, conditional, preventDefault) {
         if (preventDefault === undefined) {
             preventDefault = true;
         }
@@ -1180,7 +1209,7 @@ var edges = {
         }
     },
 
-    off : function(selector, event, caller) {
+    off: function (selector, event, caller) {
         // if the caller has an inner component (i.e. it is a Renderer), use the component's id
         // otherwise, if it has a namespace (which is true of Renderers or Templates) use that
         if (caller.component && caller.component.id) {
@@ -1204,7 +1233,7 @@ var edges = {
     //////////////////////////////////////////////////////////////////
     // Shared utilities
 
-    getUrlParams : function() {
+    getUrlParams: function () {
         var params = {};
         var url = window.location.href;
         var fragment = false;
@@ -1229,7 +1258,7 @@ var edges = {
                     // if it looks like a JSON object in string form...
                     // remove " (double quotes) at beginning and end of string to make it a valid
                     // representation of a JSON object, or the parser will complain
-                    val = val.replace(/^"/,"").replace(/"$/,"");
+                    val = val.replace(/^"/, "").replace(/"$/, "");
                     val = JSON.parse(val);
                 }
                 params[key] = val;
@@ -1244,7 +1273,7 @@ var edges = {
         return params;
     },
 
-    escapeHtml : function(unsafe, def) {
+    escapeHtml: function (unsafe, def) {
         if (def === undefined) {
             def = "";
         }
@@ -1261,7 +1290,7 @@ var edges = {
                 .replace(/>/g, "&gt;")
                 .replace(/"/g, "&quot;")
                 .replace(/'/g, "&#039;");
-        } catch(err) {
+        } catch (err) {
             return def;
         }
     },
@@ -1273,7 +1302,7 @@ var edges = {
      * @param path
      * @returns {boolean}
      */
-    hasProp : function(obj, path) {
+    hasProp: function (obj, path) {
         var bits = path.split(".");
         var ctx = obj;
         for (var i = 0; i < bits.length; i++) {
@@ -1293,7 +1322,7 @@ var edges = {
      * @param def
      * @returns {*}
      */
-    objVal : function(path, rec, def) {
+    objVal: function (path, rec, def) {
         if (def === undefined) {
             def = false;
         }
@@ -1320,8 +1349,10 @@ var edges = {
      * @param def
      * @returns {*}
      */
-    objVals : function(path, rec, def) {
-        if (def === undefined) { def = false; }
+    objVals: function (path, rec, def) {
+        if (def === undefined) {
+            def = false;
+        }
 
         var bits = path.split(".");
         var contexts = [rec];
@@ -1357,22 +1388,22 @@ var edges = {
         return contexts;
     },
 
-    getParam : function(value, def) {
+    getParam: function (value, def) {
         return value !== undefined ? value : def;
     },
 
-    safeId : function(unsafe) {
+    safeId: function (unsafe) {
         return unsafe.replace(/&/g, "_")
-                .replace(/</g, "_")
-                .replace(/>/g, "_")
-                .replace(/"/g, "_")
-                .replace(/'/g, "_")
-                .replace(/\./gi,'_')
-                .replace(/\:/gi,'_')
-                .replace(/\s/gi,"_");
+            .replace(/</g, "_")
+            .replace(/>/g, "_")
+            .replace(/"/g, "_")
+            .replace(/'/g, "_")
+            .replace(/\./gi, '_')
+            .replace(/\:/gi, '_')
+            .replace(/\s/gi, "_");
     },
 
-    numFormat : function(params) {
+    numFormat: function (params) {
         var reflectNonNumbers = edges.getParam(params.reflectNonNumbers, false);
         var prefix = edges.getParam(params.prefix, "");
         var zeroPadding = edges.getParam(params.zeroPadding, false);
@@ -1381,7 +1412,7 @@ var edges = {
         var decimalSeparator = edges.getParam(params.decimalSeparator, ".");
         var suffix = edges.getParam(params.suffix, "");
 
-        return function(number) {
+        return function (number) {
             // ensure this is really a number
             var num = parseFloat(number);
             if (isNaN(num)) {
@@ -1397,7 +1428,7 @@ var edges = {
             if (decimalPlaces !== false) {
                 num = num.toFixed(decimalPlaces);
             } else {
-                num  = num.toString();
+                num = num.toString();
             }
 
             // now "num" is a string containing the formatted number that we can work on
@@ -1425,10 +1456,10 @@ var edges = {
         }
     },
 
-    numParse : function(params) {
+    numParse: function (params) {
         var commaRx = new RegExp(",", "g");
 
-        return function(num) {
+        return function (num) {
             num = num.trim();
             num = num.replace(commaRx, "");
             if (num === "") {
@@ -1438,11 +1469,23 @@ var edges = {
         }
     },
 
-    isEmptyObject: function(obj) {
-        for(var key in obj) {
-            if(obj.hasOwnProperty(key))
+    isEmptyObject: function (obj) {
+        for (var key in obj) {
+            if (obj.hasOwnProperty(key))
                 return false;
         }
         return true;
+    },
+
+    error: {
+        NotImplementedError: function (params) {
+            edges.error.NotImplementedErrorInst.prototype = Object.create(Error.prototype);
+            edges.error.NotImplementedErrorInst.prototype.constructor = edges.error.NotImplementedErrorInst;
+            return edges.error.NotImplementedErrorInst.call(params);
+        },
+        NotImplementedErrorInst: function (message) {
+            this.name = 'NotImplementedError';
+            this.message = message || 'This method should be implemented by the derived class';
+        },
     }
 };
