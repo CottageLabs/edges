@@ -1143,7 +1143,7 @@ $.extend(edges, {
         return edges.instantiate(edges.TreeBrowserCore, params, edges.newComponent);
     },
 
-    newTreeBrowser: function (params) {
+    newTreeBrowser: function (params) {``
         return edges.instantiate(edges.TreeBrowserSearch, params, edges.newTreeBrowserCore);
     },
 
@@ -1165,7 +1165,6 @@ $.extend(edges, {
 
         // Common recurse function
         this.baseRecurse = function (tree, path, processNode) {
-            console.log("edges.TreeBrowserCore.baseRecurse");
             var anySelected = false;
             var childCount = 0;
 
@@ -1175,8 +1174,11 @@ $.extend(edges, {
 
                 this.parentIndex[node.value] = $.extend(true, [], path);
 
-                // Process the node with the provided function
-                processNode(node);
+                // Process the node and check if it was selected
+                var nodeSelected = processNode(node);
+                if (nodeSelected) {
+                    anySelected = true;
+                }
 
                 if (node.children) {
                     path.push(node.value);
@@ -1246,6 +1248,14 @@ $.extend(edges, {
 
         this.synchronise = function () {
             console.log("edges.TreeBrowserSearch.synchronise");
+
+            this.nodeCount = 0;
+            if (!(!this.pruneTree || (this.pruneTree && this.pruned))) {
+                this.syncTree = [];
+                this.parentIndex = {};
+                return;
+            }
+
             this.syncTree = $.extend(true, [], this.tree);
             var results = this.edge.result;
             if (!results) {
@@ -1272,10 +1282,12 @@ $.extend(edges, {
                 }
                 if (that.filterMatch(node, selected)) {
                     node.selected = true;
-                    anySelected = true;
+                    return true;  // Node is selected
                 }
                 node.index = that.nodeIndex ? that.nodeIndex(node) : node.display;
+                return false; // Node not selected
             };
+
 
             var path = [];
             this.baseRecurse(this.syncTree, path, processNode);
