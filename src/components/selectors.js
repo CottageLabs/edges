@@ -1280,11 +1280,11 @@ $.extend(edges, {
                 } else {
                     node.count = buckets[idx].doc_count;
                 }
+                node.index = that.nodeIndex ? that.nodeIndex(node) : node.display;
                 if (that.filterMatch(node, selected)) {
                     node.selected = true;
                     return true;  // Node is selected
                 }
-                node.index = that.nodeIndex ? that.nodeIndex(node) : node.display;
                 return false; // Node not selected
             };
 
