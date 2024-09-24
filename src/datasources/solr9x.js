@@ -873,7 +873,7 @@ es.TermsAggregation = class extends es.Aggregation {
 
 es.doQuery = (params) => {
 	const { success, error, complete, search_url, query, datatype } = params;
-    console.log("Query" , query)
+
 	const solrArgs = this._es2solr({ query : query });
 	const searchUrl = search_url;
 	// Generate the Solr query URL
@@ -1094,8 +1094,6 @@ function _es2solr({ query }) {
             } else {
                 solrQuery.q = `${field}:${value}`;
             }
-
-            console.log("Query" , solrQuery.q)
         });
     }
 
@@ -1121,7 +1119,6 @@ function _es2solr({ query }) {
 
 	solrQuery.wt = "json"
 
-    console.log("Returing" , solrQuery.q)
 	return solrQuery;
 }
 
