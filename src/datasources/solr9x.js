@@ -116,6 +116,8 @@ es.Query = class {
         this.mustNot = es.getParam(params.mustNot, []);
         this.should = es.getParam(params.should, []);
         this.minimumShouldMatch = es.getParam(params.minimumShouldMatch, false);
+        this.query = es.getParam(params.query, {});
+        this.queryStrings = es.getParam(params.queryStrings, []);
 
         // Defaults from properties set through their setters
         this.queryString = false;
@@ -261,7 +263,6 @@ es.Query = class {
 
     // Filter Methods
     addMust(filter) {
-        console.log("Add must" , filter)
         if (!this.listMust().some(existingFilter => {
             return Object.keys(filter).every(key => existingFilter[key] === filter[key]);
         })) {
@@ -872,7 +873,7 @@ es.TermsAggregation = class extends es.Aggregation {
 
 es.doQuery = (params) => {
 	const { success, error, complete, search_url, query, datatype } = params;
-	
+    console.log("Query" , query)
 	const solrArgs = this._es2solr({ query : query });
 	const searchUrl = search_url;
 	// Generate the Solr query URL
@@ -972,18 +973,22 @@ function _es2solr({ query }) {
 	let solrFacets = []
 
 	// Handle the query part
-	if (query.query) {
+	if (Object.entries(query.query).length > 0) {
 		const queryPart = query.query;
 		if (queryPart.match) {
 			const field = Object.keys(queryPart.match)[0];
 			const value = queryPart.match[field];
 			solrQuery.q = `${field}:${value}`;
 		} else if (queryPart.range) {
-			const field = Object.keys(queryPart.range)[0];
-			const range = queryPart.range[field];
-			const rangeQuery = `${field}:[${range.gte || '*'} TO ${range.lte || '*'}]`;
-			solrQuery.fq = rangeQuery;
-		} else if (queryPart.match_all) {
+			const fields = Object.keys(queryPart.range);
+            const rangeQueries = fields.map(field => {
+                const range = queryPart.range[field];
+                return `${field}:[${range.gte || '*'} TO ${range.lte || '*'}]`;
+            });
+            
+            // Join the range queries with OR if there are multiple
+            solrQuery.fq = rangeQueries.length > 1 ? `(${rangeQueries.join(' OR ')})` : rangeQueries[0];
+        } else if (queryPart.match_all) {
 			solrQuery.q = `*:*`;
 		}
 	} else {
@@ -1015,6 +1020,33 @@ function _es2solr({ query }) {
 			return `${sortField} ${sortOrder}`;
 		}).join(', ');
 	}
+
+    if (query.queryStrings && query.queryStrings.length > 0) {
+        query.queryStrings.forEach((query, queryIndex) => {
+            const esQueryString = query.queryString;
+            const fields = query.fields;
+        
+            if (typeof esQueryString == 'boolean') {
+                throw new Error('Search string needs to be a string, got boolean');
+            }
+        
+            if (esQueryString !== "" && Array.isArray(fields) && fields.length > 0) {
+                fields.forEach((fieldConfig, index) => {
+                    const { field, operator = "OR" } = fieldConfig;
+                    // Clearning solr query only in case of *:*
+                    if(solrQuery.q == "*:*") {
+                        solrQuery.q = ""
+                    }
+
+                    if (solrQuery.q) {
+                        solrQuery.q += ` ${operator} ${field}:${esQueryString}`;
+                    } else {
+                        solrQuery.q = `${field}:${esQueryString}`;
+                    }
+                });
+            }
+        });
+    }
 
     if (query.queryString && query.queryString.queryString) {
         const esQueryString = query.queryString.queryString;
@@ -1053,24 +1085,43 @@ function _es2solr({ query }) {
             const field = Object.keys(term)[0];
             const value = term[field];
 
-            solrQuery.q = `${field}:${value}`;
+            if(solrQuery.q == "*:*") {
+                solrQuery.q = ""
+            }
+
+            if(solrQuery.q) {
+                solrQuery.q += ` AND ${field}:${value}`;
+            } else {
+                solrQuery.q = `${field}:${value}`;
+            }
+
+            console.log("Query" , solrQuery.q)
         });
     }
 
     if(query && query.mustNot && query.mustNot.length > 0) {
         query.mustNot.forEach(mustNotq => {
-            solrQuery.q = `-${mustNotq.field}:${mustNotq.value}`
+            const term = mustQuery.term;
+            const field = Object.keys(term)[0];
+            const value = term[field];
+
+            solrQuery.q = `-${field}:${value}`
         });
     }
 
     if(query && query.should && query.should.length > 0) {
-        query.should.forEach(shouldQ => {
-            solrQuery.q = `(${shouldQ.field}:${shouldQ.value})^1.0`
+        query.should.forEach((shouldQ , index) => {
+            const term = mustQuery.term;
+            const field = Object.keys(term)[0];
+            const value = term[field];
+
+            solrQuery.q = `${field}:${value}^1.0`;
         });
     }
 
 	solrQuery.wt = "json"
 
+    console.log("Returing" , solrQuery.q)
 	return solrQuery;
 }
 
