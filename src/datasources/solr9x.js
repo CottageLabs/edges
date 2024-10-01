@@ -1023,29 +1023,44 @@ function _es2solr({ query }) {
 
     if (query.queryStrings && query.queryStrings.length > 0) {
         query.queryStrings.forEach((query, queryIndex) => {
-            const esQueryString = query.queryString;
-            const fields = query.fields;
-        
-            if (typeof esQueryString == 'boolean') {
-                throw new Error('Search string needs to be a string, got boolean');
-            }
-        
-            if (esQueryString !== "" && Array.isArray(fields) && fields.length > 0) {
-                fields.forEach((fieldConfig, index) => {
-                    const { field, operator = "OR" } = fieldConfig;
-                    // Clearning solr query only in case of *:*
-                    if(solrQuery.q == "*:*") {
-                        solrQuery.q = ""
-                    }
+        const esQueryString = query.queryString;
+        const fields = query.fields;
 
-                    if (solrQuery.q) {
-                        solrQuery.q += ` ${operator} ${field}:${esQueryString}`;
-                    } else {
-                        solrQuery.q = `${field}:${esQueryString}`;
-                    }
-                });
+        if (typeof esQueryString == 'boolean') {
+            throw new Error('Search string needs to be a string, got boolean');
+        }
+
+        if (esQueryString !== "" && Array.isArray(fields) && fields.length > 0) {
+            let queryPart = ""; // To hold the query part for this set of fields
+
+            fields.forEach((fieldConfig, index) => {
+                const { field, operator = "OR" } = fieldConfig;
+
+                // Cleaning solr query only in case of *:*
+                if (solrQuery.q == "*:*") {
+                    solrQuery.q = "";
+                }
+
+                if (queryPart) {
+                    queryPart += ` ${operator} ${field}:${esQueryString}`;
+                } else {
+                    queryPart = `${field}:${esQueryString}`;
+                }
+            });
+
+            // If there are multiple fields, wrap the query in parentheses
+            if (fields.length > 1) {
+                queryPart = `(${queryPart})`;
             }
-        });
+
+            // Append to the existing solrQuery.q
+            if (solrQuery.q) {
+                solrQuery.q += ` AND ${queryPart}`;
+            } else {
+                solrQuery.q = queryPart;
+            }
+        }
+    });
     }
 
     if (query.queryString && query.queryString.queryString) {
@@ -1072,9 +1087,9 @@ function _es2solr({ query }) {
 
 	if (query && query.aggs && query.aggs.length > 0) {
         solrQuery.facets = query.aggs.map(agg => agg.field);
-        query.aggs.forEach(agg => {
-            _covertAffLimitAndSortToFacet(agg , solrQuery);
-        });
+        // query.aggs.forEach(agg => {
+        //     _covertAffLimitAndSortToFacet(agg , solrQuery);
+        // });
 
         solrQuery.facet = true
 	}
@@ -1128,7 +1143,8 @@ function  _args2URL({ baseUrl, args }) {
 		if (Array.isArray(v)) {
 
             if (k === 'facets') {
-                return v.map(item => `facet.field=${encodeURIComponent(item)}`);
+                const result = v[0].split(',').map(item => `facet.field=${encodeURIComponent(item)}`).join('&');
+                return result
             } else {    
                 return v.map(item => `${encodeURIComponent(k)}=${encodeURIComponent(item)}`);
             }
@@ -1137,17 +1153,20 @@ function  _args2URL({ baseUrl, args }) {
 	});
 
 	const qs = qParts.join("&");
-	return `${baseUrl}?${qs}`;
+    return `${baseUrl}?${qs}`;
+    
 }
 
 function _covertAffLimitAndSortToFacet(agg , solrQuery) {
-    const field = agg.field;
+    const fields = agg.field.split(",");
     const size = agg.size || 10; 	// default size if not specified
     const order = agg.orderBy === "_count" ? "count" : "index"; // mapping orderBy to Solr
 	const direction = agg.orderDir === "desc" ? "desc" : "asc"; // default direction if not specified
-	
-    solrQuery[`f.${field}.facet.limit`] = size
-    solrQuery[`f.${field}.facet.sort`] = `${order}|${direction}`
+    
+    fields.forEach(field => {
+        solrQuery[`f.${field}.facet.limit`] = size
+        solrQuery[`f.${field}.facet.sort`] = `${order}|${direction}`
+    });
 }
 
 
