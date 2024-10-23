@@ -1168,9 +1168,17 @@ function _es2solr({ query }) {
 
   if (query && query.must && query.must.length > 0) {
     query.must.forEach((mustQuery) => {
-      const term = mustQuery.term;
-      const field = Object.keys(term)[0];
-      const value = term[field];
+      let term,
+        field,
+        value = "";
+      if (mustQuery.term) {
+        term = mustQuery.term;
+        field = Object.keys(term)[0];
+        value = term[field];
+      } else {
+        field = mustQuery.field;
+        value = mustQuery.value;
+      }
 
       if (solrQuery.q == "*:*") {
         solrQuery.q = "";
