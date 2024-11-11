@@ -957,7 +957,7 @@ es.querySuccess = function (callback, error_callback) {
       error_callback(data);
       return;
     }
-
+    console.log("Got result as", data);
     var result = new es.Result({ raw: data });
     callback(result);
   };
@@ -975,7 +975,11 @@ es.queryError = function (callback) {
 
 es.Result = class {
   constructor(params) {
-    this.data = JSON.parse(params.raw);
+    if (typeof params.raw == "string") {
+      this.data = JSON.parse(params.raw);
+    } else {
+      this.data = params.raw;
+    }
   }
 
   buckets(facet_name) {
@@ -1158,10 +1162,12 @@ function _es2solr({ query }) {
   }
 
   if (query && query.aggs && query.aggs.length > 0) {
-    solrQuery.facets = query.aggs.map((agg) => agg.field);
-    // query.aggs.forEach(agg => {
-    //     _covertAffLimitAndSortToFacet(agg , solrQuery);
-    // });
+    solrQuery.facets = query.aggs
+      .filter((agg) => {
+        // Log the field value
+        return typeof agg.field === "string" && agg.field; // Filter condition
+      })
+      .map((agg) => agg.field);
 
     solrQuery.facet = true;
   }
@@ -1222,10 +1228,10 @@ function _args2URL({ baseUrl, args }) {
     const v = args[k];
     if (Array.isArray(v)) {
       if (k === "facets") {
-        const result = v[0]
-          .split(",")
+        const result = v
           .map((item) => `facet.field=${encodeURIComponent(item)}`)
           .join("&");
+
         return result;
       } else {
         return v.map(
@@ -1240,16 +1246,14 @@ function _args2URL({ baseUrl, args }) {
   return `${baseUrl}?${qs}`;
 }
 
-function _covertAffLimitAndSortToFacet(agg, solrQuery) {
-  const fields = agg.field.split(",");
+function _convertAffLimitAndSortToFacet(agg, solrQuery) {
+  const field = agg.field;
   const size = agg.size || 10; // default size if not specified
-  const order = agg.orderBy === "_count" ? "count" : "index"; // mapping orderBy to Solr
-  const direction = agg.orderDir === "desc" ? "desc" : "asc"; // default direction if not specified
+  // const order = agg.orderBy === "_count" ? "count" : "index"; // mapping orderBy to Solr
+  // const direction = agg.orderDir === "desc" ? "desc" : "asc"; // default direction if not specified
 
-  fields.forEach((field) => {
-    solrQuery[`f.${field}.facet.limit`] = size;
-    solrQuery[`f.${field}.facet.sort`] = `${order}|${direction}`;
-  });
+  solrQuery[`f.${field}.facet.limit`] = size;
+  // solrQuery[`f.${field}.facet.sort`] = `${order}|${direction}`;
 }
 
 es.getParam = function (value, def) {
