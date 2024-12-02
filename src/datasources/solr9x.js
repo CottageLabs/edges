@@ -319,6 +319,25 @@ es.Query = class {
     });
     return removedCount;
   }
+
+  // TODO: this is a patch code update it when proper fix is added
+  removeQueryStrings(template) {
+    let removedCount = 0;
+
+    this.queryStrings = this.queryStrings.filter((queryItem) => {
+      // Check if the queryString matches the template value
+      const matches = queryItem.queryString === template.value;
+
+      if (matches) {
+        removedCount++;
+      }
+
+      return !matches;
+    });
+
+    return removedCount;
+  }
+
   clearMust() {
     this.must = [];
   }

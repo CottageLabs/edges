@@ -529,7 +529,8 @@ edges.Edge = class {
 
   updateUrl() {
     var currentQs = window.location.search;
-    var qs = "?" + this.fullUrlQueryString();
+    const urlString = this.fullUrlQueryString();
+    var qs = urlString ? `?${urlString}` : "";
 
     if (currentQs === qs) {
       return; // no need to push the state
@@ -569,24 +570,28 @@ edges.Edge = class {
   }
 
   urlQueryArg(objectify_options) {
-    if (!objectify_options) {
-      if (this.urlQueryOptions) {
-        objectify_options = this.urlQueryOptions;
-      } else {
-        objectify_options = {
-          include_query_string: true,
-          include_filters: true,
-          include_paging: true,
-          include_sort: true,
-          include_fields: false,
-          include_aggregations: false,
-        };
+    if (this.urlQuerySource) {
+      if (!objectify_options) {
+        if (this.urlQueryOptions) {
+          objectify_options = this.urlQueryOptions;
+        } else {
+          objectify_options = {
+            include_query_string: true,
+            include_filters: true,
+            include_paging: true,
+            include_sort: true,
+            include_fields: false,
+            include_aggregations: false,
+          };
+        }
       }
+      var q = JSON.stringify(this.currentQuery.objectify(objectify_options));
+      var obj = {};
+      obj[this.urlQuerySource] = encodeURIComponent(q);
+      return obj;
     }
-    var q = JSON.stringify(this.currentQuery.objectify(objectify_options));
-    var obj = {};
-    obj[this.urlQuerySource] = encodeURIComponent(q);
-    return obj;
+
+    return {};
   }
 
   _makeUrlQuery(args) {

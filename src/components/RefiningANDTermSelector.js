@@ -313,7 +313,7 @@ edges.components.RefiningANDTermSelector = class extends edges.Component {
         value: term,
       })
     );
-    console.log("got term", nq);
+
     // reset the search page to the start and then trigger the next query
     nq.from = 0;
     this.edge.pushQuery(nq);
