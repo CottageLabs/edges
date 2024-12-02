@@ -542,6 +542,9 @@ es.Query = class {
       should: this.should.map((filter) => ({ ...filter })), // Shallow copy of should array
       minimumShouldMatch: this.minimumShouldMatch,
       queryString: this.queryString ? { ...this.queryString } : null, // Shallow copy of queryString if present
+      queryStrings: this.queryStrings
+        ? this.queryStrings.map((qs) => ({ ...qs })) // Shallow copy of queryStrings array if present
+        : false, // Default to false if queryStrings is not present
       sort: this.sort.map((sort) => ({ ...sort })), // Shallow copy of sort array
       source: this.source
         ? {
@@ -957,7 +960,7 @@ es.querySuccess = function (callback, error_callback) {
       error_callback(data);
       return;
     }
-    console.log("Got result as", data);
+
     var result = new es.Result({ raw: data });
     callback(result);
   };
