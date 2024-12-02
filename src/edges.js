@@ -476,7 +476,6 @@ edges.Edge = class {
 
   cloneQuery() {
     if (this.currentQuery) {
-      console.log("Current query", this.currentQuery);
       return this.currentQuery.clone();
     }
     return false;
