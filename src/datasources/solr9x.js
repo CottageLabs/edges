@@ -482,6 +482,8 @@ es.Query = class {
       include_source_filters = true,
     } = params;
 
+    console.log(`${include_query_string} ${include_filters}`);
+
     const query_part = {};
     const bool = {};
 
@@ -546,7 +548,7 @@ es.Query = class {
         obj._source.excludes = this.source.exclude.slice(); // Shallow copy of exclude array
       }
     }
-
+    console.log("Returning obj", obj);
     return obj;
   }
 
@@ -1140,9 +1142,9 @@ function _es2solr({ query }) {
           }
 
           if (queryPart) {
-            queryPart += ` ${operator} ${field}:${esQueryString}`;
+            queryPart += ` ${operator} ${field}:"${esQueryString}"`;
           } else {
-            queryPart = `${field}:${esQueryString}`;
+            queryPart = `${field}:"${esQueryString}"`;
           }
         });
 
