@@ -573,6 +573,7 @@ es.Query = class {
             exclude: [...this.source.exclude], // Shallow copy of exclude array
           }
         : null,
+      query: this.query ? { ...this.query } : null,
       partialFields: this.partialFields,
       scriptFields: this.scriptFields,
       // Add any other properties that need to be cloned
