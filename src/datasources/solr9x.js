@@ -1143,9 +1143,17 @@ function _es2solr({ query }) {
           }
 
           if (queryPart) {
-            queryPart += ` ${operator} ${field}:"${esQueryString}"`;
+            if (esQueryString == "*") {
+              queryPart += ` ${operator} ${field}:${esQueryString}`;
+            } else {
+              queryPart += ` ${operator} ${field}:"${esQueryString}"`;
+            }
           } else {
-            queryPart = `${field}:"${esQueryString}"`;
+            if (esQueryString == "*") {
+              queryPart = `${field}:${esQueryString}`;
+            } else {
+              queryPart = `${field}:"${esQueryString}"`;
+            }
           }
         });
 
