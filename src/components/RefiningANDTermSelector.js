@@ -208,7 +208,7 @@ edges.components.RefiningANDTermSelector = class extends edges.Component {
       // we must cut off at the set size, as there may be more
       // terms that we care about
       // Adding condition to get all values.
-      if (realCount > this.size && this.size < 0) {
+      if (realCount > this.size && this.size > 0) {
         break;
       }
 
