@@ -99,7 +99,6 @@ edges.components.RefiningANDTermSelector = class extends edges.Component {
       orderDir: this.orderDir,
     };
     if (this.size) {
-      console.log("got size", this.id, this.size);
       params["size"] = this.size;
     }
     query.addAggregation(new es.TermsAggregation(params));
