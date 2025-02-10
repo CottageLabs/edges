@@ -16,6 +16,7 @@ edges.components.RefiningANDTermSelector = class extends edges.Component {
     this.field = edges.util.getParam(params, "field");
 
     // how many terms should the facet limit to
+    // Negative or zero will be treated as all values.
     this.size = edges.util.getParam(params, "size", 10);
 
     // which ordering to use term/count and asc/desc
@@ -98,6 +99,7 @@ edges.components.RefiningANDTermSelector = class extends edges.Component {
       orderDir: this.orderDir,
     };
     if (this.size) {
+      console.log("got size", this.id, this.size);
       params["size"] = this.size;
     }
     query.addAggregation(new es.TermsAggregation(params));
@@ -206,7 +208,8 @@ edges.components.RefiningANDTermSelector = class extends edges.Component {
 
       // we must cut off at the set size, as there may be more
       // terms that we care about
-      if (realCount > this.size) {
+      // Adding condition to get all values.
+      if (realCount > this.size && this.size < 0) {
         break;
       }
 
