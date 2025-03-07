@@ -1200,7 +1200,12 @@ function _es2solr({ query }) {
         // Log the field value
         return typeof agg.field === "string" && agg.field; // Filter condition
       })
-      .map((agg) => agg.field);
+      .map((agg) => {
+        return {
+          field: agg.field,
+          size: agg.size, // Include size property
+        };
+      });
 
     solrQuery.facet = true;
   }
@@ -1262,7 +1267,14 @@ function _args2URL({ baseUrl, args }) {
     if (Array.isArray(v)) {
       if (k === "facets") {
         const result = v
-          .map((item) => `facet.field=${encodeURIComponent(item)}`)
+          .map((item) => {
+            // Create the facet.field and f.<item.field>.facet.limit query parameters
+            return `facet.field=${encodeURIComponent(
+              item.field
+            )}&f.${encodeURIComponent(
+              item.field
+            )}.facet.limit=${encodeURIComponent(item.size)}`;
+          })
           .join("&");
 
         return result;
