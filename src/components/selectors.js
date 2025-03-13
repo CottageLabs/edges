@@ -3,10 +3,10 @@ $.extend(edges, {
     // Selector implementations
 
 
-    newRefiningANDTermSelector : function(params) {
+    newRefiningANDTermSelector: function (params) {
         return edges.instantiate(edges.RefiningANDTermSelector, params, edges.newSelector);
     },
-    RefiningANDTermSelector : function(params) {
+    RefiningANDTermSelector: function (params) {
         ////////////////////////////////////////////
         // configurations to be passed in
 
@@ -69,7 +69,7 @@ $.extend(edges, {
         //////////////////////////////////////////
         // overrides on the parent object's standard functions
 
-        this.init = function(edge) {
+        this.init = function (edge) {
             // first kick the request up to the superclass
             edges.up(this, "init", [edge]);
 
@@ -78,7 +78,7 @@ $.extend(edges, {
             }
         };
 
-        this.contrib = function(query) {
+        this.contrib = function (query) {
             var params = {
                 name: this.id,
                 field: this.field,
@@ -93,7 +93,7 @@ $.extend(edges, {
             );
         };
 
-        this.synchronise = function() {
+        this.synchronise = function () {
             // reset the state of the internal variables
             if (this.lifecycle === "update") {
                 // if we are in the "update" lifecycle, then reset and read all the values
@@ -117,7 +117,7 @@ $.extend(edges, {
             }
         };
 
-        this._readValues = function(params) {
+        this._readValues = function (params) {
             var result = params.result;
 
             // assign the terms and counts from the aggregation
@@ -187,7 +187,7 @@ $.extend(edges, {
         /////////////////////////////////////////////////
         // query handlers for getting the full list of terms to display
 
-        this.listAll = function() {
+        this.listAll = function () {
             // to list all possible terms, build off the base query
             var bq = this.edge.cloneBaseQuery();
             bq.clearAggregations();
@@ -214,7 +214,7 @@ $.extend(edges, {
             });
         };
 
-        this.listAllQuerySuccess = function(params) {
+        this.listAllQuerySuccess = function (params) {
             var result = params.result;
 
             // set the values according to what comes back
@@ -225,7 +225,7 @@ $.extend(edges, {
             this.draw();
         };
 
-        this.listAllQueryFail = function() {
+        this.listAllQueryFail = function () {
             this.values = [];
             console.log("RefiningANDTermSelector asynchronous query failed");
         };
@@ -233,7 +233,7 @@ $.extend(edges, {
         //////////////////////////////////////////
         // functions that can be called on this component to change its state
 
-        this.selectTerm = function(term) {
+        this.selectTerm = function (term) {
             if (this.parseSelectedValueString) {
                 term = this.parseSelectedValueString(term);
             }
@@ -266,7 +266,7 @@ $.extend(edges, {
             return true;
         };
 
-        this.removeFilter = function(term) {
+        this.removeFilter = function (term) {
             if (this.parseSelectedValueString) {
                 term = this.parseSelectedValueString(term);
             }
@@ -284,7 +284,7 @@ $.extend(edges, {
             this.edge.doQuery();
         };
 
-        this.clearFilters = function(params) {
+        this.clearFilters = function (params) {
             var triggerQuery = edges.getParam(params.triggerQuery, true);
 
             if (this.filters.length > 0) {
@@ -303,7 +303,7 @@ $.extend(edges, {
             }
         };
 
-        this.changeSize = function(newSize) {
+        this.changeSize = function (newSize) {
             this.size = newSize;
 
             var nq = this.edge.cloneQuery();
@@ -315,7 +315,7 @@ $.extend(edges, {
             this.edge.doQuery();
         };
 
-        this.changeSort = function(orderBy, orderDir) {
+        this.changeSort = function (orderBy, orderDir) {
             this.orderBy = orderBy;
             this.orderDir = orderDir;
 
@@ -331,7 +331,7 @@ $.extend(edges, {
         //////////////////////////////////////////
         // "private" functions for internal use
 
-        this._translate = function(term) {
+        this._translate = function (term) {
             if (this.valueMap) {
                 if (term in this.valueMap) {
                     return this.valueMap[term];
@@ -343,12 +343,14 @@ $.extend(edges, {
         };
     },
 
-    newORTermSelector : function(params) {
-        if (!params) { params = {} }
+    newORTermSelector: function (params) {
+        if (!params) {
+            params = {}
+        }
         edges.ORTermSelector.prototype = edges.newSelector(params);
         return new edges.ORTermSelector(params);
     },
-    ORTermSelector : function(params) {
+    ORTermSelector: function (params) {
         // whether this component updates itself on every request, or whether it is static
         // throughout its lifecycle.  One of "update" or "static"
         this.lifecycle = edges.getParam(params.lifecycle, "static");
@@ -398,7 +400,7 @@ $.extend(edges, {
 
         this.reQueryAfterListAll = false;
 
-        this.init = function(edge) {
+        this.init = function (edge) {
             // first kick the request up to the superclass
             edges.newSelector().init.call(this, edge);
 
@@ -411,7 +413,7 @@ $.extend(edges, {
             }
         };
 
-        this.synchronise = function() {
+        this.synchronise = function () {
             // reset the internal properties
             this.selected = [];
 
@@ -431,7 +433,7 @@ $.extend(edges, {
             }
         };
 
-        this._synchroniseTermsMergeInitial = function(params) {
+        this._synchroniseTermsMergeInitial = function (params) {
             var result = params.result;
 
             // mesh the terms in the aggregation with the terms in the terms list
@@ -454,7 +456,7 @@ $.extend(edges, {
             }
         };
 
-        this._synchroniseTerms = function(params) {
+        this._synchroniseTerms = function (params) {
             if (this.updateType === "mergeInitial") {
                 this._synchroniseTermsMergeInitial(params);
             } else {
@@ -462,7 +464,7 @@ $.extend(edges, {
             }
         };
 
-        this._synchroniseTermsFresh = function(params) {
+        this._synchroniseTermsFresh = function (params) {
             var result = params.result;
 
             this.terms = [];
@@ -476,7 +478,7 @@ $.extend(edges, {
         /////////////////////////////////////////////////
         // query handlers for getting the full list of terms to display
 
-        this.listAll = function() {
+        this.listAll = function () {
             // to list all possible terms, build off the base query
             var bq = this.edge.cloneBaseQuery();
             bq.clearAggregations();
@@ -503,7 +505,7 @@ $.extend(edges, {
             });
         };
 
-        this.listAllQuerySuccess = function(params) {
+        this.listAllQuerySuccess = function (params) {
             var result = params.result;
 
             // get the terms out of the aggregation
@@ -528,11 +530,11 @@ $.extend(edges, {
             }
         };
 
-        this.listAllQueryFail = function() {
+        this.listAllQueryFail = function () {
             this.terms = [];
         };
 
-        this.setupEvent = function() {
+        this.setupEvent = function () {
             if (this.lifecycle === "update") {
                 this.edge.context.on("edges:pre-query", edges.eventClosure(this, "doUpdate"));
                 // we used to do this, but no need, as when the query cycles, the event handler set above will run it anyway
@@ -540,7 +542,7 @@ $.extend(edges, {
             }
         };
 
-        this.doUpdate = function() {
+        this.doUpdate = function () {
             // is an update already happening?
             if (this.updating) {
                 return
@@ -576,7 +578,7 @@ $.extend(edges, {
             });
         };
 
-        this.doUpdateQuerySuccess = function(params) {
+        this.doUpdateQuerySuccess = function (params) {
             var result = params.result;
 
             this._synchroniseTerms({result: result});
@@ -588,7 +590,7 @@ $.extend(edges, {
             this.draw();
         };
 
-        this.doUpdateQueryFail = function() {
+        this.doUpdateQueryFail = function () {
             // just do nothing, hopefully the next request will be successful
             this.updating = false;
         };
@@ -596,7 +598,7 @@ $.extend(edges, {
         ///////////////////////////////////////////
         // state change functions
 
-        this.selectTerms = function(params) {
+        this.selectTerms = function (params) {
             var terms = params.terms;
             var clearOthers = edges.getParam(params.clearOthers, false);
 
@@ -644,11 +646,11 @@ $.extend(edges, {
             return true;
         };
 
-        this.selectTerm = function(term) {
-            return this.selectTerms({terms : [term]});
+        this.selectTerm = function (term) {
+            return this.selectTerms({terms: [term]});
         };
 
-        this.removeFilter = function(term) {
+        this.removeFilter = function (term) {
             var nq = this.edge.cloneQuery();
 
             // first find out if there was a terms filter already in place
@@ -670,7 +672,7 @@ $.extend(edges, {
             this.edge.doQuery();
         };
 
-        this.clearFilters = function(params) {
+        this.clearFilters = function (params) {
             var triggerQuery = edges.getParam(params.triggerQuery, true);
 
             if (this.selected.length > 0) {
@@ -688,7 +690,7 @@ $.extend(edges, {
         //////////////////////////////////////////
         // "private" functions for internal use
 
-        this._translate = function(term) {
+        this._translate = function (term) {
             if (this.valueMap) {
                 if (term in this.valueMap) {
                     return this.valueMap[term];
@@ -700,12 +702,14 @@ $.extend(edges, {
         };
     },
 
-    newBasicRangeSelector : function(params) {
-        if (!params) { params = {} }
+    newBasicRangeSelector: function (params) {
+        if (!params) {
+            params = {}
+        }
         edges.BasicRangeSelector.prototype = edges.newSelector(params);
         return new edges.BasicRangeSelector(params);
     },
-    BasicRangeSelector : function(params) {
+    BasicRangeSelector: function (params) {
         //////////////////////////////////////////////
         // values that can be passed in
 
@@ -733,7 +737,7 @@ $.extend(edges, {
         // {display: <display>, from: <from>, to: <to> }
         this.filters = [];
 
-        this.contrib = function(query) {
+        this.contrib = function (query) {
             var ranges = [];
             for (var i = 0; i < this.ranges.length; i++) {
                 var r = this.ranges[i];
@@ -755,7 +759,7 @@ $.extend(edges, {
             );
         };
 
-        this.synchronise = function() {
+        this.synchronise = function () {
             // reset the state of the internal variables
             this.values = [];
             this.filters = [];
@@ -791,7 +795,7 @@ $.extend(edges, {
             }
         };
 
-        this.selectRange = function(from, to) {
+        this.selectRange = function (from, to) {
             var nq = this.edge.cloneQuery();
 
             // just add a new range filter (the query builder will ensure there are no duplicates)
@@ -810,7 +814,7 @@ $.extend(edges, {
             this.edge.doQuery();
         };
 
-        this.removeFilter = function(from, to) {
+        this.removeFilter = function (from, to) {
             var nq = this.edge.cloneQuery();
 
             // just add a new range filter (the query builder will ensure there are no duplicates)
@@ -829,7 +833,7 @@ $.extend(edges, {
             this.edge.doQuery();
         };
 
-        this._getRangeDef = function(from, to) {
+        this._getRangeDef = function (from, to) {
             for (var i = 0; i < this.ranges.length; i++) {
                 var r = this.ranges[i];
                 var frMatch = true;
@@ -858,7 +862,7 @@ $.extend(edges, {
             return false;
         };
 
-        this._getRangeBucket = function(buckets, from, to) {
+        this._getRangeBucket = function (buckets, from, to) {
             for (var i = 0; i < buckets.length; i++) {
                 var r = buckets[i];
                 var frMatch = true;
@@ -885,7 +889,7 @@ $.extend(edges, {
             return false;
         };
 
-        this._formatUnknown = function(from, to) {
+        this._formatUnknown = function (from, to) {
             if (this.formatUnknown) {
                 return this.formatUnknown(from, to)
             } else {
@@ -913,12 +917,14 @@ $.extend(edges, {
         };
     },
 
-    newBasicGeoDistanceRangeSelector : function(params) {
-        if (!params) { params = {} }
+    newBasicGeoDistanceRangeSelector: function (params) {
+        if (!params) {
+            params = {}
+        }
         edges.BasicGeoDistanceRangeSelector.prototype = edges.newSelector(params);
         return new edges.BasicGeoDistanceRangeSelector(params);
     },
-    BasicGeoDistanceRangeSelector : function(params) {
+    BasicGeoDistanceRangeSelector: function (params) {
         // list of distances (in order) which define the filters
         // {"from" : <num>, "to" : <num>, "display" : "<display name>"}
         this.distances = params.distances || [];
@@ -938,18 +944,20 @@ $.extend(edges, {
 
         this.values = [];
 
-        this.synchronise = function() {
+        this.synchronise = function () {
             // reset the state of the internal variables
             this.values = [];
         };
     },
 
-    newDateHistogramSelector : function(params) {
-        if (!params) { params = {} }
+    newDateHistogramSelector: function (params) {
+        if (!params) {
+            params = {}
+        }
         edges.DateHistogramSelector.prototype = edges.newSelector(params);
         return new edges.DateHistogramSelector(params);
     },
-    DateHistogramSelector : function(params) {
+    DateHistogramSelector: function (params) {
         // "year, quarter, month, week, day, hour, minute ,second"
         // period to use for date histogram
         this.interval = params.interval || "year";
@@ -966,7 +974,7 @@ $.extend(edges, {
         this.values = [];
         this.filters = [];
 
-        this.contrib = function(query) {
+        this.contrib = function (query) {
             query.addAggregation(
                 es.newDateHistogramAggregation({
                     name: this.id,
@@ -976,7 +984,7 @@ $.extend(edges, {
             );
         };
 
-        this.synchronise = function() {
+        this.synchronise = function () {
             // reset the state of the internal variables
             this.values = [];
             this.filters = [];
@@ -989,9 +997,9 @@ $.extend(edges, {
                     if (this.displayFormatter) {
                         key = this.displayFormatter(key);
                     }
-                    var obj = {"display" : key, "gte": bucket.key, "count" : bucket.doc_count};
+                    var obj = {"display": key, "gte": bucket.key, "count": bucket.doc_count};
                     if (i < buckets.length - 1) {
-                        obj["lt"] = buckets[i+1].key;
+                        obj["lt"] = buckets[i + 1].key;
                     }
                     this.values.push(obj);
                 }
@@ -1023,7 +1031,7 @@ $.extend(edges, {
             }
         };
 
-        this.selectRange = function(params) {
+        this.selectRange = function (params) {
             var from = params.gte;
             var to = params.lt;
 
@@ -1046,7 +1054,7 @@ $.extend(edges, {
             this.edge.doQuery();
         };
 
-        this.removeFilter = function(params) {
+        this.removeFilter = function (params) {
             var from = params.gte;
             var to = params.lt;
 
@@ -1068,7 +1076,7 @@ $.extend(edges, {
             this.edge.doQuery();
         };
 
-        this.clearFilters = function(params) {
+        this.clearFilters = function (params) {
             var triggerQuery = edges.getParam(params.triggerQuery, true);
 
             var nq = this.edge.cloneQuery();
@@ -1082,19 +1090,21 @@ $.extend(edges, {
         };
     },
 
-    newAutocompleteTermSelector : function(params) {
-        if (!params) { params = {} }
+    newAutocompleteTermSelector: function (params) {
+        if (!params) {
+            params = {}
+        }
         edges.AutocompleteTermSelector.prototype = edges.newComponent(params);
         return new edges.AutocompleteTermSelector(params);
     },
-    AutocompleteTermSelector : function(params) {
+    AutocompleteTermSelector: function (params) {
         this.defaultRenderer = params.defaultRenderer || "newAutocompleteTermSelectorRenderer";
     },
 
-    newNavigationTermList : function(params) {
+    newNavigationTermList: function (params) {
         return edges.instantiate(edges.NavigationTermList, params, edges.newComponent);
     },
-    NavigationTermList : function(params) {
+    NavigationTermList: function (params) {
         this.urlTemplate = params.urlTemplate;
         this.placeholder = edges.getParam(params.placeholder, "{term}");
         this.sourceResults = edges.getParam(params.sourceResults, false);
@@ -1102,7 +1112,7 @@ $.extend(edges, {
 
         this.terms = [];
 
-        this.synchronise = function() {
+        this.synchronise = function () {
             this.terms = [];
 
             var results = this.edge.result;
@@ -1117,53 +1127,106 @@ $.extend(edges, {
             }
 
             var agg = results.aggregation(this.sourceAggregation);
-            this.terms = agg.buckets.map(function(x) { return x.key});
+            this.terms = agg.buckets.map(function (x) {
+                return x.key
+            });
         };
 
-        this.navigate = function(params) {
+        this.navigate = function (params) {
             var term = params.term;
             var url = this.urlTemplate.replace(this.placeholder, term);
             window.location.href = url;
         }
     },
 
-    newTreeBrowser : function(params) {
-        return edges.instantiate(edges.TreeBrowser, params, edges.newComponent);
+    newTreeBrowserCore: function (params) {
+        return edges.instantiate(edges.TreeBrowserCore, params, edges.newComponent);
     },
-    TreeBrowser : function(params) {
-        this.field = edges.getParam(params.field, false);
 
-        this.size = edges.getParam(params.size, 10);
+    newTreeBrowser: function (params) {``
+        return edges.instantiate(edges.TreeBrowserSearch, params, edges.newTreeBrowserCore);
+    },
 
+    TreeBrowserCore: function (params) {
         this.tree = edges.getParam(params.tree, {});
-
         this.nodeMatch = edges.getParam(params.nodeMatch, false);
-
         this.filterMatch = edges.getParam(params.filterMatch, false);
-
         this.nodeIndex = edges.getParam(params.nodeIndex, false);
 
-        this.pruneTree = edges.getParam(params.pruneTree, false);
-
         this.syncTree = [];
-
         this.parentIndex = {};
-        
-        this.pruned = false;
-
         this.nodeCount = 0;
 
-        this.init = function(edge) {
-            // first kick the request up to the superclass
-            edges.newSelector().init.call(this, edge);
+        this.init = function (edge) {
+            edges.newComponent().init.call(this, edge);
+        };
 
-            // now trigger a request for the terms to present, if not explicitly provided
+        // Common recurse function
+        this.baseRecurse = function (tree, path, processNode) {
+            var anySelected = false;
+            var childCount = 0;
+
+            for (var i = 0; i < tree.length; i++) {
+                var node = tree[i];
+                this.nodeCount++;
+
+                this.parentIndex[node.value] = $.extend(true, [], path);
+
+                // Process the node and check if it was selected
+                var nodeSelected = processNode(node);
+                if (nodeSelected) {
+                    anySelected = true;
+                }
+
+                if (node.children) {
+                    path.push(node.value);
+                    var childReport = this.baseRecurse(node.children, path, processNode);
+                    path.pop();
+                    if (childReport.anySelected) {
+                        node.selected = true;
+                        anySelected = true;
+                    }
+                    childCount += childReport.childCount;
+                    node.childCount = childReport.childCount;
+                } else {
+                    node.childCount = 0;
+                }
+            }
+            return {anySelected: anySelected, childCount: childCount};
+        };
+
+        this.addFilter = function (params) {
+            console.log('addFilter method must be implemented.');
+            // throw new edges.error.NotImplementedError('addFilter method must be implemented.');
+        }
+
+        this.removeFilter = function (params) {
+            console.log('removeFilter method must be implemented.');
+            // throw new edges.error.NotImplementedError('removeFilter method must be implemented.');
+        }
+
+        this.synchronise = function (params) {
+            console.log('synchronise method must be implemented.');``
+            // throw new edges.error.NotImplementedError('synchronise method must be implemented.');
+        }
+
+    },
+    TreeBrowserSearch: function (params) {
+
+        this.field = edges.getParam(params.field, false);
+        this.size = edges.getParam(params.size, 10);
+        this.pruneTree = edges.getParam(params.pruneTree, false);
+        this.pruned = false;
+
+        this.init = function (edge) {
+            // first kick the request up to the core component
+            edges.newTreeBrowserCore().init.call(this, edge);
             if (this.pruneTree) {
                 this._pruneTree();
             }
         };
 
-        this.contrib = function(query) {
+        this.contrib = function (query) {
             var params = {
                 name: this.id,
                 field: this.field
@@ -1176,10 +1239,8 @@ $.extend(edges, {
             );
         };
 
-        this.synchronise = function() {
-            // synchronise if:
-            // * we are not pruning the tree
-            // * we are pruning the tree, and it has now been pruned
+        this.synchronise = function () {
+
             this.nodeCount = 0;
             if (!(!this.pruneTree || (this.pruneTree && this.pruned))) {
                 this.syncTree = [];
@@ -1188,7 +1249,6 @@ $.extend(edges, {
             }
 
             this.syncTree = $.extend(true, [], this.tree);
-
             var results = this.edge.result;
             if (!results) {
                 return;
@@ -1205,57 +1265,27 @@ $.extend(edges, {
             var buckets = $.extend(true, [], agg.buckets);
             var that = this;
 
-            function recurse(tree, path) {
-                var anySelected = false;
-                var childCount = 0;
-
-                for (var i = 0; i < tree.length; i++) {
-                    var node = tree[i];
-                    that.nodeCount++;
-
-                    that.parentIndex[node.value] = $.extend(true, [], path);
-
-                    var idx = that.nodeMatch(node, buckets);
-                    if (idx === -1) {
-                        node.count = 0;
-                    } else {
-                        node.count = buckets[idx].doc_count;
-                    }
-                    childCount += node.count;
-
-                    if (that.filterMatch(node, selected)) {
-                        node.selected = true;
-                        anySelected = true;
-                    }
-
-                    if (that.nodeIndex) {
-                        node.index = that.nodeIndex(node);
-                    } else {
-                        node.index = node.display;
-                    }
-
-                    if (node.children) {
-                        path.push(node.value);
-                        var childReport = recurse(node.children, path);
-                        path.pop();
-                        if (childReport.anySelected) {
-                            node.selected = true;
-                            anySelected = true;
-                        }
-                        childCount += childReport.childCount;
-                        node.childCount = childReport.childCount;
-                    } else {
-                        node.childCount = 0;
-                    }
-
+            var processNode = function (node) {
+                var idx = that.nodeMatch(node, buckets);
+                if (idx === -1) {
+                    node.count = 0;
+                } else {
+                    node.count = buckets[idx].doc_count;
                 }
-                return {anySelected: anySelected, childCount: childCount}
-            }
+                node.index = that.nodeIndex ? that.nodeIndex(node) : node.display;
+                if (that.filterMatch(node, selected)) {
+                    node.selected = true;
+                    return true;  // Node is selected
+                }
+                return false; // Node not selected
+            };
+
+
             var path = [];
-            recurse(this.syncTree, path);
+            this.baseRecurse(this.syncTree, path, processNode);
         };
 
-        this.addFilter = function(params) {
+        this.addFilter = function (params) {
             var value = params.value;
             var parents = this.parentIndex[value];
             var terms = [params.value];
@@ -1263,21 +1293,17 @@ $.extend(edges, {
 
             var nq = this.edge.cloneQuery();
 
-            // first find out if there was a terms filter already in place
             var filters = nq.listMust(es.newTermsFilter({field: this.field}));
 
-            // if there is, just add the term to it (removing and parent terms along the way)
             if (filters.length > 0) {
                 var filter = filters[0];
                 var originalValues = $.extend(true, [], filter.values);
                 originalValues.sort();
 
-                // if this is an exclusive filter that clears all others, just do that
                 if (clearOthers) {
                     filter.clear_terms();
                 }
 
-                // next, if there are any terms left, remove all the parent terms
                 for (var i = 0; i < parents.length; i++) {
                     var parent = parents[i];
                     if (filter.has_term(parent)) {
@@ -1285,7 +1311,6 @@ $.extend(edges, {
                     }
                 }
 
-                // now add all the provided terms
                 var hadTermAlready = 0;
                 for (var i = 0; i < terms.length; i++) {
                     var term = terms[i];
@@ -1296,21 +1321,18 @@ $.extend(edges, {
                     }
                 }
 
-                // if, as a result of the all the operations, the values didn't change, then don't search
                 if (originalValues === filter.values.sort()) {
                     return false;
                 } else if (!filter.has_terms()) {
                     nq.removeMust(es.newTermsFilter({field: this.field}));
                 }
             } else {
-                // otherwise, set the Terms Filter
                 nq.addMust(es.newTermsFilter({
                     field: this.field,
                     values: terms
                 }));
             }
 
-            // reset the search page to the start and then trigger the next query
             nq.from = 0;
             this.edge.pushQuery(nq);
             this.edge.doQuery();
@@ -1318,22 +1340,18 @@ $.extend(edges, {
             return true;
         };
 
-        this.removeFilter = function(params) {
+        this.removeFilter = function (params) {
             var term = params.value;
             var nq = this.edge.cloneQuery();
 
-            // first find out if there was a terms filter already in place
             var filters = nq.listMust(es.newTermsFilter({field: this.field}));
 
             if (filters.length > 0) {
                 var filter = filters[0];
 
                 if (filter.has_term(term)) {
-                    // the filter we are being asked to remove is the actual selected one
                     filter.remove_term(term);
                 } else {
-                    // the filter we are being asked to remove may be a parent of the actual selected one
-                    // first get all the parent sets of the values that are currently in force
                     var removes = [];
                     for (var i = 0; i < filter.values.length; i++) {
                         var val = filter.values[i];
@@ -1347,14 +1365,10 @@ $.extend(edges, {
                     }
                 }
 
-                // look to see if the term has a parent chain
                 var grandparents = this.parentIndex[term];
                 if (grandparents.length > 0) {
-                    // if it does, get a candidate value to add to the filter
                     var immediate = grandparents[grandparents.length - 1];
 
-                    // we only want to add the candidate value to the filter if it is not a grandparent of any
-                    // of the existing filters
                     var other_terms = filter.values;
                     var tripwire = false;
                     for (var i = 0; i < other_terms.length; i++) {
@@ -1376,19 +1390,16 @@ $.extend(edges, {
                 }
             }
 
-            // reset the search page to the start and then trigger the next query
             nq.from = 0;
             this.edge.pushQuery(nq);
             this.edge.doQuery();
         };
 
-        this._pruneTree = function() {
-            // to list all possible terms, build off the base query
+        this._pruneTree = function () {
             var bq = this.edge.cloneBaseQuery();
             bq.clearAggregations();
             bq.size = 0;
 
-            // now add the aggregation that we want
             var params = {
                 name: this.id,
                 field: this.field
@@ -1400,7 +1411,6 @@ $.extend(edges, {
                 es.newTermsAggregation(params)
             );
 
-            // issue the query to elasticsearch
             this.edge.queryAdapter.doQuery({
                 edge: this.edge,
                 query: bq,
@@ -1409,7 +1419,7 @@ $.extend(edges, {
             });
         };
 
-        this._querySuccess = function(params) {
+        this._querySuccess = function (params) {
             var result = params.result;
 
             var agg = result.aggregation(this.id);
@@ -1448,28 +1458,25 @@ $.extend(edges, {
                 }
                 return {newTree: newTree, treeCount: treeCount}
             }
+
             var treeUpdate = recurse(this.tree);
             this.tree = treeUpdate.newTree;
 
             this.pruned = true;
 
-            // in case there's a race between this and another update operation, subsequently synchronise
             this.synchronise();
 
-            // since this happens asynchronously, we may want to draw
             this.draw();
         };
 
-        this._queryFail = function() {
-            console.log("pruneTree query failed");
+        this._queryFail = function () {
             this.tree = [];
             this.pruned = true;
 
-            // in case there's a race between this and another update operation, subsequently synchronise
             this.synchronise();
 
-            // since this happens asynchronously, we may want to draw
             this.draw();
         };
     }
+
 });
