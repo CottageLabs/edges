@@ -1268,13 +1268,24 @@ function _args2URL({ baseUrl, args }) {
       if (k === "facets") {
         const result = v
           .map((item) => {
-            // Create the facet.field and f.<item.field>.facet.limit query parameters
-            return `facet.field=${encodeURIComponent(
-              item.field
-            )}&f.${encodeURIComponent(
-              item.field
-            )}.facet.limit=${encodeURIComponent(item.size)}`;
+            // Check if item.field exists
+            if (item.field) {
+              // Base facet.field parameter
+              let query = `facet.field=${encodeURIComponent(item.field)}`;
+
+              // Check if item.size exists, and if so, add the facet.limit parameter
+              if (item.size) {
+                query += `&f.${encodeURIComponent(
+                  item.field
+                )}.facet.limit=${encodeURIComponent(item.size)}`;
+              }
+
+              return query;
+            }
+            // If item.field is missing, return nothing
+            return "";
           })
+          .filter(Boolean) // Remove any empty strings (where item.field was missing)
           .join("&");
 
         return result;
@@ -1296,7 +1307,7 @@ function _convertAffLimitAndSortToFacet(agg, solrQuery) {
   const size = agg.size || 10; // default size if not specified
   // const order = agg.orderBy === "_count" ? "count" : "index"; // mapping orderBy to Solr
   // const direction = agg.orderDir === "desc" ? "desc" : "asc"; // default direction if not specified
-
+  console.log("Got size", size, field);
   solrQuery[`f.${field}.facet.limit`] = size;
   // solrQuery[`f.${field}.facet.sort`] = `${order}|${direction}`;
 }
