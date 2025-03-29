@@ -85,7 +85,9 @@ edges.renderers.bs3.RefiningANDTermSelector = class extends edges.Renderer {
             // get the terms of the filters that have already been set
             var filterTerms = [];
             for (var i = 0; i < ts.filters.length; i++) {
-                filterTerms.push(ts.filters[i].term.toString());
+                if(ts.filters[i].term){
+                    filterTerms.push(ts.filters[i].term.toString());
+                }
             }
 
             // render each value, if it is not also a filter that has been set
