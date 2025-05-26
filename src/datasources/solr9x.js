@@ -143,6 +143,7 @@ es.Query = class {
     this.minimumShouldMatch = es.getParam(params.minimumShouldMatch, false);
     this.query = es.getParam(params.query, {});
     this.queryStrings = es.getParam(params.queryStrings, []);
+    this.highlights = es.getParam(params.highlights, []);
 
     // Defaults from properties set through their setters
     this.queryString = false;
@@ -482,8 +483,6 @@ es.Query = class {
       include_source_filters = true,
     } = params;
 
-    console.log(`${include_query_string} ${include_filters}`);
-
     const query_part = {};
     const bool = {};
 
@@ -548,7 +547,7 @@ es.Query = class {
         obj._source.excludes = this.source.exclude.slice(); // Shallow copy of exclude array
       }
     }
-    console.log("Returning obj", obj);
+
     return obj;
   }
 
@@ -567,6 +566,7 @@ es.Query = class {
         ? this.queryStrings.map((qs) => ({ ...qs })) // Shallow copy of queryStrings array if present
         : false, // Default to false if queryStrings is not present
       sort: this.sort.map((sort) => ({ ...sort })), // Shallow copy of sort array
+      highlights: this.highlights,
       source: this.source
         ? {
             include: [...this.source.include], // Shallow copy of include array
@@ -1256,6 +1256,13 @@ function _es2solr({ query }) {
     });
   }
 
+  // Adding highlight section
+  if (query && query.highlights && query.highlights.length > 0) {
+    const highlightObj = query.highlights[0];
+
+    solrQuery.hl = highlightObj;
+  }
+
   solrQuery.wt = "json";
 
   return solrQuery;
@@ -1294,7 +1301,31 @@ function _args2URL({ baseUrl, args }) {
           (item) => `${encodeURIComponent(k)}=${encodeURIComponent(item)}`
         );
       }
+    } else if (k == "hl") {
+      const obj = v;
+
+      const objMap = {
+        filter: "hl.fl",
+        pre: "hl.simple.pre",
+        post: "hl.simple.post",
+        hl: "hl",
+        indent: "indent",
+      };
+
+      const result = Object.entries(v)
+        .map(([key, value]) => {
+          const mappedKey = objMap[key];
+          if (!mappedKey) return null; // Skip keys not in objMap
+          return `${encodeURIComponent(mappedKey)}=${encodeURIComponent(
+            value
+          )}`;
+        })
+        .filter(Boolean) // Remove nulls
+        .join("&");
+
+      return result;
     }
+
     return `${encodeURIComponent(k)}=${encodeURIComponent(v)}`;
   });
 
@@ -1307,7 +1338,7 @@ function _convertAffLimitAndSortToFacet(agg, solrQuery) {
   const size = agg.size || 10; // default size if not specified
   // const order = agg.orderBy === "_count" ? "count" : "index"; // mapping orderBy to Solr
   // const direction = agg.orderDir === "desc" ? "desc" : "asc"; // default direction if not specified
-  console.log("Got size", size, field);
+
   solrQuery[`f.${field}.facet.limit`] = size;
   // solrQuery[`f.${field}.facet.sort`] = `${order}|${direction}`;
 }
