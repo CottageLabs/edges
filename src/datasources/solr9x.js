@@ -308,6 +308,7 @@ es.Query = class {
 
   removeMust(template) {
     let removedCount = 0;
+
     this.must = this.must.filter((filter) => {
       // Check if filter values match the template values
       const matches = Object.keys(template).every(
@@ -318,6 +319,7 @@ es.Query = class {
       }
       return !matches;
     });
+
     return removedCount;
   }
 
@@ -1313,14 +1315,23 @@ function _args2URL({ baseUrl, args }) {
       };
 
       const result = Object.entries(v)
-        .map(([key, value]) => {
+        .flatMap(([key, value]) => {
           const mappedKey = objMap[key];
-          if (!mappedKey) return null; // Skip keys not in objMap
+          if (!mappedKey) return []; // Skip keys not in objMap
+
+          // Handle array for `filter` (or any key that maps to a value array)
+          if (Array.isArray(value)) {
+            return value.map(
+              (val) =>
+                `${encodeURIComponent(mappedKey)}=${encodeURIComponent(val)}`
+            );
+          }
+
+          // Normal key-value
           return `${encodeURIComponent(mappedKey)}=${encodeURIComponent(
             value
           )}`;
         })
-        .filter(Boolean) // Remove nulls
         .join("&");
 
       return result;
