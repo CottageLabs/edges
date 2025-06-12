@@ -1148,13 +1148,13 @@ function _es2solr({ query }) {
             if (esQueryString == "*") {
               queryPart += ` ${operator} ${field}:${esQueryString}`;
             } else {
-              queryPart += ` ${operator} ${field}:"${esQueryString}"`;
+              queryPart += ` ${operator} ${field}:(${esQueryString})`;
             }
           } else {
             if (esQueryString == "*") {
               queryPart = `${field}:${esQueryString}`;
             } else {
-              queryPart = `${field}:"${esQueryString}"`;
+              queryPart = `${field}:(${esQueryString})`;
             }
           }
         });
@@ -1168,7 +1168,7 @@ function _es2solr({ query }) {
         if (solrQuery.q) {
           solrQuery.q += ` AND ${queryPart}`;
         } else {
-          solrQuery.q = queryPart;
+          solrQuery.q = `{!q.op=AND} ${queryPart}`;
         }
       }
     });
