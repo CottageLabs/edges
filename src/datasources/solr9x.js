@@ -1188,8 +1188,8 @@ function _es2solr({ query }) {
     }
 
     if (esQueryString != "") {
-      if (typeof searchField == "boolean") {
-        solrQuery.q = `${solrQuery.q} ${operator} ${esQueryString}`;
+      if (solrQuery.q) {
+        solrQuery.q = `${searchField}:${esQueryString}`;
       } else {
         solrQuery.q = `${solrQuery.q} ${operator} ${searchField}:${esQueryString}`;
       }
