@@ -1135,7 +1135,7 @@ function _es2solr({ query }) {
 
       if (esQueryString !== "" && Array.isArray(fields) && fields.length > 0) {
         let queryPart = ""; // To hold the query part for this set of fields
-
+        console.log("fields", fields.length);
         fields.forEach((fieldConfig, index) => {
           const { field, operator = "OR" } = fieldConfig;
 
@@ -1148,13 +1148,21 @@ function _es2solr({ query }) {
             if (esQueryString == "*") {
               queryPart += ` ${operator} ${field}:${esQueryString}`;
             } else {
-              queryPart += ` ${operator} ${field}:(${esQueryString})`;
+              if (fields.length > 1) {
+                queryPart += ` ${operator} ${field}:(${esQueryString})`;
+              } else {
+                queryPart += ` ${operator} ${field}:"${esQueryString}"`;
+              }
             }
           } else {
             if (esQueryString == "*") {
               queryPart = `${field}:${esQueryString}`;
             } else {
-              queryPart = `${field}:(${esQueryString})`;
+              if (fields.length > 1) {
+                queryPart = `${field}:(${esQueryString})`;
+              } else {
+                queryPart = `${field}:"${esQueryString}"`;
+              }
             }
           }
         });
