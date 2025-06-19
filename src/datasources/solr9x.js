@@ -329,7 +329,10 @@ es.Query = class {
 
     this.queryStrings = this.queryStrings.filter((queryItem) => {
       // Check if the queryString matches the template value
-      const matches = queryItem.queryString === template.value;
+
+      // A patch for handling boolean - Need a better way to handle such things
+      const effectiveValue = template.value === "true" ? "*" : template.value;
+      const matches = queryItem.queryString === effectiveValue;
 
       if (matches) {
         removedCount++;
@@ -1135,7 +1138,7 @@ function _es2solr({ query }) {
 
       if (esQueryString !== "" && Array.isArray(fields) && fields.length > 0) {
         let queryPart = ""; // To hold the query part for this set of fields
-        console.log("fields", fields.length);
+
         fields.forEach((fieldConfig, index) => {
           const { field, operator = "OR" } = fieldConfig;
 
