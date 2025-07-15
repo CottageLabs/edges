@@ -1455,3 +1455,18 @@ edges.util.numParse = function(params) {
         return parseFloat(num);
     }
 }
+
+edges.util.pathValue = function(path, rec, def) {
+    if (def === undefined) { def = null; }
+    let bits = path.split(".");
+    let val = rec;
+    for (let i = 0; i < bits.length; i++) {
+        let field = bits[i];
+        if (field in val) {
+            val = val[field];
+        } else {
+            return def;
+        }
+    }
+    return val;
+}
