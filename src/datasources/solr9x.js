@@ -1151,13 +1151,21 @@ function _es2solr({ query }) {
             if (esQueryString == "*") {
               queryPart += ` ${operator} ${field}:${esQueryString}`;
             } else {
-              queryPart += ` ${operator} ${field}:(${esQueryString})`;
+              if (fields.length > 1) {
+                queryPart += ` ${operator} ${field}:(${esQueryString})`;
+              } else {
+                queryPart += ` ${operator} ${field}:"${esQueryString}"`;
+              }
             }
           } else {
             if (esQueryString == "*") {
               queryPart = `${field}:${esQueryString}`;
             } else {
-              queryPart = `${field}:(${esQueryString})`;
+              if (fields.length > 1) {
+                queryPart = `${field}:(${esQueryString})`;
+              } else {
+                queryPart = `${field}:"${esQueryString}"`;
+              }
             }
           }
         });
