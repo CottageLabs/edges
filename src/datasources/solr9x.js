@@ -144,6 +144,7 @@ es.Query = class {
     this.query = es.getParam(params.query, {});
     this.queryStrings = es.getParam(params.queryStrings, []);
     this.highlights = es.getParam(params.highlights, []);
+    this.filters = es.getParam(params.filters, []);
 
     // Defaults from properties set through their setters
     this.queryString = false;
@@ -572,6 +573,7 @@ es.Query = class {
         : false, // Default to false if queryStrings is not present
       sort: this.sort.map((sort) => ({ ...sort })), // Shallow copy of sort array
       highlights: this.highlights,
+      filters: this.filters,
       source: this.source
         ? {
             include: [...this.source.include], // Shallow copy of include array
@@ -1266,6 +1268,10 @@ function _es2solr({ query }) {
     const highlightObj = query.highlights[0];
 
     solrQuery.hl = highlightObj;
+  }
+
+  if (query && query.filters && query.filters.length > 0) {
+    solrQuery.fl = query.filters.join(",");
   }
 
   solrQuery.wt = "json";
