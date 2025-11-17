@@ -1320,6 +1320,7 @@ function _args2URL({ baseUrl, args }) {
         pre: "hl.simple.pre",
         post: "hl.simple.post",
         hl: "hl",
+        requireFieldMatch: "hl.requireFieldMatch",
         indent: "indent",
       };
 
