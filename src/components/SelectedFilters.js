@@ -1,9 +1,14 @@
-// requires: es
-// requires: edges
-// requires: edges.util
+/* global $, jQuery */
 
-if (!window.hasOwnProperty("edges")) { edges = {}}
-if (!edges.hasOwnProperty("components")) { edges.components = {}}
+window.es = window.es || {};
+var es = window.es;
+
+window.edges = window.edges || {};
+var edges = window.edges;
+
+edges.util = edges.util || {};
+edges.components = edges.components || {};
+
 
 edges.components.SelectedFilters = class extends edges.Component {
     constructor(params) {

@@ -1,7 +1,11 @@
-// requires: $
-// requires: es
+/* global $, jQuery, es */
 
-if (!window.hasOwnProperty("edges")) { edges = {}}
+window.edges = window.edges || {};
+var edges = window.edges;
+
+window.es = window.es || {};
+var es = window.es;
+
 if (!edges.hasOwnProperty("util")) { edges.util = {}}
 if (!edges.hasOwnProperty("es")) { edges.es = {}}
 

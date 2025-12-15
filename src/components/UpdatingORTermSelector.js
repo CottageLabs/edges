@@ -1,7 +1,9 @@
 import {Component} from "../core";
 import {getParam, objClosure, eventClosure} from "../utils";
 
-import {es} from '../../dependencies/es'
+window.edges = window.edges || {};
+var edges = window.edges;
+if (!edges.hasOwnProperty("es")) { edges.es = {}}
 
 export class UpdatingORTermSelector extends Component {
     constructor(params) {

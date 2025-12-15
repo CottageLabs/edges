@@ -1,7 +1,8 @@
 // requires: edges
 // requires: edges.util
 
-if (!window.hasOwnProperty("edges")) { edges = {}}
+window.edges = window.edges || {};
+var edges = window.edges;
 if (!edges.hasOwnProperty("templates")) { edges.templates = {}}
 if (!edges.templates.hasOwnProperty("bs3")) { edges.templates.bs3 = {}}
 

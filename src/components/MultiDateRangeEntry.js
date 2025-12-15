@@ -2,7 +2,8 @@
 // requires: edges.util
 // requires: es
 
-if (!window.hasOwnProperty("edges")) { edges = {}}
+window.edges = window.edges || {};
+var edges = window.edges;
 if (!edges.hasOwnProperty("components")) { edges.components = {}}
 
 edges.components.MultiDateRangeEntry = class extends edges.Component {
