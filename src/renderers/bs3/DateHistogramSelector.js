@@ -1,4 +1,5 @@
-if (!window.hasOwnProperty("edges")) { edges = {}}
+window.edges = window.edges || {};
+var edges = window.edges;
 if (!edges.hasOwnProperty("renderers")) { edges.renderers = {}}
 if (!edges.renderers.hasOwnProperty("bs3")) { edges.renderers.bs3 = {}}
 

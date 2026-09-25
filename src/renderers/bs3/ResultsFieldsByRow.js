@@ -2,7 +2,10 @@
 // requires: edges
 // requires: edges.util
 
-if (!window.hasOwnProperty("edges")) { edges = {}}
+import i18next from "i18next";
+
+window.edges = window.edges || {};
+var edges = window.edges;
 if (!edges.hasOwnProperty("renderers")) { edges.renderers = {}}
 if (!edges.renderers.hasOwnProperty("bs3")) { edges.renderers.bs3 = {}}
 
@@ -14,7 +17,7 @@ edges.renderers.bs3.ResultsFieldsByRow = class extends edges.Renderer {
         // parameters that can be passed in
 
         // what to display when there are no results
-        this.noResultsText = edges.util.getParam(params, "noResultsText", "No results to display");
+        this.noResultsText = edges.util.getParam(params, "noResultsText", i18next.t("No results to display"));
 
         // ordered list of rows of fields with pre and post wrappers, and a value function
         // (all fields are optional)

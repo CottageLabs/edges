@@ -1,6 +1,7 @@
-// requires: $
+/* global $, jQuery, es */
 
-if (!window.hasOwnProperty("es")) { es = {}}
+window.es = window.es || {};
+var es = window.es;
 
 es.Aggregation = class {
     static type = "aggregation"
@@ -949,7 +950,9 @@ es.QueryString = class {
             var oip = optparts[i];
             if (oip.length > 0) {
                 oip = oip + this.fuzzify;
-                this.fuzzify === "*" ? oip = "*" + oip : false;
+                if (this.fuzzify === "*") {
+                    oip = "*" + oip;
+                }
                 pq += oip + " ";
             }
         }

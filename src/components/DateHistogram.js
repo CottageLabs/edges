@@ -1,4 +1,10 @@
-if (!window.hasOwnProperty("edges")) { edges = {}}
+/* global $, jQuery, es */
+
+window.es = window.es || {};
+var es = window.es;
+
+window.edges = window.edges || {};
+var edges = window.edges;
 if (!edges.hasOwnProperty("components")) { edges.components = {}}
 
 edges.components.DateHistogram = class extends edges.Component {

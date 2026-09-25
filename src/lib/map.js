@@ -1,4 +1,5 @@
-if (!window.hasOwnProperty("edges")) { edges = {}}
+window.edges = window.edges || {};
+var edges = window.edges;
 if (!edges.hasOwnProperty("lib")) { edges.lib = {}}
 if (!edges.lib.hasOwnProperty("map")) { edges.lib.map = {}}
 

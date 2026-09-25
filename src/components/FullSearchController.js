@@ -1,9 +1,13 @@
-// requires: edges
-// requires: edges.util
-// requires: es
+/* global $, jQuery */
 
-if (!window.hasOwnProperty("edges")) { edges = {}}
-if (!edges.hasOwnProperty("components")) { edges.components = {}}
+window.es = window.es || {};
+var es = window.es;
+
+window.edges = window.edges || {};
+var edges = window.edges;
+
+edges.components = edges.components || {}
+edges.util = edges.util || {}
 
 edges.components.FullSearchController = class extends edges.Component {
     constructor(params) {

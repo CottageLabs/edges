@@ -3,7 +3,8 @@
 // requires: latlon-geohash.Geohash
 // requires: edges.lib.map.pickFirst
 
-if (!window.hasOwnProperty("edges")) { edges = {}}
+window.edges = window.edges || {};
+var edges = window.edges;
 if (!edges.hasOwnProperty("components")) { edges.components = {}}
 
 edges.components.GeohashedZoomableMap = class extends edges.Component {

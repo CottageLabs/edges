@@ -1,7 +1,8 @@
 // requires: edges
 // requires: edges.util
 
-if (!window.hasOwnProperty("edges")) { edges = {}}
+window.edges = window.edges || {};
+var edges = window.edges;
 if (!edges.hasOwnProperty("renderers")) { edges.renderers = {}}
 if (!edges.renderers.hasOwnProperty("bs5")) { edges.renderers.bs5 = {}}
 
