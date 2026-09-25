@@ -108,6 +108,9 @@ edges.components.MultiDateRangeEntry = class extends edges.Component {
                 var filter = filters[0];
                 this.fromDate = filter.gte;
                 this.toDate = filter.lte;
+                if (!this.toDate) { // check both possibilities
+                    this.toDate = filter.lt;
+                }
             }
         }
 
